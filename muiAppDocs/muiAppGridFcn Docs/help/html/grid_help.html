@@ -1,0 +1,214 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Grid classes and functions</title><meta name="generator" content="MATLAB 9.9"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2022-01-27"><meta name="DC.source" content="grid_help.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Grid classes and functions</h1><!--introduction--><p>The <i>muiAppGridFcns</i> folder contains classes and functions to support the handling of gridded data model for Apps built using the <a href="matlab:doc('muitoolbox')">muitoolbox</a>.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Grid classes</a></li><li><a href="#13">Grid functions</a></li></ul></div><h2 id="1">Grid classes</h2><p>The Apps that use grids can make use of the following classes:</p><p><b>GD_GridProps</b>: class inherits <a href="matlab:doc('muipropertyui')">muiPropertyUI</a> abstract class, providing an interface to define the extent and intervals of a cartesian grid. Methods within the class include:</p><div><ul><li>setInput - calls the default interface to input property values for grid extend and grid intervals in the x and y directions.</li><li>setGridDimensions - pass the x and y dimensions of a grid to updatge the property settings.</li><li>getGridDimensions - retrieve the x and y dimensions as vectors and the grid intervals (delx, dely).</li></ul></div><p><b>GDinterface</b>: an abstract class to support classes that need additional functionality to handle grids. The class inherits <a href="matlab:doc('muidataset')">muiDataSet</a> and together they provide an extensive set of methods to handle datasets of various types (eg from models or imported files). The methods in the GDinterface include the following:</p><p>Methods to add, delete and update grids and propetry tables:</p><div><ul><li>setGrid - load the grid results into a dstable.</li><li>getGrid - retrieve a grid</li><li>addGrid - add a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table</li><li>deleteGrid - delete a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table</li><li>setFormProps - add the derived form properties to a gridded data set (hypsometry, section properties and gross properties).</li><li>setPlanProps - add the plan form properties to a gridded data set.</li><li>setWLProps - add the water level properties to a gridded data set.</li><li>addFormProperties - add form properties to a gridded data set.</li><li>delFormProperties - delete ALL property tables associated with a selected gridded data set</li><li>setHyps_SP_GP - add a set of Hypsometry, Section and Gross form properties</li></ul></div><p>
+<table border=1><tr><td><u>Note</u>: the set methods create and load the relevant dstable for each type
+of summary data and can have multiple rows, with the exception of
+<b>setFormProps</b> which only loads the first row (ie data for the first
+grid). Mulitple rows can be added using <b>setHyps_SP_GP</b>. The
+<b>addFormProperties</b> method is for adding the properties to a set of
+gridded data (eg when loaded from file(s)). If these are subsequently
+modified use the <b>delFormPropeties</b> method to remove the existing tables
+and then run <b>addFormPropeties</b> to recreate the tables.
+</td></tr></table>
+</p><p>Methods to manipulate grids:</p><div><ul><li>translateGrid - interactively translate grid x-y coordinates.</li><li>rotateGrid - interactively flip or rotate grid.</li><li>reGridData - regrid a gridded dataset to match another grid or to user specified dimensions.</li><li>subGridData - interactively define a subgrid and save grid as a new Case.</li><li>setCombinedGrids - superimpose one grid on another based on maximum or minimum set of values.</li><li>diffGridsPlot - generate a plot of the difference between two grids.</li><li>addSurface - add horizontal surface to an extisting grid.</li><li>curvilinear_xy2sn - map grid from cartesian to curvilinear coordinates.</li><li>curvilinear_sn2xy - map grid from curvilinear to cartesian coordinates.</li><li>exportGrid - select a Case and export grid as xyz tuples.</li></ul></div><p><b>GD_ImportData</b> class inherits GDinterface abstract class (see above) to load xyz data from a file. Methods within the class include:</p><div><ul><li>loadData - set up a new dataset by loading data from a file.</li><li>addData - add additional data to an existing dataset.</li><li>tabPlots - plots the grid as a filled contour plot (can be overloaded if required for a specific application).</li></ul></div><p>These methods are supplemented by the methods available in <a href="matlab:doc('muidataset')">muiDataSet</a> and the GDinterface detailed above.</p><h2 id="13">Grid functions</h2><p>Summary of functions available in the <i>muiAppGridFcns</i> folder. Use the Matlab&#8482; help function in the command window to get further details of each function.</p><p><b>gd_channel_hypsometry</b> - compute area and volume hypsometry from gridded elevation data</p><pre class="language-matlab">hyps = gd_channel_hypsometry(grid,wl,histint,limits,xM,isHW); <span class="comment">%see below for explantion of input variables</span>
+</pre><p><b>gd_colormap</b> - check if Mapping toolbox is installed to use land/sea colormap, or call <i>cmap_selection</i> (see <a href="matlab:doc('psfunctions')">Plotting and statistical functions</a> in the <a href="matlab:doc('muitoolbox')">muitoolbox</a>) if not available.</p><pre class="language-matlab">gd_colormap(zlimits);  <span class="comment">%zlimits - minimum and maximum elevations [minz,maxz]</span>
+</pre><p><b>gd_gross_properties</b> - compute the gross properties of a gridded bathymetry</p><pre class="language-matlab">grossprops = gd_gross_properties(grid,wl,hyps,width,csa,xM); <span class="comment">%see below for explantion of input variables</span>
+</pre><p><b>gd_section_properties</b> - compute the width, cross-sectional area and prism along channel</p><pre class="language-matlab">[width,csa,prism] = gd_section_properties(grid,wl,xM); <span class="comment">%see below for explantion of input variables</span>
+</pre><p>where <i>grid</i> is a struct containing the gridded data, <i>wl</i> is a struct for water levels at 3 elevations (high water, mean tide and low water), <i>histint</i> is the vertical interval to be used for the hypsometry, <i>limits</i> defines the upper and lower limits for vertical range of the hypsometry, <i>xM</i> is the offset from x=0 to the mouth, <i>isHW</i> is a flag to apply mask to data to apply an upper bound to a given data set at hihg water within limits that might be set for multiple grids, <i>width</i> are the widths and <i>csa</i> the cross-sectional area at mean tide level (eg from call to <b>gd_section_properties</b>).</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2020b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Grid classes and functions
+% The _muiAppGridFcns_ folder contains classes and functions to support the 
+% handling of gridded data model for Apps built using the 
+% <matlab:doc('muitoolbox') muitoolbox>.
+
+%% Grid classes
+% The Apps that use grids can make use of the following classes:
+%%
+% *GD_GridProps*: class inherits <matlab:doc('muipropertyui') muiPropertyUI> 
+% abstract class, providing an interface to define the extent and intervals
+% of a cartesian grid. Methods within the class include:
+%%
+% * setInput - calls the default interface to input property values for grid
+% extend and grid intervals in the x and y directions.
+% * setGridDimensions - pass the x and y dimensions of a grid to updatge the
+% property settings.
+% * getGridDimensions - retrieve the x and y dimensions as vectors and the
+% grid intervals (delx, dely).
+%%
+% *GDinterface*: an abstract class to support classes that need additional
+% functionality to handle grids. The class inherits <matlab:doc('muidataset') muiDataSet> 
+% and together they provide an extensive set of methods to handle datasets
+% of various types (eg from models or imported files). The methods in the
+% GDinterface include the following:
+%%
+% Methods to add, delete and update grids and propetry tables:
+%%
+% * setGrid - load the grid results into a dstable. 
+% * getGrid - retrieve a grid  
+% * addGrid - add a grid to an existing <matlab:doc('muitoolbox') muitoolbox> Case table
+% * deleteGrid - delete a grid to an existing <matlab:doc('muitoolbox') muitoolbox> Case table
+% * setFormProps - add the derived form properties to a gridded data set 
+% (hypsometry, section properties and gross properties).
+% * setPlanProps - add the plan form properties to a gridded data set.
+% * setWLProps - add the water level properties to a gridded data set.
+% * addFormProperties - add form properties to a gridded data set. 
+% * delFormProperties - delete ALL property tables associated with a 
+% selected gridded data set
+% * setHyps_SP_GP - add a set of Hypsometry, Section and Gross form properties
+%%
+% <html>
+% <table border=1><tr><td><u>Note</u>: the set methods create and load the relevant dstable for each type 
+% of summary data and can have multiple rows, with the exception of
+% <b>setFormProps</b> which only loads the first row (ie data for the first
+% grid). Mulitple rows can be added using <b>setHyps_SP_GP</b>. The
+% <b>addFormProperties</b> method is for adding the properties to a set of
+% gridded data (eg when loaded from file(s)). If these are subsequently
+% modified use the <b>delFormPropeties</b> method to remove the existing tables
+% and then run <b>addFormPropeties</b> to recreate the tables.
+% </td></tr></table>
+% </html>
+
+%%
+% Methods to manipulate grids:
+%%
+% * translateGrid - interactively translate grid x-y coordinates.
+% * rotateGrid - interactively flip or rotate grid.
+% * reGridData - regrid a gridded dataset to match another grid or to user
+% specified dimensions.
+% * subGridData - interactively define a subgrid and save grid as a new Case.
+% * setCombinedGrids - superimpose one grid on another based on maximum
+% or minimum set of values.
+% * diffGridsPlot - generate a plot of the difference between two grids.
+% * addSurface - add horizontal surface to an extisting grid. 
+% * curvilinear_xy2sn - map grid from cartesian to curvilinear coordinates.
+% * curvilinear_sn2xy - map grid from curvilinear to cartesian coordinates.
+% * exportGrid - select a Case and export grid as xyz tuples.
+
+%%
+% *GD_ImportData* class inherits GDinterface abstract class (see above)
+% to load xyz data from a file. Methods within the class include:
+%%
+% * loadData - set up a new dataset by loading data from a file. 
+% * addData - add additional data to an existing dataset.
+% * tabPlots - plots the grid as a filled contour plot (can be overloaded if
+% required for a specific application).
+%%
+% These methods are supplemented by the methods available in
+% <matlab:doc('muidataset') muiDataSet> and the GDinterface detailed
+% above.
+
+%% Grid functions
+% Summary of functions available in the _muiAppGridFcns_ folder. Use the Matlab(TM)
+% help function in the command window to get further details of each
+% function.
+%%
+% *gd_channel_hypsometry*
+% - compute area and volume hypsometry from gridded elevation data
+%%
+%   hyps = gd_channel_hypsometry(grid,wl,histint,limits,xM,isHW); %see below for explantion of input variables
+
+%%
+% *gd_colormap*
+% - check if Mapping toolbox is installed to use land/sea colormap, or call
+% _cmap_selection_ (see <matlab:doc('psfunctions') Plotting and statistical functions> 
+% in the <matlab:doc('muitoolbox') muitoolbox>) if not available.
+%%
+%   gd_colormap(zlimits);  %zlimits - minimum and maximum elevations [minz,maxz]
+
+%%
+% *gd_gross_properties*
+% - compute the gross properties of a gridded bathymetry
+%%
+%   grossprops = gd_gross_properties(grid,wl,hyps,width,csa,xM); %see below for explantion of input variables
+
+%%
+% *gd_section_properties*
+% - compute the width, cross-sectional area and prism along channel
+%%
+%   [width,csa,prism] = gd_section_properties(grid,wl,xM); %see below for explantion of input variables
+
+%%
+% where _grid_ is a struct containing the gridded data, _wl_ is a struct 
+% for water levels at 3 elevations (high water, mean tide and low water), _histint_ is the 
+% vertical interval to be used for the hypsometry, _limits_ defines the 
+% upper and lower limits for vertical range of the hypsometry, _xM_ is the 
+% offset from x=0 to the mouth, _isHW_ is a flag to apply mask to data to 
+% apply an upper bound to a given data set at hihg water within limits that 
+% might be set for multiple grids, _width_ are the widths
+% and _csa_ the cross-sectional area at mean tide level (eg from call to 
+% *gd_section_properties*).
+
+
+
+
+
+
+##### SOURCE END #####
+--></body></html>

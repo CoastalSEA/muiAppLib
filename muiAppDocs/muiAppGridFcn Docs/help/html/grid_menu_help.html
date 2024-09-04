@@ -1,0 +1,104 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Grid Tools Menu</title><meta name="generator" content="MATLAB 9.9"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2022-08-29"><meta name="DC.source" content="grid_menu_help.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Grid Tools Menu</h1><div><ul><li><b>Grid Tools &gt; Translate Grid</b>: interactively translate grid x-y coordinates;</li><li><b>Grid Tools &gt; Rotate Grid</b>: interactively flip or rotate grid;</li><li><b>Grid Tools &gt; Re-Grid</b>: regrid a gridded dataset to match another grid or to user specified dimensions;</li><li><b>Grid Tools &gt; Sub-Grid</b>: interactively define a subgrid and save grid as a new Case;</li><li><b>Grid Tools &gt; Combine Grids</b>: superimpose one grid on another based on maximum or minimum set of values;</li><li><b>Grid Tools &gt; Add Surface</b>: add horizontal surface to an extisting grid;</li><li><b>Grid Tools &gt; To curvilinear</b>: map grid from cartesian to curvilinear coordinates;</li><li><b>Grid Tools &gt; From curvilinear</b>: map grid from curvilinear to cartesian coordinates;</li><li><b>Grid Tools &gt; Display Dimensions</b>: display a table with the dimensions of a selected grid;</li><li><b>Grid Tools &gt; Difference Plot</b>: generate a plot of the difference between two grids;</li><li><b>Grid Tools &gt; Plot Sections</b>: interactively define sections and plot them on a figure;</li><li><b>Grid Tools &gt; Digitise Line</b>: interactively digitise a line (with option to add z values) using selected grid as base map;</li><li><b>Grid Tools &gt; Export xyz Grid</b>: select a Case and export grid as xyz tuples;</li><li><b>Grid Tools &gt; Add Properties</b>: add form properties to a gridded data set;</li><li><b>Grid Tools &gt; Delete Properties</b>: delete ALL property tables associated with a selected gridded data set.</li></ul></div><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2020b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Grid Tools Menu
+% * *Grid Tools > Translate Grid*: interactively translate grid x-y
+% coordinates;
+% * *Grid Tools > Rotate Grid*: interactively flip or rotate grid;   
+% * *Grid Tools > Re-Grid*: regrid a gridded dataset to match another grid or to user
+% specified dimensions;
+% * *Grid Tools > Sub-Grid*: interactively define a subgrid and save grid as a new Case;               
+% * *Grid Tools > Combine Grids*: superimpose one grid on another based on maximum
+% or minimum set of values;
+% * *Grid Tools > Add Surface*: add horizontal surface to an extisting
+% grid;
+% * *Grid Tools > To curvilinear*: map grid from cartesian to curvilinear coordinates; 
+% * *Grid Tools > From curvilinear*: map grid from curvilinear to cartesian
+% coordinates;
+% * *Grid Tools > Display Dimensions*: display a table with the dimensions
+% of a selected grid;
+% * *Grid Tools > Difference Plot*: generate a plot of the difference
+% between two grids;
+% * *Grid Tools > Plot Sections*: interactively define sections and plot
+% them on a figure;
+% * *Grid Tools > Digitise Line*: interactively digitise a line (with
+% option to add z values) using selected grid as base map;
+% * *Grid Tools > Export xyz Grid*: select a Case and export grid as xyz
+% tuples;
+% * *Grid Tools > Add Properties*: add form properties to a gridded data
+% set;
+% * *Grid Tools > Delete Properties*: delete ALL property tables associated with a 
+% selected gridded data set.
+
+ 
+
+##### SOURCE END #####
+--></body></html>
