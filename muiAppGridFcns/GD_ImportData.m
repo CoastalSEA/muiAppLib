@@ -64,11 +64,12 @@ classdef GD_ImportData < FGDinterface
             
             %see if grid needs flipping or rotating
             filename{1,1} = [path,fname{1}];
-            data = readinputfile(filename{1,1},1);  
+            data = readinputfile(filename{1,1},1);  %header defines file read format
             if isempty(data), return; end 
             data{3} = setDataRange(obj,data{3});
 
             grid = formatGridData(obj,data);%assign data to struct for x,y,z 
+            if isempty(grid), return; end         %user deleted orientGrid UI
             [grid,rotate] = orientGrid(obj,grid); %option to flip or rotate grid
             if isempty(grid), return; end         %user deleted orientGrid UI
             newgrid(1,:,:) = grid.z;
@@ -234,10 +235,22 @@ classdef GD_ImportData < FGDinterface
             %X and Y assumed fixed and saved as dimensions 
             grid.x = unique(data{:,1},'stable'); %stable so that orientatioin of 
             grid.y = unique(data{:,2},'stable'); %grid is preserved to input direction
-            
-            Nx = length(grid.x);
-            Ny = length(grid.y);
-            grid.z = reshape(data{:,3},Nx,Ny);
+            z = data{:,3};
+            try
+                Nx = length(grid.x);
+                Ny = length(grid.y);
+                grid.z = reshape(data{:,3},Nx,Ny);
+            catch
+                try
+                    %based on xyz2grid by Chad A. Greene of the University of Texas 
+                    [grid.x,~,xi] = unique(data{:,1},'sorted'); 
+                    [grid.y,~,yi] = unique(data{:,2},'sorted'); 
+                    grid.z = accumarray([xi yi],z(:),[],[],NaN); 
+                catch
+                    warndlg('Unable to resolve grid from data')
+                    grid = [];
+                end
+            end
         end
 %%
         function zdata = setDataRange(~,zdata)

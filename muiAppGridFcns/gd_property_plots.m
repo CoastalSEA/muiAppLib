@@ -470,7 +470,11 @@ function [var,txt] = getChannelVariables(varname,sprop,indices,Rv)
         var = zeros(length(xj),nvar);  
         for i=1:nvar
             var(:,i) = sprop.(txt.names{i})(idx);  %selects variable
-            evar = var(:,i)-Rv;  evar(evar<0) = 0; %remove any offset at teh head
+            if isempty(Rv)                         %no river offset
+                evar = var(:,i);
+            else
+                evar = var(:,i)-Rv;  evar(evar<0) = 0; %remove any offset at the head
+            end
             Lv = -getconvergencelength(xj,evar);
             txt.desc{i} = sprintf('%s (L_v = %.0f)',txt.names{i},Lv);
         end
