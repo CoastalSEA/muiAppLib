@@ -4,7 +4,8 @@ function ws = settling_velocity(d50,g,rhow,rhos,visc,rhoc)
 % NAME
 %   settling_velocity.m
 % PURPOSE
-%   calcualte the settling velocity using Soulsby equation
+%   calculate the settling velocity using Soulsby equation in the Mud
+%   Manual 
 % INPUT
 %   d50  = median sediment grain size (m)
 %   rhoc = density of sediment(kg/m^3) - default is 0.
@@ -15,6 +16,9 @@ function ws = settling_velocity(d50,g,rhow,rhos,visc,rhoc)
 %   [the above parameters can also be passed as a struct]
 % OUTPUT
 %   ws - settling velocity (m/s)
+% NOTES
+%   Whitehouse R J S, Soulsby R L, Roberts W and Mitchener H, 2000, 
+%   Dynamics of estuarine muds, Thomas Telford, London.
 %
 % Author: Ian Townend
 % CoastalSEA (c)June 2015
