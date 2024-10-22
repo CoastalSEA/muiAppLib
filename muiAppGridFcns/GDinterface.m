@@ -987,7 +987,7 @@ classdef (Abstract = true) GDinterface < muiDataSet
 %% ------------------------------------------------------------------------
 % Static, private methods to: getOrigin, getContours, combineGrids
 %--------------------------------------------------------------------------
-    methods (Static, Access=private)
+    methods (Static, Access=protected)
         function grid = getOrigin(grid)
             %Prompt user to define new grid origin
             promptxt = {'Change in X-origin','Change in Y-origin'};

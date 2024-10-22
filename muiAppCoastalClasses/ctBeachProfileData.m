@@ -77,7 +77,7 @@ classdef ctBeachProfileData < muiDataSet
                 [newprofiles,ok] = callFileFormatFcn(obj,funcname,obj,filename);
                 if ok<1 || isempty(newprofiles), continue; end
                 
-                %newdst is a struct of dstables with profile_id as the fieldname
+                %newprofiles is a struct of dstables with profile_id as the fieldname
                 profid = fieldnames(newprofiles);
                 idx = strcmp(muicat.Catalogue.CaseClass,classname);
                 existprofs = muicat.Catalogue.CaseDescription(idx);

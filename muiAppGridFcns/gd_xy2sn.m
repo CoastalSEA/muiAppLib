@@ -49,7 +49,7 @@ function [sngrid,cline] = gd_xy2sn(grid,cline,isxy,isplot)
         end
 
         promptxt = {'Maximum number of iterations','Tolerance (m)'};
-        tol = num2str(1e-3*nanmean(sqrt(sum(diff(clx).^2))));
+        tol = num2str(1e-3*mean(sqrt(sum(diff(clx).^2)),'omitnan'));
         vals = inputdlg(promptxt,'xy2sn',1,{'500',tol});
         if isempty(vals), sngrid = []; return; end
         cline.maxiter = str2double(vals{1});
@@ -58,6 +58,7 @@ function [sngrid,cline] = gd_xy2sn(grid,cline,isxy,isplot)
     
     [S, N] = xy2sn(clx,cly,xi,yi,'MaximumIterations',cline.maxiter,...
               'Tolerance',cline.tolerance);
+    if isempty(S), return; end
     %S and N are returned from origin of [0,0]. Adjust to grid origin
     xSN0 = cline.x(1);   %origin of centreline used in xy2sn
     ySN0 = cline.y(1);
@@ -65,6 +66,7 @@ function [sngrid,cline] = gd_xy2sn(grid,cline,isxy,isplot)
     ysgn = sign(grid.y(2)-grid.y(1));    
     S = xSN0+xsgn*S;
     N = ySN0+ysgn*N;   
+    
     if isxy
         %map elevations from the curvilinear grid back to the cartesian grid
         F = scatteredInterpolant(S,N,zi,'linear','nearest');

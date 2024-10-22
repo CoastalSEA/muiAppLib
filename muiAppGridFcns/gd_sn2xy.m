@@ -46,6 +46,7 @@ function sngrid = gd_sn2xy(grid,cline,isplot)
     Sx = xSN0+xsgn*xi;
     Ny = ySN0-ysgn*yi;  
     [xc, yc] = sn2xy(cline.x,cline.y,Sx,Ny);
+    if isempty(xc), return; end
     %map elevations from the curvilinear grid back to the cartesian grid
     F = scatteredInterpolant(xc,yc,zi,'linear','nearest');
     newz = F(X,Y);
