@@ -36,7 +36,7 @@ classdef GD_ImportData < FGDinterface
             obj = GD_ImportData; %initialise instance of class
             
             [fname,path,nfiles] = getfiles('MultiSelect','on',...
-                'FileType','*.txt;*.grd;*.csv;*.xyz','PromptText','Select file(s):');
+                'FileType','*.txt;*.grd;*.csv;*.xyz;*.mat','PromptText','Select file(s):');
             if nfiles==0
                 return;
             elseif ~iscell(fname)
@@ -47,15 +47,21 @@ classdef GD_ImportData < FGDinterface
             ischannel = strcmp(answer,'Yes');
 
             if nfiles>1
-                timetxt = {num2str(0:1:nfiles-1)};
+                timetxt = {num2str(0:1:nfiles-1),'years'};
             else
-                timetxt = {'0'};
+                timetxt = {'0','years'};
             end
             ok = 0;
+            promptxt = {'Define grid intervals:','Units'};
             while ok<1
-                timetxt = inputdlg('Define timesteps:','Load grid',1,timetxt);
+                timetxt = inputdlg(promptxt,'Load grid',1,timetxt);
                 if isempty(timetxt), return; end
-                timesteps = years(str2double(split(timetxt)));
+                %
+                if strcmp(timetxt{2},'years')
+                    timesteps = years(str2double(split(timetxt{1})));
+                else
+                    timesteps = str2double(split(timetxt{1}));
+                end
                 %check length is correct and that all values are unique
                 if length(timesteps)==nfiles && isunique(timesteps)
                     ok = 1; 
@@ -64,7 +70,14 @@ classdef GD_ImportData < FGDinterface
             
             %see if grid needs flipping or rotating
             filename{1,1} = [path,fname{1}];
-            data = readinputfile(filename{1,1},1);  %header defines file read format
+            [~,~,ext] = fileparts(fname{1});
+            if strcmp(ext,'.mat')
+                promptxt = {'X grid-spacing','Y grid-spacing'};
+                gridints = inputdlg(promptxt,'Input',1,{'2','2'});
+                data = readmatfile(filename{1,1},gridints);
+            else
+                data = readinputfile(filename{1,1},1);  %header defines file read format
+            end
             if isempty(data), return; end 
             data{3} = setDataRange(obj,data{3});
 
@@ -73,43 +86,26 @@ classdef GD_ImportData < FGDinterface
             [grid,rotate] = orientGrid(obj,grid); %option to flip or rotate grid
             if isempty(grid), return; end         %user deleted orientGrid UI
             newgrid(1,:,:) = grid.z;
-            
-            %default values used when not a channnel or not required
-            %alternative would be to have a class that inherits GDinterface
-            ishead = false; xM = 0;  Lt = max(grid.x);
-            if ischannel
-                answer = questdlg('Minimum X is mouth?','Load grid',...
-                                               'True','False','N/A','True');            
-                if strcmp(answer,'False')
-                    ishead = true;
-                end
-                
-                
-                promptxt = {'Distance to mouth from grid origin (from min x)',...
-                            'Distance from mouth to head (default is max-min x)'};
-                defaults = {'0',num2str(max(grid.x))};
-                inp = inputdlg(promptxt,'Load grid',1,defaults);
-                if ~isempty(inp)
-                    xM = str2double(inp{1});
-                    Lt = str2double(inp{2});
-                end
-            end
-            
+
             %now load each file selected
             nhead = 1; %number of header lines in file   
             for i=2:nfiles
-               filename{i,1} = [path,fname{i}];
-               data = readinputfile(filename{i,1},nhead);   
-               if isempty(data), continue; end 
-               grid = formatGridData(obj,data); %assign data to struct for x,y,z
-               grid = rotateGridData(obj,grid,rotate); 
-               newgrid(i,:,:) = grid.z; 
+                filename{i,1} = [path,fname{i}];
+                if strcmp(ext,'.mat')
+                    data = readmatfile(filename{i,1},gridints);
+                else
+                    data = readinputfile(filename{i,1},nhead);
+                end
+                if isempty(data), continue; end
+                data{3} = setDataRange(obj,data{3});
+                grid = formatGridData(obj,data); %assign data to struct for x,y,z
+                grid = rotateGridData(obj,grid,rotate);
+                newgrid(i,:,:) = grid.z;
             end
-
-            %assume that the X and Y dimensions and xM are the same in all files
-            Rv = struct('Hr',[],'Wr',[],'Ar',[]);
-            dims = struct('x',grid.x,'y',grid.y,'t',timesteps,'xM',xM,...
-                                         'Lt',Lt,'Rv',Rv,'ishead',ishead);                                               
+            %default values used when not a channnel or not required
+            %alternative would be to have a class that inherits GDinterface
+            dims = setChannel(obj,grid,timesteps,ischannel);
+                                             
             %assign metadata about data source and save grid
             meta.source = filename;
             meta.data = sprintf('Rotate option = %d',rotate);
@@ -125,22 +121,34 @@ classdef GD_ImportData < FGDinterface
             %add additional data to an existing user dataset (called from
             %model UI using useCase in muiCatalogue
             [fname,path,~] = getfiles('MultiSelect','off',...
-                'FileType','*.txt;*.csv','PromptText','Select file:');
+                'FileType','*.txt;*.grd;*.csv;*.xyz;*.mat','PromptText','Select file:');
             nhead = 1;
             filename = [path,fname];
-            data = readinputfile(filename,nhead);  
+            [~,~,ext] = fileparts(fname);
+            if strcmp(ext,'.mat')
+                promptxt = {'X grid-spacing','Y grid-spacing'};
+                gridints = inputdlg(promptxt,'Input',1,{'2','2'});
+                data = readmatfile(filename,gridints);
+            else
+                data = readinputfile(filename,nhead);  
+            end
             if isempty(data), return; end
             
             %existing loaded grid
-            dst = obj.Data.Form;      %selected dstable
+            dst = obj.Data.Grid;      %selected dstable
             x = dst.Dimensions.X;
             y = dst.Dimensions.Y;
             existimes = dst.RowNames;
             ok = 1;
             while ok>0  %add timestep and ensure is unique from existing values
-                timestep = inputdlg('Define timestep:','Load grid',1,{'X'});
+                timestep = inputdlg('Define grid interval:','Load grid',1,{'X'});
                 if isempty(timestep), return; end
-                timestep = years(str2double(timestep));
+                %
+                if isduration(existimes)
+                    timestep = years(str2double(timestep));
+                else
+                    timestep = str2double(timestep);
+                end
                 if ~ismember(existimes,timestep), ok=0; end %ensure value entered is unique
             end
             
@@ -158,17 +166,13 @@ classdef GD_ImportData < FGDinterface
                 warndlg('Dimensions of grid being added do not match existing grid')
                 return
             end
-            
-            %get x-distance of mouth from grid origin
-            inp = inputdlg('Distance to mouth from grid origin','Load grid',1,{'0'});
-            if isempty(inp)
-                xM = 0;
-            else
-                xM = str2double(inp{1});
-            end
-            
+
+            answer = questdlg('Is grid a channel/estuary/inlet?','Type','Yes','No','No');
+            ischannel = strcmp(answer,'Yes');
+            dims = setChannel(obj,grid,timestep,ischannel);
+
             %add grid to existing Case table
-            addGrid(obj,muicat,newgrid,timestep,xM,filename,true);
+            addGrid(obj,muicat,newgrid,timestep,dims,filename,true);
         end        
 %%
         function qcData(obj,classrec,catrec,muicat) %#ok<INUSD>
@@ -191,7 +195,7 @@ classdef GD_ImportData < FGDinterface
             if height(dst)>1
                 %propmpt user to select timestep
                 list = dst.DataTable.Properties.RowNames;
-                irec = listdlg('PromptString','Select timestep:',...
+                irec = listdlg('PromptString','Select grid:',...
                                'Name','Tab plot','SelectionMode','single',...
                                'ListSize',[160,160],'ListString',list);
                 if isempty(irec), return; end
@@ -210,7 +214,6 @@ classdef GD_ImportData < FGDinterface
             else
                 ax = src; %user passing an axis as src rather than a uicontrol
             end
-            
 
             %plot form as a contour plot
             contourf(grid.x,grid.y,grid.z');
@@ -223,7 +226,13 @@ classdef GD_ImportData < FGDinterface
             cb.Label.String = 'Elevation (mAD)';
             xlabel('Length (m)'); 
             ylabel('Width (m)'); 
-            title(sprintf('%s (%s)',dst.Description,char(grid.t)));
+            
+            if isduration(grid.t)
+                gridnum =char(grid.t);
+            else
+                gridnum = num2str(grid.t);
+            end
+            title(sprintf('%s (%s: %s)',dst.Description,dst.RowDescription,gridnum));
             ax.Color = [0.96,0.96,0.96];  %needs to be set after plot
         end       
     end
@@ -242,10 +251,11 @@ classdef GD_ImportData < FGDinterface
                 grid.z = reshape(data{:,3},Nx,Ny);
             catch
                 try
-                    %based on xyz2grid by Chad A. Greene of the University of Texas 
+                    %[grid.x,grid.y,grid.z] = xyz2grid(data{:,1},data{:,2},data{:,3});
                     [grid.x,~,xi] = unique(data{:,1},'sorted'); 
                     [grid.y,~,yi] = unique(data{:,2},'sorted'); 
                     grid.z = accumarray([xi yi],z(:),[],[],NaN); 
+                    %grid.z = flipud(Z);
                 catch
                     warndlg('Unable to resolve grid from data')
                     grid = [];
@@ -266,6 +276,33 @@ classdef GD_ImportData < FGDinterface
             maxz = str2double(answer{2});
             zdata(zdata<minz) = NaN;
             zdata(zdata>maxz) = NaN;
+        end
+%%        
+        function dims = setChannel(~,grid,timesteps,ischannel)
+            %default values used when not a channnel or not required
+            %alternative would be to have a class that inherits GDinterface
+            ishead = false; xM = 0;  Lt = max(grid.x);
+            if ischannel
+                answer = questdlg('Minimum X is mouth?','Load grid',...
+                                               'True','False','N/A','True');            
+                if strcmp(answer,'False')
+                    ishead = true;
+                end
+
+                promptxt = {'Distance to mouth from grid origin (from min x)',...
+                            'Distance from mouth to head (default is max-min x)'};
+                defaults = {'0',num2str(max(grid.x))};
+                inp = inputdlg(promptxt,'Load grid',1,defaults);
+                if ~isempty(inp)
+                    xM = str2double(inp{1});
+                    Lt = str2double(inp{2});
+                end
+            end   
+            
+            %assume that the X and Y dimensions and xM are the same in all files
+            Rv = struct('Hr',[],'Wr',[],'Ar',[]);
+            dims = struct('x',grid.x,'y',grid.y,'t',timesteps,'xM',xM,...
+                                         'Lt',Lt,'Rv',Rv,'ishead',ishead);          
         end
     end
 end

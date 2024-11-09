@@ -50,6 +50,10 @@ classdef (Abstract = true) GDinterface < muiDataSet
             
             %create dstable for grid data
             zdsp = GDinterface.setDSproperties();
+            if ~isduration(dims.t)
+                zdsp = dsproperties(zdsp,'Grid properties'); 
+                editDSproperty(zdsp,'Row');
+            end
             zdst = dstable(griddata{:},'RowNames',dims.t,'DSproperties',zdsp); 
             zdst.Dimensions.X = dims.x; %row or column vector because
             zdst.Dimensions.Y = dims.y; %dstable holds Dimensions as column vectors   
@@ -70,19 +74,23 @@ classdef (Abstract = true) GDinterface < muiDataSet
             obj.Data.Grid = zdst;             
         end
 %%
-        function grid = getGrid(obj,irow)
+        function grid = getGrid(obj,irow,promptxt)
             %retrieve a grid and the index for the case and row
             % obj - any GDinterface subclass that contains a Grid dstable
             % irow - row index of the dstable to extract grid from (optional)
+            % promptxt - user input prompt (optional)
             if nargin<2
                 irow = [];
+                promptxt = 'Select grid:';
+            elseif nargin<3
+                promptxt = 'Select grid:';
             end
             
             dst = obj.Data.Grid;
             if height(dst)>1 && isempty(irow)
                 %propmpt user to select timestep
                 list = dst.DataTable.Properties.RowNames;
-                irow = listdlg('PromptString','Select timestep:',...
+                irow = listdlg('PromptString',promptxt,...
                                'Name','Grid selection','SelectionMode','single',...
                                'ListSize',[200,200],'ListString',list);
                 if isempty(irow), grid = []; return; end
@@ -104,7 +112,7 @@ classdef (Abstract = true) GDinterface < muiDataSet
             grid.cline = dst.UserData.cline(irow);             
         end 
 %%
-        function addGrid(obj,muicat,newgrid,timestep,dims,sourcetxt,ismsg)
+        function addGrid(obj,muicat,newgrid,timestep,dims,sourcetxt,ismsg)            
             %add a grid to an existing Case table
             % obj - any GDinterface subclass that contains a Grid dstable
             % muicat - handle to muiCatalogue
@@ -121,7 +129,12 @@ classdef (Abstract = true) GDinterface < muiDataSet
             %assign metadata about data
             dst.Source{nrec} = sourcetxt; 
             %struct for xy coordinate of curvilinear transformation
-            dst.UserData.cline(nrec) = struct('x',[],'y',[]);
+            if isfield(dims,'cline')
+                dst.UserData.cline(nrec) = dims.cline;
+            else
+                dst.UserData.cline(nrec,1) = struct('x',[],'y',[],...
+                                            'maxiter',[],'tolerance',[]);
+            end
             %sort in row order and load case
             dst = sortrows(dst);
             obj.Data.Grid = dst;  

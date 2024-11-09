@@ -88,16 +88,19 @@ classdef (Abstract = true) FGDinterface < GDinterface
             obj.Data.Grid = zdst;
         end
 %%
-        function grid = getGrid(obj,irow)
+        function grid = getGrid(obj,irow,promptxt)
             %retrieve a grid and the index for the case and row
             % obj - any FGDinterface subclass that contains a Grid dstable
             % irow - row index of the dstable to extract grid from (optional)
             if nargin<2
                 irow = [];
+                promptxt = 'Select grid:';
+            elseif nargin<3
+                promptxt = 'Select grid:';
             end
             %get grid by calling superclass function in GDinterface
-            grid = getGrid@GDinterface(obj,irow);
-            
+            grid = getGrid@GDinterface(obj,irow,promptxt);
+            if isempty(grid), return; end
             dst = obj.Data.Grid;
             %add properties that are specific to a channel form
             grid.ishead = dst.UserData.ishead; %orientation of x-axis true if head
@@ -115,9 +118,9 @@ classdef (Abstract = true) FGDinterface < GDinterface
             % dims - struct containig xM, Lt and river properties 
             % sourcetxt - file name or model name to identify data source
             % ismsg - true to use defualt message, false to suppress message
-            addGrid@GDinterface(obj,muicat,newgrid,timestep,sourcetxt,false)
+            addGrid@GDinterface(obj,muicat,newgrid,timestep,dims,sourcetxt,false)
             dst = obj.Data.Grid;      %selected dstable     
-            nrec = find(dst.Rownames==timestep); %addGrid sorts rows
+            nrec = find(dst.RowNames==timestep); %addGrid sorts rows
             %properties added by FGDinterface
             dst.UserData.xM(nrec) = dims.xM;
             dst.UserData.Lt(nrec) = dims.Lt;
