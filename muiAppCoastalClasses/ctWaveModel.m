@@ -155,7 +155,7 @@ classdef ctWaveModel < muiDataSet
             muicat = mobj.Cases;
             promptxt = 'Select input wave data set:';           
             [wv_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
-                           'CaseClass',{'ctWaveData'},'ListSize',[300,100]);                                    
+                           'CaseClass',{'ctWaveData','muiUserModel'},'ListSize',[300,100]);                                    
             if ok<1, return; end
             wvdst = getDataset(muicat,wv_crec,1);
             wvtime = wvdst.RowNames;
@@ -163,7 +163,8 @@ classdef ctWaveModel < muiDataSet
 
             promptxt = 'Select input water level data set (Cancel to use SWL=0):';           
             [wl_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
-                                'CaseClass',{'ctWaterLevelData','ctTidalAnalysis'},...
+                                'CaseClass',{'ctWaterLevelData','ctTidalAnalysis'...
+                                              'muiUserModel'},...
                                 'ListSize',[300,100]); 
 
             swl = zeros(size(wvtime));               

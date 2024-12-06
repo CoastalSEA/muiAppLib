@@ -1,4 +1,4 @@
-function [qtime,qdrift] = littoraldriftstats(qs,tdt,varargin)
+function dst = littoraldriftstats(qs,tdt,varargin)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -18,10 +18,10 @@ function [qtime,qdrift] = littoraldriftstats(qs,tdt,varargin)
 %               gap in data = data values that are NaN
 %               calms = |qs|<calmsthreshold
 %   Option to return time series of results (e.g. monthly values) 
+%   dst - dstable if defined period is chose or a struct if annual and
+%   monthly are to be saved. Each table contains:
+%       qtime, qdrift - depends on selection 
 %   Otherwise returns the average annual values (return value required by muiUserModel) 
-%   qtime, qdrift - depends on selection 
-%               Save results  returns time and drift
-%               otherwise average annual drift is returned as a single value
 % NOTES
 %	designed to be called from Derive Output in any muitoolbox model UI
 % SEE ALSO
@@ -118,7 +118,7 @@ function [qtime,qdrift] = littoraldriftstats(qs,tdt,varargin)
 
     %set output as cell array of drift and time
     if strcmp(period,'year') || strcmp(period,'annual')
-        qdrift = andrift; qtime = datetime(yearrecs,7,1)';
+        qdrift = andrift; qtime = andtn';
     else
         qdrift = mdrift; qtime = mtime;
     end
@@ -147,7 +147,7 @@ function [qtime,qdrift] = littoraldriftstats(qs,tdt,varargin)
     %plot annual and monthly drift volumes
     subplot(3,1,2)
     yyaxis left
-    plot(mtime,mdrift);
+    plot(mtime,mdrift);                                      %monthly drift
     hold on
     hp = plot([mtime(1),mtime(end)],[0,0],'--k');            %zero axis
     excludefromlegend(hp);
@@ -163,7 +163,7 @@ function [qtime,qdrift] = littoraldriftstats(qs,tdt,varargin)
     if str2double(mver(1:4))<2017
         andtn = datenum(andtn); %#ok<DATNM> 
     end
-    bar(andtn,andrift,'FaceColor','none','BarWidth',1);
+    bar(andtn,andrift,'FaceColor','none','BarWidth',1);     %annual drift
     ylabel('Annual drift volumes (m^3)');
     legend({'Monthly drift','Gaps','Annual drift'},'Location','best');
     
@@ -183,7 +183,7 @@ function [qtime,qdrift] = littoraldriftstats(qs,tdt,varargin)
     legend({'+ve annual: left to right','-ve annual: right to left','+ve monthly x2','-ve monthly x2'},...
         'Location','best');
     
-    hqd = questdlg('Save results?','Save','Yes','No','Yes');
+    hqd = questdlg('Save results?','Drift','Defined','All','No','No');
     if strcmp(hqd,'No') %returns total drift over period of record
         reclen = dur;                   %duration of record in years
         qdrift = (sum(qdrift))/reclen;  %returns drift rate (m3/yr) - Tian edited
@@ -193,11 +193,61 @@ function [qtime,qdrift] = littoraldriftstats(qs,tdt,varargin)
         txt1 = sprintf('Average annual drift rate %.1f m^3/y',qdrift);
         txt2 = sprintf('Average annual positive drift %.1f m^3/y',pdrift);
         txt3 = sprintf('Average annual negative drift %.1f m^3/y',ndrift);
-        qtime = sprintf('%s\n%s\n%s',txt1,txt2,txt3);
+        dst = sprintf('%s\n%s\n%s',txt1,txt2,txt3);
+    elseif strcmp(hqd,'Defined')
+        dsp = modelDSproperties(period);
+        qtime.Format = dsp.Row.Format;   %force format to defined format
+        dst = dstable(qdrift,'RowNames',qtime,'DSproperties',dsp);
+    else
+        adsp = modelDSproperties('year');
+        andtn.Format = adsp.Row.Format;  %force format to defined format
+        dst.Year = dstable(andrift,'RowNames', andtn,'DSproperties',adsp);
+        mdsp = modelDSproperties('month');
+        mtime.Format = mdsp.Row.Format;  %force format to defined format
+        dst.Month = dstable(mdrift,'RowNames', mtime,'DSproperties',mdsp);
     end
 end
-
+%%
 function excludefromlegend(hp)
     set(get(get(hp,'Annotation'),'LegendInformation'),...
             'IconDisplayStyle','off'); % Exclude line from legend
+end
+%%
+function dsp = modelDSproperties(period) 
+    %define a dsproperties struct and add the model metadata
+    dsp = struct('Variables',[],'Row',[],'Dimensions',[]); 
+    %define each variable to be included in the data table and any
+    %information about the dimensions. dstable Row and Dimensions can
+    %accept most data types but the values in each vector must be unique
+    
+    %struct entries are cell arrays and can be column or row vectors
+    switch period
+        case 'year'             %Drift
+            dsp.Variables = struct(...                       
+                'Name',{'aQs'},...
+                'Description',{'Annual alongshore drift potential'},...
+                'Unit',{'m^3'},...
+                'Label',{'Transport (m^3)'},...
+                'QCflag',{'model'});
+        case 'month'
+            dsp.Variables = struct(...                       
+                'Name',{'mQs'},...
+                'Description',{'Monthly alongshore drift potential'},...
+                'Unit',{'m^3'},...
+                'Label',{'Transport (m^3)'},...
+                'QCflag',{'model'});
+    end
+    %
+    dsp.Row = struct(...
+        'Name',{'Time'},...
+        'Description',{'Time'},...
+        'Unit',{'h'},...
+        'Label',{'Time'},...
+        'Format',{'dd-MM-yyyy'});        
+    dsp.Dimensions = struct(...    
+        'Name',{''},...
+        'Description',{''},...
+        'Unit',{''},...
+        'Label',{''},...
+        'Format',{''});    
 end
