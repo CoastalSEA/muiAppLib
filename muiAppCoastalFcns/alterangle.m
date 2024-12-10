@@ -5,6 +5,9 @@ function outdir = alterangle(indir)
 %   alterangle.m
 % PURPOSE
 %   Function to adjust the direction angle of a wind or wave dataset 
+%   Applies a linear scaling of a direction shift between min and max
+%   directions (Dir0 and Dir1) and then the maximum shift outside of this
+%   range (Dir2).
 % USAGE
 %   outdir = alterangle(indir)
 % INPUTS
@@ -29,8 +32,8 @@ function outdir = alterangle(indir)
     Dir1 = str2double(answer{3});  %Angle for maximum shift (degTN)
     Dir2 = str2double(answer{4});  %Angle for limit of adjustment (degTN)
     asgn = str2double(answer{5});  %Direction of shift (+1 or -1)
-    alp = alp0*(indir-Dir0)/(Dir1-Dir0); %linear scaling of shift betweeb Dir0 and Dir1
+    alp = alp0*(indir-Dir0)/(Dir1-Dir0); %linear scaling of shift between Dir0 and Dir1
     alp(indir>Dir1) = alp0;        %maximum shift beyond Dir1
-    alp(indir>Dir2) = alp0;        %maximum shift beyond Dir2
+    alp(indir>Dir2) = 0;           %maximum shift beyond Dir2
     outdir = indir+asgn*alp;       %adjust direction by +/- alp
 end

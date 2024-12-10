@@ -156,8 +156,9 @@ function [depS, mS] = surfdepth(dst,inp,dep0)
     options.FunValCheck = 'on';
     nrec = length(dst.Hs);
     hpw = PoolWaitbar(nrec, 'Processing wave data');
-    parfor j=1:nrec
+    parfor j=1:nrec                                        %parfor*********
         jfunc = @(depi) myfunc(depi,j);
+       % sprintf('%d: depi1 %.3f depi2 %0.3f\n',j,depi1(j),depi2(j))
         if depi1(j)>0.2 && depi2(j)>depi1(j) && ~(idx(j))
             depS(j) = findepth(jfunc,depi1(j),depi2(j),options);            
             if isnan(depS(j)) || depS(j)<1 %depS can be negative if fzero does not find solution
@@ -180,20 +181,30 @@ function [depS, mS] = surfdepth(dst,inp,dep0)
 end
 %%
 function depS = findepth(afunc,depi1,depi2,options)
-    %use depi1 to find root. If this fails, iterate out to closure depth        
-    [depS,~,exitflag] = fzero(afunc,depi1,options);
-    if exitflag<1 || ~isreal(depS)
+    %use depi1 to find root. If this fails, iterate out to closure depth
+    try
+        [depS,~,exitflag] = fzero(afunc,depi1,options);
+    catch
+        exitflag = -3;	%NaN or Inf function value was encountered
+    end
+
+    if exitflag<1 || ~isreal(depS) 
         nint = 5;
         dint = abs(depi2)/nint;
         for ii=1:nint
             depii = depi1+dint*ii;
-            [depS,~,exitflag] = fzero(afunc,depii,options);
+            try
+                [depS,~,exitflag] = fzero(afunc,depii,options);
+            catch
+                exitflag = -3;	%NaN or Inf function value was encountered
+            end
+
             if exitflag>0
                 break
             end
         end
         if exitflag<1
-                depS = exitflag; %errors are -1 to -6
+                depS = exitflag; %errors are -1 to -6 or 0 if function returns NaN in fzero
         end
     end
 end

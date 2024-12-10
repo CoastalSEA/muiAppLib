@@ -21,14 +21,14 @@ function dst = scale_waterlevels(wl,t,issave,isplot)
 % CoastalSEA (c)Dec 2024
 %--------------------------------------------------------------------------
 %
-    if nargin<3           %catch call using tidalrange(wl,t)
+    if nargin<3           %catch call using scale_waterlevels(wl,t)
         isplot = false;
         issave = false;
-    elseif nargin<4      %catch call using tidalrange(wl,t,issave)
+    elseif nargin<4      %catch call using scale_waterlevels(wl,t,issave)
         isplot = false;         
     end
     %
-    if isempty(issave)   %catch call using tidalrange(wl,t,[],isplot)
+    if isempty(issave)   %catch call using scale_waterlevels(wl,t,[],isplot)
         issave = false;
     end
     promptxt = {'Scale for high waters', 'Scale for low waters'};
@@ -42,7 +42,7 @@ function dst = scale_waterlevels(wl,t,issave,isplot)
 
     if isplot
         %option to produce various plots    
-        figure; plot(t,wl); ylabel('Scaledd water levels');
+        figure; plot(t,wl); ylabel('Scaled water levels');
     end
     %option to save output
     if issave
