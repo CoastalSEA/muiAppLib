@@ -60,6 +60,7 @@ function dst = getData(~,filename)
     dur = ncread(filename,'time');
     date = datetime('1970-01-01 00:00:00');
     myDatetime =  date+seconds(dur);
+    myDatetime.Format = 'dd-MM-yyyy HH:mm:ss';
 
     info = ncinfo(filename);
     varnames = {info.Variables(:).Name};
@@ -153,9 +154,17 @@ function dsp = setDSproperties(varnames)
         'Label',{'Latitude and Longitude'},...
         'Format',{''});    
     
+   
+    
     %now remove the variables that are not being loaded
     idx = ismember({dsp.Variables(:).Name},varnames);
     dsp.Variables(~idx) = [];
+
+    %rename variables to be compatible with wave model which uses Hs, Tp
+    %and Dir
+    modelvars = {'Hs','Dir','Tp'};
+    idx = ismember({dsp.Variables(:).Name},{'VHM0','VMDR','VTPK'});
+    [dsp.Variables(idx).Name] = modelvars{:};
 end
 %%
 %--------------------------------------------------------------------------
