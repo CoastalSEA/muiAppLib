@@ -76,7 +76,7 @@ classdef GD_ImportData < FGDinterface
                 gridints = inputdlg(promptxt,'Input',1,{'2','2'});
                 data = readmatfile(filename{1,1},gridints);
             else
-                data = readinputfile(filename{1,1},1);  %header defines file read format
+                data = readinputfile(filename{1,1},1,'%f %f %f');  %header defines file read format
             end
             if isempty(data), return; end 
             data{3} = setDataRange(obj,data{3});
@@ -94,7 +94,7 @@ classdef GD_ImportData < FGDinterface
                 if strcmp(ext,'.mat')
                     data = readmatfile(filename{i,1},gridints);
                 else
-                    data = readinputfile(filename{i,1},nhead);
+                    data = readinputfile(filename{i,1},nhead,'%f %f %f');
                 end
                 if isempty(data), continue; end
                 data{3} = setDataRange(obj,data{3});
