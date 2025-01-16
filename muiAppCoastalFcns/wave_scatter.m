@@ -23,11 +23,10 @@ function res = wave_scatter(dst)
 %----------------------------------------------------------------------
 %
     res = 'no output'; %cell ouput required by call from DataManip.createVar 
-
     ok = 1;
     while ok>0
         %allow user to generate various plots
-        plotlist = {'Scatter plot','Scatter histogram','Steepness plots'};
+        plotlist = {'Scatter plot (H,T)','Scatter plot (H,T,d)','Scatter histogram','Steepness plots'};
         [idx,ok] = listdlg('Name','Plot options', ...
             'PromptString','Select a plot:', ...
             'SelectionMode','single', ...
@@ -35,8 +34,10 @@ function res = wave_scatter(dst)
             'ListString',plotlist);
         if ok<1, return; end
 
-        switch plotlist{idx}
-            case 'Scatter plot'
+         switch plotlist{idx}
+            case 'Scatter plot (H,T)'
+                basic_scatter_plot(dst);
+            case 'Scatter plot (H,T,d)'
                 scatter_plot(dst);
             case 'Scatter histogram'
                 scatter_histogram(dst);
@@ -46,9 +47,50 @@ function res = wave_scatter(dst)
     end
 end
 %%
+function basic_scatter_plot(dst)
+    %basis wave height v wave period scatter plot
+   if length(dst)<2
+        warndlg('Assign wave height to X and wave period to Y button')
+        return
+    end
+    H = dst(1).data.DataTable{:,1};
+    T = dst(2).data.DataTable{:,1};
+    %create plot
+    hf = figure('Name','Rates of change','Units','normalized',...
+                'Tag','PlotFig');
+    ax = axes(hf);
+
+    plot(ax,T,H,'.k','MarkerSize',0.1);
+    hold on
+    nbins = [20,20];
+    X = [T,H];
+    [Z,XY]=hist3(X,nbins);
+    htrec = max(length(find(~isnan(T))),length(find(~isnan(H))));
+    Z = Z/htrec*100;                %percentage occurrence
+    zmx = max(max(Z));
+    %
+    ci = [0.02,0.05,0.1,0.2,0.5,0.8]*zmx;
+    contourf(ax,XY{1},XY{2},Z',ci,'FaceAlpha',0.8);
+    hold off
+    colormap('bone')
+    cmap=colormap;
+    cmap=flipud(cmap);
+    colormap(cmap);
+    cb  = colorbar;
+    cb.Label.String = 'Frequency (%)';
+    
+    xlabel(dst(2).data.VariableLabels{1})
+    ylabel(dst(1).data.VariableLabels{1})
+end
+%%
 function scatter_plot(dst)
     %create a scatter plot with steepness contours from wave Hs and Tp or
     %Tz and water depth
+    if length(dst)<3
+        warndlg('Assign wave height to X, wave period to Y and water depth to Z button')
+        return
+    end
+
     H = dst(1).data.DataTable{:,1};
     T = dst(2).data.DataTable{:,1};
     d = dst(3).data.DataTable{:,1}; 
@@ -64,10 +106,10 @@ function scatter_plot(dst)
                 'Tag','PlotFig');
     ax = axes(hf);
     scatter(ax,T,H,[],d,'fill')
-    xlabel(dst(2).data.VariableDescriptions{1})
-    ylabel(dst(1).data.VariableDescriptions{1})
+    xlabel(dst(2).data.VariableLabels{1})
+    ylabel(dst(1).data.VariableLabels{1})
     cb = colorbar;
-    cb.Label.String = dst(3).data.VariableDescriptions{1};
+    cb.Label.String = dst(3).data.VariableLabels{1};
 
     mnlines = {'-k','--k','-.k'};
     mxlines = {'-r','--r','-.r'};
@@ -85,6 +127,10 @@ end
 %%
 function scatter_histogram(dst)
     %create a contoured 3D histogram from Hs and Tp or Tz and water depth
+    if length(dst)<3
+        warndlg('Assign wave height to X, wave period to Y and water depth to Z button')
+        return
+    end
     H = dst(1).data.DataTable{:,1};
     T = dst(2).data.DataTable{:,1};
     d = dst(3).data.DataTable{:,1};  
@@ -93,16 +139,16 @@ function scatter_histogram(dst)
     switch answer
         case 'T-H'
             v1 = T; v2 = H;
-            xlabtxt = dst(2).data.VariableDescriptions{1};
-            ylabtxt = dst(1).data.VariableDescriptions{1};
+            xlabtxt = dst(2).data.VariableLabels{1};
+            ylabtxt = dst(1).data.VariableLabels{1};
         case 'd-H'
             v1 = d; v2 = H;
-            xlabtxt = dst(3).data.VariableDescriptions{1};
-            ylabtxt = dst(1).data.VariableDescriptions{1};
+            xlabtxt = dst(3).data.VariableLabels{1};
+            ylabtxt = dst(1).data.VariableLabels{1};
         case 'd-S'
             v1 = d;
             [~,v2] = wave_steepness(H,T,d,[]);
-            xlabtxt = dst(3).data.VariableDescriptions{1};
+            xlabtxt = dst(3).data.VariableLabels{1};
             ylabtxt = 'Wave Steepness';
     end
 
@@ -127,6 +173,10 @@ end
 %%
 function steepness_plot(dst)
     %plot wave steepness against another property
+    if length(dst)<3
+        warndlg('Assign wave height to X, wave period to Y and water depth to Z button')
+        return
+    end
     H = dst(1).data.DataTable{:,1};
     T = dst(2).data.DataTable{:,1};
     d = dst(3).data.DataTable{:,1};
@@ -148,9 +198,9 @@ function steepness_plot(dst)
         case 'S-H (d)'
             scatter(ax,S,H,10,d,'fill','DisplayName','data')
             xlabel('Wave Steepness')
-            ylabel(dst(1).data.VariableDescriptions{1})
+            ylabel(dst(1).data.VariableLabels{1})
             cb = colorbar;
-            cb.Label.String = dst(3).data.VariableDescriptions{1};
+            cb.Label.String = dst(3).data.VariableLabels{1};
         case 'T-H (S)'
             Tmnmx = minmax(T,'omitnan');
             Tr = Tmnmx(1):0.1:Tmnmx(2);
@@ -159,8 +209,8 @@ function steepness_plot(dst)
             [Hmn,Hmx] = wave_steepness_heights(Steep,Tr,H,d,[10,15,20]);
 
             scatter(ax,T,H,10,S,'fill')
-            xlabel(dst(2).data.VariableDescriptions{1})
-            ylabel(dst(1).data.VariableDescriptions{1})
+            xlabel(dst(2).data.VariableLabels{1})
+            ylabel(dst(1).data.VariableLabels{1})
             cb = colorbar;
             cb.Label.String = 'Wave Steepness';
 

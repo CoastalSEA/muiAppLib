@@ -110,7 +110,7 @@ classdef ctWaveModel < muiDataSet
             %
             if nargin<5   %no caserec to prompt for selection
                 [wvobj,wvdst,ok] = selectClassInstance(obj,'ModelType',type);
-                if ok<1, tsdst = []; return; end
+                if ok<1, tsdst = []; caserec = []; return; end
                 caserec = caseRec(muicat,wvobj.CaseIndex);
             else
                 wvobj = getCase(muicat,caserec);
@@ -163,7 +163,7 @@ classdef ctWaveModel < muiDataSet
 
             promptxt = 'Select input water level data set (Cancel to use SWL=0):';           
             [wl_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
-                                'CaseClass',{'ctWaterLevelData','ctTidalAnalysis'...
+                                'CaseClass',{'ctWaterLevelData','ctTidalAnalysis',...
                                               'muiUserModel'},...
                                 'ListSize',[300,100]); 
 
