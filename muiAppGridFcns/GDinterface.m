@@ -20,7 +20,7 @@ classdef (Abstract = true) GDinterface < muiDataSet
 %   Model grids include RunParam whereas imported grids do not. A model
 %   generated Grid includes copies of the classes used as input to the model.
 %
-%   When using reGridData, any 'New' grid defition must use an
+%   When using reGridData, any 'New' grid definition must use an
 %   Input class with a classname containing the string 'GridData',
 %   'GridProps', or 'GridParams', eg similar to GD_GridProps.
 % SEE ALSO
@@ -40,6 +40,7 @@ classdef (Abstract = true) GDinterface < muiDataSet
             % dims - structure with dimensions of griddata
             %        x and y vector dimensions of z - must be unique
             %        t datetimes, durations or values to assign to rows in dstable
+            %        cline struct of centre line co-ordinates 
             % meta - stuct with source and data fields to describe model
             %        used and additional run details, respectively
             if nargin<4
@@ -533,6 +534,59 @@ classdef (Abstract = true) GDinterface < muiDataSet
             
             getdialog(sprintf('Grid written to %s',desc));
         end
+
+%%
+        function [grid,rotate] = orientGrid(obj,grid0)
+            %Allow user to select whether to flip the grid (180 deg) or
+            %rotate by 90 deg.
+            % rotate - 0 = no change, 1 = flip lr, 2 = flip ud, 
+            %          3 = +90, 4 = -90
+            figtitle = sprintf('Orient data');
+            promptxt = 'Flip or rotate grid?';
+            tag = 'PlotFig'; %used for collective deletes of a group
+            butnames = {'Accept','Flip LR','Flip UD','+90','-90','invX','invY','Reset'};
+            position = [0.2,0.4,0.4,0.4];
+            [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position);
+            %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
+            gd_plotgrid(h_plt,grid0);
+            ok = 0;
+            rotate = 0;
+            grid = grid0;
+            while ok<1
+                waitfor(h_but,'Tag')
+                if ~ishandle(h_but)   %this handles the user deleting figure window
+                    grid = []; rotate = 0; return; %continue with no rotation                    
+                elseif strcmp(h_but.Tag,'Flip LR')
+                    rotate = 1;   
+                elseif strcmp(h_but.Tag,'Flip UD')
+                    rotate = 2;     
+                elseif strcmp(h_but.Tag,'+90')
+                    rotate = 3;
+                elseif strcmp(h_but.Tag,'-90')
+                    rotate = 4;
+                elseif strcmp(h_but.Tag,'invX')
+                    grid.x = flipud(grid.x);
+                elseif strcmp(h_but.Tag,'invY')    
+                    grid.y = flipud(grid.y);
+                elseif strcmp(h_but.Tag,'Reset')
+                    %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
+                    gd_plotgrid(h_plt,grid0);
+                    grid = grid0; rotate = 0;
+                    h_but.Tag = 'reset';
+                    continue;
+                else                %user accepts selection
+                    ok = 1;
+                    continue;
+                end
+                
+                if ~any(strcmp(h_but.Tag,{'invX','invY'}))
+                    grid = rotateGridData(obj,grid,rotate);
+                end
+                gd_plotgrid(h_plt,grid);
+                h_but.Tag = 'reset';
+            end
+            delete(h_plt.Parent);
+        end
     end
 %% ------------------------------------------------------------------------
 % Static methods to maniputlate grids: setCombinedGrids, gridMenuOptions 
@@ -800,57 +854,57 @@ classdef (Abstract = true) GDinterface < muiDataSet
 % rotateGridData, getGridDimensions, setDSproperties
 %--------------------------------------------------------------------------
     methods (Access=protected)
-        function [grid,rotate] = orientGrid(obj,grid0)
-            %Allow user to select whether to flip the grid (180 deg) or
-            %rotate by 90 deg.
-            % rotate - 0 = no change, 1 = flip lr, 2 = flip ud, 
-            %          3 = +90, 4 = -90
-            figtitle = sprintf('Orient data');
-            promptxt = 'Flip or rotate grid?';
-            tag = 'PlotFig'; %used for collective deletes of a group
-            butnames = {'Accept','Flip LR','Flip UD','+90','-90','invX','invY','Reset'};
-            position = [0.2,0.4,0.4,0.4];
-            [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position);
-            %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
-            gd_plotgrid(h_plt,grid0);
-            ok = 0;
-            rotate = 0;
-            grid = grid0;
-            while ok<1
-                waitfor(h_but,'Tag')
-                if ~ishandle(h_but)   %this handles the user deleting figure window
-                    grid = []; rotate = 0; return; %continue with no rotation                    
-                elseif strcmp(h_but.Tag,'Flip LR')
-                    rotate = 1;   
-                elseif strcmp(h_but.Tag,'Flip UD')
-                    rotate = 2;     
-                elseif strcmp(h_but.Tag,'+90')
-                    rotate = 3;
-                elseif strcmp(h_but.Tag,'-90')
-                    rotate = 4;
-                elseif strcmp(h_but.Tag,'invX')
-                    grid.x = flipud(grid.x);
-                elseif strcmp(h_but.Tag,'invY')    
-                    grid.y = flipud(grid.y);
-                elseif strcmp(h_but.Tag,'Reset')
-                    %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
-                    gd_plotgrid(h_plt,grid0);
-                    grid = grid0; rotate = 0;
-                    h_but.Tag = 'reset';
-                    continue;
-                else                %user accepts selection
-                    ok = 1;
-                    continue;
-                end
-                
-                if ~any(strcmp(h_but.Tag,{'invX','invY'}))
-                    grid = rotateGridData(obj,grid,rotate);
-                end
-                gd_plotgrid(h_plt,grid);
-                h_but.Tag = 'reset';
-            end
-            delete(h_plt.Parent);
-        end
+%         function [grid,rotate] = orientGrid(obj,grid0)
+%             %Allow user to select whether to flip the grid (180 deg) or
+%             %rotate by 90 deg.
+%             % rotate - 0 = no change, 1 = flip lr, 2 = flip ud, 
+%             %          3 = +90, 4 = -90
+%             figtitle = sprintf('Orient data');
+%             promptxt = 'Flip or rotate grid?';
+%             tag = 'PlotFig'; %used for collective deletes of a group
+%             butnames = {'Accept','Flip LR','Flip UD','+90','-90','invX','invY','Reset'};
+%             position = [0.2,0.4,0.4,0.4];
+%             [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position);
+%             %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
+%             gd_plotgrid(h_plt,grid0);
+%             ok = 0;
+%             rotate = 0;
+%             grid = grid0;
+%             while ok<1
+%                 waitfor(h_but,'Tag')
+%                 if ~ishandle(h_but)   %this handles the user deleting figure window
+%                     grid = []; rotate = 0; return; %continue with no rotation                    
+%                 elseif strcmp(h_but.Tag,'Flip LR')
+%                     rotate = 1;   
+%                 elseif strcmp(h_but.Tag,'Flip UD')
+%                     rotate = 2;     
+%                 elseif strcmp(h_but.Tag,'+90')
+%                     rotate = 3;
+%                 elseif strcmp(h_but.Tag,'-90')
+%                     rotate = 4;
+%                 elseif strcmp(h_but.Tag,'invX')
+%                     grid.x = flipud(grid.x);
+%                 elseif strcmp(h_but.Tag,'invY')    
+%                     grid.y = flipud(grid.y);
+%                 elseif strcmp(h_but.Tag,'Reset')
+%                     %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
+%                     gd_plotgrid(h_plt,grid0);
+%                     grid = grid0; rotate = 0;
+%                     h_but.Tag = 'reset';
+%                     continue;
+%                 else                %user accepts selection
+%                     ok = 1;
+%                     continue;
+%                 end
+%                 
+%                 if ~any(strcmp(h_but.Tag,{'invX','invY'}))
+%                     grid = rotateGridData(obj,grid,rotate);
+%                 end
+%                 gd_plotgrid(h_plt,grid);
+%                 h_but.Tag = 'reset';
+%             end
+%             delete(h_plt.Parent);
+%         end
 %%
         function grid = setGridOrigin(~,grid0)
             %Allow user to define a new origin for the grid

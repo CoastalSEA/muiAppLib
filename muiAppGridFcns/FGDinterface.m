@@ -49,8 +49,12 @@ classdef (Abstract = true) FGDinterface < GDinterface
             % dims - structure with dimensions of griddata
             %        x and y vector dimensions of z - must be unique
             %        t datetimes, durations or values to assign to rows in dstable
-            %        xM distance to the mouth of an inlet/estuary
             %        cline struct of centre line co-ordinates 
+            %     and FGDinterface additions:
+            %        xM distance to the mouth of an inlet/estuary
+            %        ishead orientation of x-axis relative to mouth
+            %        Lt distance from mouth to tidal limit
+            %        Rv river properties hydraulic depth, width and CSA
             % meta - stuct with source and data fields to describe model
             %        used and additional run details, respectively
             % NB: if xM and cline are not arrays of same as t (no of grids)

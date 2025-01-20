@@ -1,20 +1,20 @@
-classdef GD_ImportData < GDinterface
+classdef FGD_ImportData < FGDinterface
 %
 %-------class help---------------------------------------------------------
 % NAME
-%   GD_ImportData.m
+%   FGD_ImportData.m
 % PURPOSE
 %   Class to import grid data, adding the results to dstable
 %   and a record in a dscatlogue (as a property of muiCatalogue)
 % USAGE
-%   obj = GD_ImportData()
+%   obj = FGD_ImportData()
 % SEE ALSO
-%   inherits GDinterface and muiDataSet and is part of the grid tools used 
-%   by mui Apps. FGD_ImportData is similar but inherits FGDinterface which
-%   has a range of additional estuary/inlet specific tools.
+%   inherits FGDinterface and muiDataSet and is part of the grid tools used 
+%   by mui Apps and has a range of additional estuary/inlet specific tools.
+%   It is similar to GD_ImportData which inherits GDinterface  amd muiDataSet  
 %
 % Author: Ian Townend
-% CoastalSEA (c) Jan 2022
+% CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 %    
     properties  
@@ -23,7 +23,7 @@ classdef GD_ImportData < GDinterface
     end
     
     methods 
-        function obj = GD_ImportData()               
+        function obj = FGD_ImportData()               
             %class constructor                          
         end
     end
@@ -42,6 +42,9 @@ classdef GD_ImportData < GDinterface
             elseif ~iscell(fname)
                 fname = {fname};   %single select returns char
             end
+            
+            answer = questdlg('Is grid a channel/estuary/inlet?','Type','Yes','No','No');
+            ischannel = strcmp(answer,'Yes');
 
             if nfiles>1
                 timetxt = {num2str(0:1:nfiles-1),'years'};
@@ -49,7 +52,7 @@ classdef GD_ImportData < GDinterface
                 timetxt = {'0','years'};
             end
             ok = 0;
-            promptxt = {'Define grid time intervals:','Units'};
+            promptxt = {'Define grid intervals:','Units'};
             while ok<1
                 timetxt = inputdlg(promptxt,'Load grid',1,timetxt);
                 if isempty(timetxt), return; end
@@ -100,7 +103,8 @@ classdef GD_ImportData < GDinterface
                 newgrid(i,:,:) = grid.z;
             end
             %default values used when not a channnel or not required
-            dims = struct('x',grid.x,'y',grid.y,'t',timesteps);
+            %alternative would be to have a class that inherits GDinterface
+            dims = setChannel(obj,grid,timesteps,ischannel);
                                              
             %assign metadata about data source and save grid
             meta.source = filename;
@@ -116,14 +120,8 @@ classdef GD_ImportData < GDinterface
         function addData(obj,~,~,muicat) 
             %add additional data to an existing user dataset (called from
             %model UI using useCase in muiCatalogue
-            [fname,path,nfiles] = getfiles('MultiSelect','off',...
+            [fname,path,~] = getfiles('MultiSelect','off',...
                 'FileType','*.txt;*.grd;*.csv;*.xyz;*.mat','PromptText','Select file:');
-            if nfiles==0
-                return;            %user cancelled
-            elseif ~iscell(fname)
-                fname = {fname};   %single select returns char
-            end
-
             nhead = 1;
             filename = [path,fname];
             [~,~,ext] = fileparts(fname);
@@ -168,7 +166,10 @@ classdef GD_ImportData < GDinterface
                 warndlg('Dimensions of grid being added do not match existing grid')
                 return
             end
-            dims = struct('x',grid.x,'y',grid.y,'t',timestep);
+
+            answer = questdlg('Is grid a channel/estuary/inlet?','Type','Yes','No','No');
+            ischannel = strcmp(answer,'Yes');
+            dims = setChannel(obj,grid,timestep,ischannel);
 
             %add grid to existing Case table
             addGrid(obj,muicat,newgrid,timestep,dims,filename,true);
@@ -186,6 +187,7 @@ classdef GD_ImportData < GDinterface
                     cf_model_tabs(obj,src);   
                     return;
                 end
+%                 return;
             end
             
             dst = obj.Data.Grid;
@@ -274,6 +276,33 @@ classdef GD_ImportData < GDinterface
             maxz = str2double(answer{2});
             zdata(zdata<minz) = NaN;
             zdata(zdata>maxz) = NaN;
+        end
+%%        
+        function dims = setChannel(~,grid,timesteps,ischannel)
+            %default values used when not a channnel or not required
+            %alternative would be to have a class that inherits GDinterface
+            ishead = false; xM = 0;  Lt = max(grid.x);
+            if ischannel
+                answer = questdlg('Minimum X is mouth?','Load grid',...
+                                               'True','False','N/A','True');            
+                if strcmp(answer,'False')
+                    ishead = true;
+                end
+
+                promptxt = {'Distance to mouth from grid origin (from min x)',...
+                            'Distance from mouth to head (default is max-min x)'};
+                defaults = {'0',num2str(max(grid.x))};
+                inp = inputdlg(promptxt,'Load grid',1,defaults);
+                if ~isempty(inp)
+                    xM = str2double(inp{1});
+                    Lt = str2double(inp{2});
+                end
+            end   
+            
+            %assume that the X and Y dimensions and xM are the same in all files
+            Rv = struct('Hr',[],'Wr',[],'Ar',[]);
+            dims = struct('x',grid.x,'y',grid.y,'t',timesteps,'xM',xM,...
+                                         'Lt',Lt,'Rv',Rv,'ishead',ishead);          
         end
     end
 end
