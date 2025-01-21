@@ -218,8 +218,9 @@ classdef GD_ImportData < GDinterface
             ax = gd_ax_dir(ax,grid.x,grid.y);
             colormap('parula')
             shading flat
-            %gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')])
-            %caxis([-8,2]);
+            % gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')])
+            % lims = clim;
+            % clim([lims(1),2]) %renamed in v2022a
             cb = colorbar;
             cb.Label.String = 'Elevation (mAD)';
             xlabel('Length (m)'); 
