@@ -1,13 +1,13 @@
-function len = getconvergencelength(xdata,ydata,x0)
+function len = gd_convergencelength(xdata,ydata,x0)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   getconvergencelength.m
+%   gd_convergencelength.m
 % PURPOSE
 %   least squares fit using fminsearch (curve fitting via optimization) to
 %   find the convergence length of a channel from x-y data 
 % USAGE
-%   len = getconvergencelength(xdata,ydata)
+%   len = gd_convergencelength(xdata,ydata)
 % INPUTS
 %   xdata - independent variable, e.g. x-coordinates for ydata
 %   ydata - dependent variable to be fitted with best fit exponential

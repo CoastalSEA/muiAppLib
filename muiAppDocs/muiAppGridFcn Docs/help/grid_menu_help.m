@@ -1,4 +1,8 @@
 %% Grid Tools Menu
+
+%%
+% *Options for classes that use the GDinterface class*
+%%
 % * *Grid Tools > Translate Grid*: interactively translate grid x-y
 % coordinates;
 % * *Grid Tools > Rotate Grid*: interactively flip or rotate grid;   
@@ -26,7 +30,9 @@
 % gd_user_function.m for user to define bespoke functionality (passes the
 % selected case and a handle to the model).
 
-
+%%
+% *Additions for FGDinterface classes*
+%%
 % * *Grid Tools > Add Properties*: add form properties to a gridded data
 % set;
 % * *Grid Tools > Delete Properties*: delete ALL property tables associated with a 

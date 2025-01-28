@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Grid Tools Menu</title><meta name="generator" content="MATLAB 9.9"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2022-08-29"><meta name="DC.source" content="grid_menu_help.m"><style type="text/css">
+      --><title>Grid Tools Menu</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2025-01-28"><meta name="DC.source" content="grid_menu_help.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -67,9 +67,13 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h1>Grid Tools Menu</h1><div><ul><li><b>Grid Tools &gt; Translate Grid</b>: interactively translate grid x-y coordinates;</li><li><b>Grid Tools &gt; Rotate Grid</b>: interactively flip or rotate grid;</li><li><b>Grid Tools &gt; Re-Grid</b>: regrid a gridded dataset to match another grid or to user specified dimensions;</li><li><b>Grid Tools &gt; Sub-Grid</b>: interactively define a subgrid and save grid as a new Case;</li><li><b>Grid Tools &gt; Combine Grids</b>: superimpose one grid on another based on maximum or minimum set of values;</li><li><b>Grid Tools &gt; Add Surface</b>: add horizontal surface to an extisting grid;</li><li><b>Grid Tools &gt; To curvilinear</b>: map grid from cartesian to curvilinear coordinates;</li><li><b>Grid Tools &gt; From curvilinear</b>: map grid from curvilinear to cartesian coordinates;</li><li><b>Grid Tools &gt; Display Dimensions</b>: display a table with the dimensions of a selected grid;</li><li><b>Grid Tools &gt; Difference Plot</b>: generate a plot of the difference between two grids;</li><li><b>Grid Tools &gt; Plot Sections</b>: interactively define sections and plot them on a figure;</li><li><b>Grid Tools &gt; Digitise Line</b>: interactively digitise a line (with option to add z values) using selected grid as base map;</li><li><b>Grid Tools &gt; Export xyz Grid</b>: select a Case and export grid as xyz tuples;</li><li><b>Grid Tools &gt; Add Properties</b>: add form properties to a gridded data set;</li><li><b>Grid Tools &gt; Delete Properties</b>: delete ALL property tables associated with a selected gridded data set.</li></ul></div><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2020b</a><br></p></div><!--
+  </style></head><body><div class="content"><h1>Grid Tools Menu</h1><!--introduction--><!--/introduction--><p><b>Options for classes that use the GDinterface class</b></p><div><ul><li><b>Grid Tools &gt; Translate Grid</b>: interactively translate grid x-y coordinates;</li><li><b>Grid Tools &gt; Rotate Grid</b>: interactively flip or rotate grid;</li><li><b>Grid Tools &gt; Re-Grid</b>: regrid a gridded dataset to match another grid or to user specified dimensions;</li><li><b>Grid Tools &gt; Sub-Grid</b>: interactively define a subgrid and save grid as a new Case;</li><li><b>Grid Tools &gt; Combine Grids</b>: superimpose one grid on another based on maximum or minimum set of values;</li><li><b>Grid Tools &gt; Add Surface</b>: add horizontal surface to an extisting grid;</li><li><b>Grid Tools &gt; To curvilinear</b>: map grid from cartesian to curvilinear coordinates;</li><li><b>Grid Tools &gt; From curvilinear</b>: map grid from curvilinear to cartesian coordinates;</li><li><b>Grid Tools &gt; Display Dimensions</b>: display a table with the dimensions of a selected grid;</li><li><b>Grid Tools &gt; Difference Plot</b>: generate a plot of the difference between two grids;</li><li><b>Grid Tools &gt; Plot Sections</b>: interactively define sections and plot them on a figure;</li><li><b>Grid Tools &gt; Digitise Line</b>: interactively digitise a line (with option to add z values) using selected grid as base map;</li><li><b>Grid Tools &gt; Export xyz Grid</b>: select a Case and export grid as xyz tuples;</li><li><b>Grid Tools &gt; User Function</b>: select a case and pass to function gd_user_function.m for user to define bespoke functionality (passes the selected case and a handle to the model).</li></ul></div><p><b>Additions for FGDinterface classes</b></p><div><ul><li><b>Grid Tools &gt; Add Properties</b>: add form properties to a gridded data set;</li><li><b>Grid Tools &gt; Delete Properties</b>: delete ALL property tables associated with a selected gridded data set.</li></ul></div><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 %% Grid Tools Menu
+
+%%
+% *Options for classes that use the GDinterface class*
+%%
 % * *Grid Tools > Translate Grid*: interactively translate grid x-y
 % coordinates;
 % * *Grid Tools > Rotate Grid*: interactively flip or rotate grid;   
@@ -93,6 +97,13 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 % option to add z values) using selected grid as base map;
 % * *Grid Tools > Export xyz Grid*: select a Case and export grid as xyz
 % tuples;
+% * *Grid Tools > User Function*: select a case and pass to function
+% gd_user_function.m for user to define bespoke functionality (passes the
+% selected case and a handle to the model).
+
+%%
+% *Additions for FGDinterface classes*
+%%
 % * *Grid Tools > Add Properties*: add form properties to a gridded data
 % set;
 % * *Grid Tools > Delete Properties*: delete ALL property tables associated with a 

@@ -14,10 +14,9 @@ function points = gd_startendpoints(grid,isdel)
 % OUTPUTS
 %  points - struct with x and y fields defining selected start and end points
 % NOTES
-%   to trap use of 'Quit' use >> if any(isnan(points.st)), return; end
-%   in calling function 
+% 
 % SEE ALSO
-%   called in getInletTools
+%   called in
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jun 2022
@@ -42,7 +41,7 @@ function points = gd_startendpoints(grid,isdel)
     while ok<1
         waitfor(h_but,'Tag')
         if ~ishandle(h_but) %this handles the user deleting figure window 
-            points.st = NaN;   points.nd = NaN; return;             
+            points = []; return;             
         elseif strcmp(h_but.Tag,'Edit') 
             points = getCoords(points);
             h_but.Tag = 'reset';
@@ -51,7 +50,7 @@ function points = gd_startendpoints(grid,isdel)
             hpnd.XData = points.nd(1); hpnd.YData = points.nd(2);
             hold off
         elseif strcmp(h_but.Tag,'Quit') 
-            points.st = NaN;   points.nd = NaN;
+            points= [];
             ok = 1;
         else   %user accepted
             ok = 1; 

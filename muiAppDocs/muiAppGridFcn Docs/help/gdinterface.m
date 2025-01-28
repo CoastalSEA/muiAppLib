@@ -86,23 +86,34 @@
 %   translateGrid(obj,classrec,muicat);
 
 %%
-% *rotateGrid* - interactively flip or rotate grid,
+% *rotateGrid* - interactively flip or rotate one or more grids,
 % where _obj_ is any GDintereface subclass; _classsrec_ is the class record
 % index of selected instance and _muicat_ is a handle to the
 % <matlab:doc('muicatalogue') muiCatalogue>.
 %%
-%   rotateGrid(obj,classrec,muicat)
+%   rotateGrid(obj,classrec,muicat);
+
+%% 
+% *orientGrid* - interactively rotate or flip a grid and/or reverse the
+% direction of the x and y axes, where _obj_ is any GDintereface subclass;
+% _grid0_ is the input grid to be re-oriented, _grid_ is the modified grid
+% and _orient_ is a vector of flags indicating whether the grid has been 
+% flipped or rotated in the order applied (0 = no change, 1 = flip lr, 2 = flip ud, 
+% 3 = +90, 4 = -90, 5 = invert x, 6 = invert y)
+%%
+%  [grid,orient] = orientGrid(obj,grid0);
 
 %%
 % *reGridData* - regrid a gridded dataset to match another grid or to user
 % specified dimensions, where _obj_ is any GDintereface subclass; _mobj_ 
 % is mui model instance; and _gridclasses_ is a cell array of clases to be
-% used for case selection.
+% used for case selection. Calls *orientGrid*  and selection made for first 
+% grid is applied to all grids in the Case.
 %%
 %   reGridData(obj,mobj,gridclasses);
 
 %%
-% * *subGridData* - interactively define a subgrid and save grid as a new
+% *subGridData* - interactively define a subgrid and save grid as a new
 % Case, where _obj_ is any GDintereface subclass; _classsrec_ is the class record
 % index of selected instance and _muicat_ is a handle to the
 % <matlab:doc('muicatalogue') muiCatalogue>.

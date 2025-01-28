@@ -226,7 +226,9 @@ classdef (Abstract = true) GDinterface < muiDataSet
             nrec = height(formdst);
             for i=1:nrec
                 grid = getGrid(obj,i);
-                grid = rotateGridData(obj,grid,rotate);
+                for j=1:length(rotate)
+                    grid = rotateGridData(obj,grid,rotate(j));
+                end
                 sz = num2cell(size(grid.z));
                 newgrids(i,:,:) = reshape(grid.z,1,sz{:}); %#ok<AGROW>
             end
@@ -236,11 +238,16 @@ classdef (Abstract = true) GDinterface < muiDataSet
             
             %assign metadata about data
             if rotate>0
-                rotxt = {'Fliped LR','Flipped UD','Rotated +90 deg','Rotated -90 deg'};
+                rotxt = {'Fliped LR','Flipped UD','Rotated +90 deg',...
+                               'Rotated -90 deg','Invert X','Inveret Y'};
+                orientxt = rotxt{rotate(1)};
+                for j=2:length(rotate)
+                    orientxt = sprintf('%s; %s',orientxt,rotxt{rotate(j)});
+                end
                 if iscell(formdst.Source)
-                    formdst.Source{1} = sprintf('%s grid from: %s',rotxt{rotate},formdst.Source{1});
+                    formdst.Source{1} = sprintf('%s grid from: %s',orientxt,formdst.Source{1});
                 else
-                    formdst.Source = sprintf('%s grid from: %s',rotxt{rotate},formdst.Source);
+                    formdst.Source = sprintf('%s grid from: %s',orientxt,formdst.Source);
                 end
             end
 
@@ -536,11 +543,12 @@ classdef (Abstract = true) GDinterface < muiDataSet
         end
 
 %%
-        function [grid,rotate] = orientGrid(obj,grid0)
+function [grid,orient] = orientGrid(obj,grid0)
             %Allow user to select whether to flip the grid (180 deg) or
             %rotate by 90 deg.
             % rotate - 0 = no change, 1 = flip lr, 2 = flip ud, 
-            %          3 = +90, 4 = -90
+            %          3 = +90, 4 = -90, 5 = invert x, 6 = invert y
+            % orient - vector of rotate values in order applied
             figtitle = sprintf('Orient data');
             promptxt = 'Flip or rotate grid?';
             tag = 'PlotFig'; %used for collective deletes of a group
@@ -550,12 +558,12 @@ classdef (Abstract = true) GDinterface < muiDataSet
             %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
             gd_plotgrid(h_plt,grid0);
             ok = 0;
-            rotate = 0;
+            orient = [];
             grid = grid0;
             while ok<1
                 waitfor(h_but,'Tag')
                 if ~ishandle(h_but)   %this handles the user deleting figure window
-                    grid = []; rotate = 0; return; %continue with no rotation                    
+                    grid = []; orient = 0; return; %continue with no rotation                    
                 elseif strcmp(h_but.Tag,'Flip LR')
                     rotate = 1;   
                 elseif strcmp(h_but.Tag,'Flip UD')
@@ -566,12 +574,15 @@ classdef (Abstract = true) GDinterface < muiDataSet
                     rotate = 4;
                 elseif strcmp(h_but.Tag,'invX')
                     grid.x = flipud(grid.x);
+                    rotate = 5;
                 elseif strcmp(h_but.Tag,'invY')    
                     grid.y = flipud(grid.y);
+                    rotate = 6;
                 elseif strcmp(h_but.Tag,'Reset')
                     %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
                     gd_plotgrid(h_plt,grid0);
-                    grid = grid0; rotate = 0;
+                    grid = grid0; 
+                    orient = [];
                     h_but.Tag = 'reset';
                     continue;
                 else                %user accepts selection
@@ -581,6 +592,9 @@ classdef (Abstract = true) GDinterface < muiDataSet
                 
                 if ~any(strcmp(h_but.Tag,{'invX','invY'}))
                     grid = rotateGridData(obj,grid,rotate);
+                    orient = [orient,rotate]; %#ok<AGROW> 
+                else
+                    orient = [orient,rotate]; %#ok<AGROW> 
                 end
                 gd_plotgrid(h_plt,grid);
                 h_but.Tag = 'reset';
@@ -726,8 +740,11 @@ classdef (Abstract = true) GDinterface < muiDataSet
             gd_plotsections(grid);      %function plots selected sections  
         end
 %%
-        function getGridLine(muicat,gridclasses)
+        function points = getGridLine(muicat,gridclasses,issave)
             %interactively digitise a line and save to a file
+            if nargin<3
+                issave = true;
+            end
             promptxt = {'Select Case to use (Cancel to quit):','Select timestep:'};
             [obj,~,irec] = selectCaseDatasetRow(muicat,[],...
                                                          gridclasses,promptxt,1);
@@ -741,25 +758,29 @@ classdef (Abstract = true) GDinterface < muiDataSet
             
             %desc = sprintf('%s at %s',obj.Data.Grid.Description,char(obj.Data.Grid.RowNames(irec)));
             grid = getGrid(obj,irec);   %grid for selected year
+            points = gd_digitisepoints(grid,{'Digitise a Line'},isxyz,false);
+%             obj = GD_DataUI.getGridLine(grid,{'Select point'},isxyz,false);
+%             points = obj.Data.points;
+            if any(isinf([points(:).x])), points = []; return; end
 
-            points = gd_digitisepoints(grid,{'Select point'},isxyz,false);
-            if any(isnan([points(:).x])), return; end
             % Save as a text file
-            path = pwd;
-            promptxt = {'Path','File name'};
-            defaults = {path,'Grid line'};
-            answers = inputdlg(promptxt,'DigiLine',1,defaults);
-            if isempty(answers), return; end
-            xy = cell2mat(struct2cell(points'));
-            fid = fopen([answers{1},'\',answers{2},'.txt'],'w');
-            if isxyz  %z has been digitised as well as x,y
-                fprintf(fid,'%s\n', '%f %f %f');
-                fprintf(fid,'%f\t%f\t%f\n', xy);               
-            else
-                fprintf(fid,'%s\n', '%f %f');
-                fprintf(fid,'%f\t%f\n', xy);
+            if issave && ~isempty(points)
+                path = pwd;
+                promptxt = {sprintf('Save points to file or cancel\nPath'),'File name'};
+                defaults = {path,'Grid line'};
+                answers = inputdlg(promptxt,'DigiLine',1,defaults);
+                if isempty(answers), return; end
+                xy = cell2mat(struct2cell(points'));
+                fid = fopen([answers{1},'\',answers{2},'.txt'],'w');
+                if isxyz  %z has been digitised as well as x,y
+                    fprintf(fid,'%s\n', '%f %f %f');
+                    fprintf(fid,'%f\t%f\t%f\n', xy);               
+                else
+                    fprintf(fid,'%s\n', '%f %f');
+                    fprintf(fid,'%f\t%f\n', xy);
+                end
+                fclose(fid);
             end
-            fclose(fid);
         end
 %%
         function gridMenuOptions(mobj,src,gridclasses)
@@ -854,58 +875,6 @@ classdef (Abstract = true) GDinterface < muiDataSet
 % rotateGridData, getGridDimensions, setDSproperties
 %--------------------------------------------------------------------------
     methods (Access=protected)
-%         function [grid,rotate] = orientGrid(obj,grid0)
-%             %Allow user to select whether to flip the grid (180 deg) or
-%             %rotate by 90 deg.
-%             % rotate - 0 = no change, 1 = flip lr, 2 = flip ud, 
-%             %          3 = +90, 4 = -90
-%             figtitle = sprintf('Orient data');
-%             promptxt = 'Flip or rotate grid?';
-%             tag = 'PlotFig'; %used for collective deletes of a group
-%             butnames = {'Accept','Flip LR','Flip UD','+90','-90','invX','invY','Reset'};
-%             position = [0.2,0.4,0.4,0.4];
-%             [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position);
-%             %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
-%             gd_plotgrid(h_plt,grid0);
-%             ok = 0;
-%             rotate = 0;
-%             grid = grid0;
-%             while ok<1
-%                 waitfor(h_but,'Tag')
-%                 if ~ishandle(h_but)   %this handles the user deleting figure window
-%                     grid = []; rotate = 0; return; %continue with no rotation                    
-%                 elseif strcmp(h_but.Tag,'Flip LR')
-%                     rotate = 1;   
-%                 elseif strcmp(h_but.Tag,'Flip UD')
-%                     rotate = 2;     
-%                 elseif strcmp(h_but.Tag,'+90')
-%                     rotate = 3;
-%                 elseif strcmp(h_but.Tag,'-90')
-%                     rotate = 4;
-%                 elseif strcmp(h_but.Tag,'invX')
-%                     grid.x = flipud(grid.x);
-%                 elseif strcmp(h_but.Tag,'invY')    
-%                     grid.y = flipud(grid.y);
-%                 elseif strcmp(h_but.Tag,'Reset')
-%                     %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
-%                     gd_plotgrid(h_plt,grid0);
-%                     grid = grid0; rotate = 0;
-%                     h_but.Tag = 'reset';
-%                     continue;
-%                 else                %user accepts selection
-%                     ok = 1;
-%                     continue;
-%                 end
-%                 
-%                 if ~any(strcmp(h_but.Tag,{'invX','invY'}))
-%                     grid = rotateGridData(obj,grid,rotate);
-%                 end
-%                 gd_plotgrid(h_plt,grid);
-%                 h_but.Tag = 'reset';
-%             end
-%             delete(h_plt.Parent);
-%         end
-%%
         function grid = setGridOrigin(~,grid0)
             %Allow user to define a new origin for the grid
             grid = grid0;
@@ -1039,9 +1008,16 @@ classdef (Abstract = true) GDinterface < muiDataSet
             %formdst is the Grid dstable for all grids
             %          
             %This function may need to be overloaded if the grid derives 
-            %from a model and RunParam and/or Form properties need updating          
-            heq = str2func(metaclass(obj).Name);
-            newobj = heq();                  %new instance of class object
+            %from a model and RunParam and/or Form properties need updating   
+            if isempty(obj.DataFormats)
+                heq = str2func(metaclass(obj).Name);
+                newobj = heq();                  %new instance of class object
+            else
+                formatfile = obj.DataFormats{2};
+                heq = str2func(sprintf('@(file) %s(file)',metaclass(obj).Name));
+                newobj = heq(formatfile);                  %new instance of class object
+            end
+
             caserec = caseRec(muicat,obj.CaseIndex);
             casedef = getRecord(muicat,caserec);
             

@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>GDinterface</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2022-12-21"><meta name="DC.source" content="gdinterface.m"><style type="text/css">
+      --><title>GDinterface</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2025-01-28"><meta name="DC.source" content="gdinterface.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -67,30 +67,30 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h1>GDinterface</h1><!--introduction--><p>Abstract class with properties and methods to manipulate gridded datasets for use in applications that import data, or save model ouput. The class inherits <a href="matlab:doc('muidataset')">muiDataSet</a> and together they provide an extensive set of methods to handle datasets of various types (e.g. from models or imported files).</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Description</a></li><li><a href="#3">GDinterface properties</a></li><li><a href="#4">GDinterface methods</a></li><li><a href="#33">GDinterface static methods</a></li><li><a href="#46">See Also</a></li></ul></div><h2 id="1">Description</h2><p><b>GDinterface</b> is used as a superclass to provide data handling functionality for classes that import different types of data or models that are gridded, in order to store them in a consistent and documented format. The data are stored in a set of <a href="matlab:doc('dstable')">dstables</a>, which are assigned as a <a href="matlab:doc('struct')">struct</a> to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a> <i>Data</i> property (typically as part of a UI based on the <a href="matlab:doc('muitoolbox')">muitoolbox</a>). The core table is the <i>'Grid'</i> <a href="matlab:doc('dstable')">dstable</a> which holds the gridded data and supporting metadata. The metatdata for the dstable content are defined in the <i><b>setDSproperties</b></i> method in <b>GDinterface</b>.</p><p>
+  </style></head><body><div class="content"><h1>GDinterface</h1><!--introduction--><p>Abstract class with properties and methods to manipulate gridded datasets for use in applications that import data, or save model ouput. The class inherits <a href="matlab:doc('muidataset')">muiDataSet</a> and together they provide an extensive set of methods to handle datasets of various types (e.g. from models or imported files).</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Description</a></li><li><a href="#3">GDinterface properties</a></li><li><a href="#4">GDinterface methods</a></li><li><a href="#35">GDinterface static methods</a></li><li><a href="#48">See Also</a></li></ul></div><h2 id="1">Description</h2><p><b>GDinterface</b> is used as a superclass to provide data handling functionality for classes that import different types of data or models that are gridded, in order to store them in a consistent and documented format. The data are stored in a set of <a href="matlab:doc('dstable')">dstables</a>, which are assigned as a <a href="matlab:doc('struct')">struct</a> to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a> <i>Data</i> property (typically as part of a UI based on the <a href="matlab:doc('muitoolbox')">muitoolbox</a>). The core table is the <i>'Grid'</i> <a href="matlab:doc('dstable')">dstable</a> which holds the gridded data and supporting metadata. The metatdata for the dstable content are defined in the <i><b>setDSproperties</b></i> method in <b>GDinterface</b>.</p><p>
 <table border=1><tr><td><u>Note</u>: In UI's based on <a href="matlab:doc('muitoolbox')">muitoolbox</a>
 the <i>DSproperties</i> can be viewed by using the mouse button callback
 in the first column of a Case on the Cases/Data/Model tab in the main interface.
 </td></tr></table>
-</p><h2 id="3">GDinterface properties</h2><p>The class uses the properties defined for <a href="matlab:doc('muidataset')">muiDataSet</a></p><h2 id="4">GDinterface methods</h2><p>The methods in the abstract class include the following:</p><p>Methods to add, delete and update grids:</p><p><b>setGrid</b> - load the grid results into a dstable, where <i>obj</i> is any GDintereface subclass; <i>gridddata</i> is a cell array with a matrix of elevations, and any other data to be included in the dstable; <i>dims</i> is a struct for the dimensions of griddata, where the fields 'x' and 'y' are the vector dimensions of z and must be unique, and the field 't' can be datetimes, durations or values to assign to rows in dstable; and <i>meta</i> is a stuct with 'source' and 'data' fields to describe file name or model used, and additional run details, respectively.</p><pre class="language-matlab">obj = setGrid(obj,griddata,dims,meta);
-</pre><p><b>getGrid</b> - retrieve a grid, where <i>obj</i> is any GDintereface subclass; and <i>irow</i> is the row index of the dstable to extract grid from (optional). Returns grid as a struct with the fields, 'x', 'y', 'z' and 't, together with any metadata that may be assigned to the dstable, including, 'irow', the row indexin the dstable, 'desc', the dstable Description, 'ishead', a logical flag defining the x-axis orientation, 'xM', the distance to the inlet/estuary/valley mouth from the grid origin, and 'cline', a struct with the x and y coordinates of the centre-line if a meander has been added.</p><pre class="language-matlab">grid = getGrid(obj,irow);
-</pre><p><b>addGrid</b> - add a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table, where <i>obj</i> is any GDintereface subclass; <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>; <i>newgrid</i> is the grid to add to the dstable and should be of the same dimensions as existing grids in the table; <i>timestep</i> is the value to use for RowName in the dstable; <i>sourcetxt</i> is the file name, or model name, to identify data source; and <i>ismsg</i> is a flag set to true to use the defualt message, and false to suppress the message.</p><pre class="language-matlab">addGrid(obj,muicat,newgrid,timestep,sourcetxt,ismsg);
+</p><h2 id="3">GDinterface properties</h2><p>The class uses the properties defined for <a href="matlab:doc('muidataset')">muiDataSet</a></p><h2 id="4">GDinterface methods</h2><p>The methods in the abstract class include the following:</p><p>Methods to add, delete and update grids:</p><p><b>setGrid</b> - load the grid results into a dstable, where <i>obj</i> is any GDintereface subclass; <i>gridddata</i> is a cell array with a matrix of elevations, and any other data to be included in the dstable; <i>dims</i> is a struct for the dimensions of griddata, where the fields 'x' and 'y' are the vector dimensions of z and must be unique, and the field 't' can be datetimes, durations or values to assign to rows in dstable, and 'cline' is a struct with the x and y coordinates of the centre-line; and <i>meta</i> is a stuct with 'source' and 'data' fields to describe file name or model used, and additional run details, respectively.</p><pre class="language-matlab">obj = setGrid(obj,griddata,dims,meta);
+</pre><p><b>getGrid</b> - retrieve a grid, where <i>obj</i> is any GDintereface subclass; and <i>irow</i> is the row index of the dstable to extract grid from (optional). Returns grid as a struct with the fields, 'x', 'y', 'z' and 't, together with any metadata that may be assigned to the dstable, including, 'irow', the row indexin the dstable, 'desc', the dstable Description, and 'cline', a struct with the x and y coordinates of the centre-line.</p><pre class="language-matlab">grid = getGrid(obj,irow);
+</pre><p><b>addGrid</b> - add a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table, where <i>obj</i> is any GDintereface subclass; <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>; <i>newgrid</i> is the grid to add to the dstable and should be of the same dimensions as existing grids in the table; <i>timestep</i> is the value to use for RowName in the dstable; <i>sourcetxt</i> is the file name, or model name, to identify data source; and <i>ismsg</i> is a flag set to true to use the defualt message, and false to suppress the message.</p><pre class="language-matlab">addGrid(obj,muicat,newgrid,timestep,[],sourcetxt,ismsg);
 </pre><p><b>deleteGrid</b> - delete a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table, where <i>obj</i> is any GDintereface subclass; <i>classrec</i> is the class record number; <i>catrec</i> is the catalogue record for the instance; and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</p><pre class="language-matlab">deleteGrid(obj,classrec,catrec,muicat);
 </pre><p>Methods to manipulate grids:</p><p><b>translateGrid</b> - interactively translate grid x-y coordinates, where <i>obj</i> is any GDintereface subclass; <i>classsrec</i> is the class record index of selected instance and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</p><pre class="language-matlab">translateGrid(obj,classrec,muicat);
-</pre><p><b>rotateGrid</b> - interactively flip or rotate grid, where <i>obj</i> is any GDintereface subclass; <i>classsrec</i> is the class record index of selected instance and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</p><pre class="language-matlab">rotateGrid(obj,classrec,muicat)
-</pre><p><b>reGridData</b> - regrid a gridded dataset to match another grid or to user specified dimensions, where <i>obj</i> is any GDintereface subclass; <i>mobj</i> is mui model instance; and <i>gridclasses</i> is a cell array of clases to be used for case selection.</p><pre class="language-matlab">reGridData(obj,mobj,gridclasses);
-</pre><div><ul><li><b>subGridData</b> - interactively define a subgrid and save grid as a new Case, where <i>obj</i> is any GDintereface subclass; <i>classsrec</i> is the class record index of selected instance and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</li></ul></div><pre class="language-matlab">subGridData(obj,muicat);
+</pre><p><b>rotateGrid</b> - interactively flip or rotate one or more grids, where <i>obj</i> is any GDintereface subclass; <i>classsrec</i> is the class record index of selected instance and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</p><pre class="language-matlab">rotateGrid(obj,classrec,muicat);
+</pre><p><b>orientGrid</b> - interactively rotate or flip a grid and/or reverse the direction of the x and y axes, where <i>obj</i> is any GDintereface subclass; <i>grid0</i> is the input grid to be re-oriented, <i>grid</i> is the modified grid and <i>orient</i> is a vector of flags indicating whether the grid has been flipped or rotated in the order applied (0 = no change, 1 = flip lr, 2 = flip ud, 3 = +90, 4 = -90, 5 = invert x, 6 = invert y)</p><pre>[grid,orient] = orientGrid(obj,grid0);</pre><p><b>reGridData</b> - regrid a gridded dataset to match another grid or to user specified dimensions, where <i>obj</i> is any GDintereface subclass; <i>mobj</i> is mui model instance; and <i>gridclasses</i> is a cell array of clases to be used for case selection. Calls <b>orientGrid</b>  and selection made for first grid is applied to all grids in the Case.</p><pre class="language-matlab">reGridData(obj,mobj,gridclasses);
+</pre><p><b>subGridData</b> - interactively define a subgrid and save grid as a new Case, where <i>obj</i> is any GDintereface subclass; <i>classsrec</i> is the class record index of selected instance and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</p><pre class="language-matlab">subGridData(obj,muicat);
 </pre><p><b>addSurface</b> - add horizontal surface to an extisting grid, where <i>obj</i> is any GDintereface subclass; <i>classsrec</i> is the class record index of selected instance and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</p><pre class="language-matlab">addSurface(obj,muicat);
 </pre><p><b>curvilinear_xy2sn</b> - map grid from cartesian to curvilinear coordinates, where <i>obj</i> is any GDintereface subclass; <i>classsrec</i> is the class record index of selected instance and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</p><pre class="language-matlab">curvilinear_xy2sn(cobj,muicat);
 </pre><p><b>curvilinear_sn2xy</b> - map grid from curvilinear to cartesian coordinates, where <i>obj</i> is any GDintereface subclass; <i>classsrec</i> is the class record index of selected instance and <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>.</p><pre class="language-matlab">curvilinear_sn2xy(cobj,muicat);
 </pre><p><b>exportGrid</b> - select a Case and export grid as xyz tuples, where <i>obj</i> is any GDintereface subclass.</p><pre class="language-matlab">exportGrid(obj);
 </pre><p><b>displayGridDims</b> - display the dimensions of a selected grid in a table figure, where <i>obj</i> is any GDintereface subclass.</p><pre class="language-matlab">displayGridDims(obj)
-</pre><h2 id="33">GDinterface static methods</h2><p>The static methods in the abstract class include the following:</p><p><b>setCombinedGrids</b> - superimpose one grid on another based on maximum or minimum set of values</p><pre class="language-matlab">GDinterface.setCombinedGrids(muicat,gridclasses,ismax,prompts); <span class="comment">%see below for detail of input variables</span>
+</pre><h2 id="35">GDinterface static methods</h2><p>The static methods in the abstract class include the following:</p><p><b>setCombinedGrids</b> - superimpose one grid on another based on maximum or minimum set of values</p><pre class="language-matlab">GDinterface.setCombinedGrids(muicat,gridclasses,ismax,prompts); <span class="comment">%see below for detail of input variables</span>
 </pre><p><b>diffGridsPlot</b> - generate a plot of the difference between two grids</p><pre class="language-matlab">GDinterface.diffGridsPlot(muicat,gridclasses); <span class="comment">%see below for detail of input variables</span>
 </pre><p><b>plotSections</b> - display grid and allow user to interactively define start and end points of a section line to be plotted in a figure.</p><pre class="language-matlab">GDinterface.plotSections(muicat,gridclasses); <span class="comment">%see below for detail of input variables</span>
 </pre><p><b>getGridLine</b> - interactively digitise a line and save to a file</p><pre class="language-matlab">GDinterface.getGridLine(muicat,gridclasses); <span class="comment">%see below for detail of input variables</span>
 </pre><p>where <i>muicat</i> is a handle to the <a href="matlab:doc('muicatalogue')">muiCatalogue</a>; <i>gridclasses</i> is a cell array of clases to be used for case selection; <i>ismax</i> is logical true, then use maximum value at each point, if false then use minimum values (optional); and <i>prompts</i> is a struct, with fields 'first' and 'second' that define prompts for the selection of the two Cases to be combined (optional).</p><p><b>gridMenuOptions</b> - handles the menu calls for the default menu of Grid Tools.</p><pre class="language-matlab">GDinterface.gridMenuOptions(mobj,src,gridclasses);
-</pre><p>where <i>mobj</i> is a mui model instance, <i>src</i> is a handle to the calling menu option, and <i>gridclasses</i> is a cell array of classes to use in the case selection.</p><h2 id="46">See Also</h2><p>Some classes that use <b>GDinterface</b> and related functions are detailed in the help for <a href="matlab:doc('grid_class_fcns')">Grid classes and functions</a>.</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
+</pre><p>where <i>mobj</i> is a mui model instance, <i>src</i> is a handle to the calling menu option, and <i>gridclasses</i> is a cell array of classes to use in the case selection.</p><h2 id="48">See Also</h2><p>Some classes that use <b>GDinterface</b> and related functions are detailed in the help for <a href="matlab:doc('grid_class_fcns')">Grid classes and functions</a>.</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 %% GDinterface
 % Abstract class with properties and methods to manipulate gridded datasets 
@@ -132,7 +132,8 @@ in the first column of a Case on the Cases/Data/Model tab in the main interface.
 % elevations, and any other data to be included in the dstable; _dims_ is a
 % struct for the dimensions of griddata, where the fields 'x' and 'y' are the 
 % vector dimensions of z and must be unique, and the field 't' can be 
-% datetimes, durations or values to assign to rows in dstable; and 
+% datetimes, durations or values to assign to rows in dstable, and 'cline'
+% is a struct with the x and y coordinates of the centre-line; and 
 % _meta_ is a stuct with 'source' and 'data' fields to describe file name or model
 % used, and additional run details, respectively.
 %%
@@ -143,10 +144,8 @@ in the first column of a Case on the Cases/Data/Model tab in the main interface.
 % and _irow_ is the row index of the dstable to extract grid from
 % (optional). Returns grid as a struct with the fields, 'x', 'y', 'z' and
 % 't, together with any metadata that may be assigned to the dstable,
-% including, 'irow', the row indexin the dstable, 'desc', the dstable Description, 'ishead',
-% a logical flag defining the x-axis orientation, 'xM', the distance to 
-% the inlet/estuary/valley mouth from the grid origin, and 'cline', a struct 
-% with the x and y coordinates of the centre-line if a meander has been added.
+% including, 'irow', the row indexin the dstable, 'desc', the dstable Description, 
+% and 'cline', a struct with the x and y coordinates of the centre-line.
 %%
 %   grid = getGrid(obj,irow);
 
@@ -160,7 +159,7 @@ in the first column of a Case on the Cases/Data/Model tab in the main interface.
 % data source; and _ismsg_ is a flag set to true to use the defualt message, 
 % and false to suppress the message.
 %%
-%   addGrid(obj,muicat,newgrid,timestep,sourcetxt,ismsg);
+%   addGrid(obj,muicat,newgrid,timestep,[],sourcetxt,ismsg);
 
 %%
 % *deleteGrid* - delete a grid to an existing <matlab:doc('muitoolbox') muitoolbox>
@@ -181,23 +180,34 @@ in the first column of a Case on the Cases/Data/Model tab in the main interface.
 %   translateGrid(obj,classrec,muicat);
 
 %%
-% *rotateGrid* - interactively flip or rotate grid,
+% *rotateGrid* - interactively flip or rotate one or more grids,
 % where _obj_ is any GDintereface subclass; _classsrec_ is the class record
 % index of selected instance and _muicat_ is a handle to the
 % <matlab:doc('muicatalogue') muiCatalogue>.
 %%
-%   rotateGrid(obj,classrec,muicat)
+%   rotateGrid(obj,classrec,muicat);
+
+%% 
+% *orientGrid* - interactively rotate or flip a grid and/or reverse the
+% direction of the x and y axes, where _obj_ is any GDintereface subclass;
+% _grid0_ is the input grid to be re-oriented, _grid_ is the modified grid
+% and _orient_ is a vector of flags indicating whether the grid has been 
+% flipped or rotated in the order applied (0 = no change, 1 = flip lr, 2 = flip ud, 
+% 3 = +90, 4 = -90, 5 = invert x, 6 = invert y)
+%%
+%  [grid,orient] = orientGrid(obj,grid0);
 
 %%
 % *reGridData* - regrid a gridded dataset to match another grid or to user
 % specified dimensions, where _obj_ is any GDintereface subclass; _mobj_ 
 % is mui model instance; and _gridclasses_ is a cell array of clases to be
-% used for case selection.
+% used for case selection. Calls *orientGrid*  and selection made for first 
+% grid is applied to all grids in the Case.
 %%
 %   reGridData(obj,mobj,gridclasses);
 
 %%
-% * *subGridData* - interactively define a subgrid and save grid as a new
+% *subGridData* - interactively define a subgrid and save grid as a new
 % Case, where _obj_ is any GDintereface subclass; _classsrec_ is the class record
 % index of selected instance and _muicat_ is a handle to the
 % <matlab:doc('muicatalogue') muiCatalogue>.

@@ -22,7 +22,8 @@ function ax = gd_plotgrid(hfig,grid)
     hp = findobj(hfig,'Type','axes');
     delete(hp);
     ax = axes(hfig);
-    pcolor(ax,grid.x,grid.y,grid.z')
+    hpc = pcolor(ax,grid.x,grid.y,grid.z');
+    hpc.Tag = 'PlotGrid';
     ax = gd_ax_dir(ax,grid.x,grid.y);
     shading interp
     colormap('parula')

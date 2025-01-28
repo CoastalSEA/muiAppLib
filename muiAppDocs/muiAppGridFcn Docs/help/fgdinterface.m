@@ -45,7 +45,7 @@
 
 %%
 % *setGrid* - load the grid results into a dstable, where _obj_ is any 
-% GDintereface subclass; _gridddata_ is a cell array with a matrix of
+% FGDintereface subclass; _gridddata_ is a cell array with a matrix of
 % elevations, and any other data to be included in the dstable; _dims_ is a
 % struct for the dimensions of griddata, where the fields 'x' and 'y' are the 
 % vector dimensions of z and must be unique, and the field 't' can be 
@@ -59,7 +59,7 @@
 %   obj = setGrid(obj,griddata,dims,meta);
 
 %%
-% *getGrid* - retrieve a grid, where _obj_ is any GDintereface subclass;
+% *getGrid* - retrieve a grid, where _obj_ is any FGDintereface subclass;
 % and _irow_ is the row index of the dstable to extract grid from
 % (optional). Returns grid as a struct with the fields, 'x', 'y', 'z' and
 % 't, together with any metadata that may be assigned to the dstable,
@@ -72,7 +72,7 @@
 
 %%
 % *addGrid* - add a grid to an existing <matlab:doc('muitoolbox') muitoolbox> 
-% Case table, where _obj_ is any GDintereface subclass; _muicat_ is a 
+% Case table, where _obj_ is any FGDintereface subclass; _muicat_ is a 
 % handle to the <matlab:doc('muicatalogue') muiCatalogue>; _newgrid_ is the
 % grid to add to the dstable and should be of the same dimensions as
 % existing grids in the table; _timestep_ is the value to use for RowName
@@ -145,12 +145,6 @@
 %%
 %   editGridInletData(obj);
 
-
-%%
-% Methods to manipulate grids use the GDinterface class  - see <matlab:doc('gdinterface')
-% GDinterface> documentation.
-
-
 %% FGDinterface static methods
 % The additional static methods in the abstract class include the following:
 
@@ -179,6 +173,10 @@
 %%
 %   FGDinterface.formMenuOptions(mobj,src,gridclasses);
 
+%% GDinterface methods
+% As the FGDinterface inherits GDinterface, all the methods to manipulate 
+% grids in the GDinterface class are also available  - 
+% see <matlab:doc('gdinterface') GDinterface> documentation.
 
 %% See Also
 % Some classes that use *FGDinterface* and related functions are detailed in

@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Grid classes and functions</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2025-01-19"><meta name="DC.source" content="grid_class_fcns.m"><style type="text/css">
+      --><title>Grid classes and functions</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2025-01-28"><meta name="DC.source" content="grid_class_fcns.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -67,34 +67,39 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 
 
 
-  </style></head><body><div class="content"><h1>Grid classes and functions</h1><!--introduction--><p>The <i>muiAppGridFcns</i> folder contains classes and functions to support the handling of gridded data, for Apps built using the <a href="matlab:doc('muitoolbox')">muitoolbox</a>.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Grid classes</a></li><li><a href="#21">Grid property functions</a></li><li><a href="#34">Grid utility functions</a></li><li><a href="#87">See Also</a></li></ul></div><h2 id="1">Grid classes</h2><p>The Apps that use grids can make use of the following classes:</p><p><b>GD_GridProps</b>: class inherits <a href="matlab:doc('muipropertyui')">muiPropertyUI</a> abstract class, providing an interface to define the extent and intervals of a cartesian grid. Methods within the class include:</p><div><ul><li>setInput - calls the default interface to input property values for grid extend and grid intervals in the x and y directions.</li><li>setGridDimensions - pass the x and y dimensions of a grid to updatge the property settings.</li><li>getGridDimensions - retrieve the x and y dimensions as vectors and the grid intervals (delx, dely).</li></ul></div><p><b>GDinterface</b>: an abstract class to support classes that need additional functionality to handle grids. The class inherits <a href="matlab:doc('muidataset')">muiDataSet</a> and together they provide an extensive set of methods to handle datasets of various types (eg from models or imported files). The methods in the <a href="matlab:doc('gdinterface')">GDinterface</a> include the following:</p><p>Methods to add, delete and update grids and propetry tables:</p><div><ul><li>setGrid - load the grid results into a dstable.</li><li>getGrid - retrieve a grid.</li><li>addGrid - add a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table.</li><li>deleteGrid - delete a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table.</li></ul></div><p>Methods to manipulate grids:</p><div><ul><li>translateGrid - interactively translate grid x-y coordinates.</li><li>rotateGrid - interactively flip or rotate grid.</li><li>reGridData - regrid a gridded dataset to match another grid or to user specified dimensions.</li><li>subGridData - interactively define a subgrid and save grid as a new Case.</li><li>addSurface - add horizontal surface to an extisting grid.</li><li>curvilinear_xy2sn - map grid from cartesian to curvilinear coordinates.</li><li>curvilinear_sn2xy - map grid from curvilinear to cartesian coordinates.</li><li>exportGrid - select a Case and export grid as xyz tuples.</li></ul></div><p>Static methods to manipulate grids</p><div><ul><li>setCombinedGrids - superimpose one grid on another based on maximum or minimum set of values.</li><li>diffGridsPlot - generate a plot of the difference between two grids.</li><li>getGridLine - interactively digitise a line and save to a file.</li><li>gridMenuOptions - handles the menu calls ffor the default menu of Grid Tools.</li></ul></div><p><b>GD_ImportData</b> class inherits GDinterface abstract class (see above) to load xyz data from a file. Methods within the class include:</p><div><ul><li>loadData - set up a new dataset by loading data from a file.</li><li>addData - add additional data to an existing dataset.</li><li>tabPlots - plots the grid as a filled contour plot (can be overloaded if required for a specific application).</li></ul></div><p>These methods are supplemented by the methods available in <a href="matlab:doc('muidataset')">muiDataSet</a> as well as the <a href="matlab:doc('gdinterface')">GDinterface</a> summarised above.</p><p><b>FGDinterface</b>: an abstract class to support classes that need additional functionality to handle grids. The class inherits <b>GDinterface</b>, to extend the grid handling methods, to extract inlet/channel properties from the grid. The setGrid, getGrid, addGrid and deleteGrid methods in <b>GDinterface</b> are overloaded to handle inlet/channel specific properties such as distance to mouth of inlet, orientation of channel, etc. Other methods in the <a href="matlab:doc('fgdinterface')">FGDinterface</a> include the following:</p><div><ul><li>setProperties - initialises the tables for derived properties of gridded data set</li><li>addProperties - add properties to an existing set of grid property tables</li><li>delProperties - delete a row of properties from existing grid property tables</li><li>addFormProps - add form properties to a gridded data set</li><li>delFormProperties - delete ALL property tables associated with a selected gridded data set</li><li>setModelFormProps -add a set of Hypsometry, Section and Gross form properties</li><li>editGridInletData - UI to edit, definition of channel head, x-distance to mouth and definition of centre-line (if used).</li></ul></div><p>Static methods to manipulate grids</p><div><ul><li>addValleyBase - use an xyz definition of the channel thalweg to create a valley base this is used to modify an existing valley defined above MHW to include the valley form down to the pre-Holocene surface (i.e. below the existing channel bed).</li><li>addShore - add a strip to shore side of a grid by extrapolating from the neighbouring strip.</li><li>formMenuOptions - handles the menu calls ffor the default menu of Form Tools.</li></ul></div><p><b>FGD_ImportData</b> class inherits FGDinterface abstract class (see above) to load xyz data from a file. Methods within the class include:</p><div><ul><li>loadData - set up a new dataset by loading data from a file.</li><li>addData - add additional data to an existing dataset.</li><li>tabPlots - plots the grid as a filled contour plot (can be overloaded if required for a specific application).</li></ul></div><p>These methods are supplemented by the methods available in <a href="matlab:doc('muidataset')">muiDataSet</a> as well as the <a href="matlab:doc('fgdinterface')">FGDinterface</a> and <a href="matlab:doc('gdinterface')">GDinterface</a> summarised above.</p><h2 id="21">Grid property functions</h2><p>Summary of functions that derive and manipulte properties of the grid such as basin/channel dimensions and available in the <i>muiAppGridFcns</i> folder. Use the Matlab&#8482; help function in the command window to get further details of each function.</p><p><b>gd_basin_hypsometry</b> - compute area and volume hypsometry from gridded elevation data and return as a cell array of along-channel values, containing <i>z-intervals</i>, <i>zsurf(z)</i> and <i>zvol(z)</i>, and a dstable of the surface area hyspometry, <i>SArea(x,z)</i>.</p><pre class="language-matlab">[hyps,hdst] = gd_basin_hypsometry(grid,wl,histint,limits,isHW); <span class="comment">%see below for explantion of input variables</span>
+  </style></head><body><div class="content"><h1>Grid classes and functions</h1><!--introduction--><p>The <i>muiAppGridFcns</i> folder contains classes and functions to support the handling of gridded data, for Apps built using the <a href="matlab:doc('muitoolbox')">muitoolbox</a>.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Grid classes</a></li><li><a href="#21">Grid property functions</a></li><li><a href="#34">Grid utility functions</a></li><li><a href="#87">Additional utility functions</a></li><li><a href="#94">Functions from Matlab&#8482; Exchange Forum</a></li><li><a href="#101">See Also</a></li></ul></div><h2 id="1">Grid classes</h2><p>The Apps that use grids can make use of the following classes:</p><p><b>GD_GridProps</b>: class inherits <a href="matlab:doc('muipropertyui')">muiPropertyUI</a> abstract class, providing an interface to define the extent and intervals of a cartesian grid. Methods within the class include:</p><div><ul><li>setInput - calls the default interface to input property values for grid extend and grid intervals in the x and y directions.</li><li>setGridDimensions - pass the x and y dimensions of a grid to updatge the property settings.</li><li>getGridDimensions - retrieve the x and y dimensions as vectors and the grid intervals (delx, dely).</li></ul></div><p><b>GDinterface</b>: an abstract class to support classes that need additional functionality to handle grids. The class inherits <a href="matlab:doc('muidataset')">muiDataSet</a> and together they provide an extensive set of methods to handle datasets of various types (eg from models or imported files). The methods in the <a href="matlab:doc('gdinterface')">GDinterface</a> include the following:</p><p>Methods to add, delete and update grids and propetry tables:</p><div><ul><li>setGrid - load the grid results into a dstable.</li><li>getGrid - retrieve a grid.</li><li>addGrid - add a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table.</li><li>deleteGrid - delete a grid to an existing <a href="matlab:doc('muitoolbox')">muitoolbox</a> Case table.</li></ul></div><p>Methods to manipulate grids:</p><div><ul><li>translateGrid - interactively translate grid x-y coordinates.</li><li>rotateGrid - interactively flip or rotate grid.</li><li>reGridData - regrid a gridded dataset to match another grid or to user specified dimensions.</li><li>subGridData - interactively define a subgrid and save grid as a new Case.</li><li>addSurface - add horizontal surface to an extisting grid.</li><li>curvilinear_xy2sn - map grid from cartesian to curvilinear coordinates.</li><li>curvilinear_sn2xy - map grid from curvilinear to cartesian coordinates.</li><li>exportGrid - select a Case and export grid as xyz tuples.</li></ul></div><p>Static methods to manipulate grids</p><div><ul><li>setCombinedGrids - superimpose one grid on another based on maximum or minimum set of values.</li><li>diffGridsPlot - generate a plot of the difference between two grids.</li><li>getGridLine - interactively digitise a line and save to a file.</li><li>gridMenuOptions - handles the menu calls ffor the default menu of Grid Tools.</li></ul></div><p><b>GD_ImportData</b> class inherits GDinterface abstract class (see above) to load xyz data from a file. Methods within the class include:</p><div><ul><li>loadData - set up a new dataset by loading data from a file.</li><li>addData - add additional data to an existing dataset.</li><li>tabPlots - plots the grid as a filled contour plot (can be overloaded if required for a specific application).</li></ul></div><p>These methods are supplemented by the methods available in <a href="matlab:doc('muidataset')">muiDataSet</a> as well as the <a href="matlab:doc('gdinterface')">GDinterface</a> summarised above.</p><p><b>FGDinterface</b>: an abstract class to support classes that need additional functionality to handle grids. The class inherits <b>GDinterface</b>, to extend the grid handling methods, to extract inlet/channel properties from the grid. The setGrid, getGrid, addGrid and deleteGrid methods in <b>GDinterface</b> are overloaded to handle inlet/channel specific properties such as distance to mouth of inlet, orientation of channel, etc. Other methods in the <a href="matlab:doc('fgdinterface')">FGDinterface</a> include the following:</p><div><ul><li>setProperties - initialises the tables for derived properties of gridded data set</li><li>addProperties - add properties to an existing set of grid property tables</li><li>delProperties - delete a row of properties from existing grid property tables</li><li>addFormProps - add form properties to a gridded data set</li><li>delFormProperties - delete ALL property tables associated with a selected gridded data set</li><li>setModelFormProps -add a set of Hypsometry, Section and Gross form properties</li><li>editGridInletData - UI to edit, definition of channel head, x-distance to mouth and definition of centre-line (if used).</li></ul></div><p>Static methods to manipulate grids</p><div><ul><li>addValleyBase - use an xyz definition of the channel thalweg to create a valley base this is used to modify an existing valley defined above MHW to include the valley form down to the pre-Holocene surface (i.e. below the existing channel bed).</li><li>addShore - add a strip to shore side of a grid by extrapolating from the neighbouring strip.</li><li>formMenuOptions - handles the menu calls ffor the default menu of Form Tools.</li></ul></div><p><b>FGD_ImportData</b> class inherits FGDinterface abstract class (see above) to load xyz data from a file. Methods within the class include:</p><div><ul><li>loadData - set up a new dataset by loading data from a file.</li><li>addData - add additional data to an existing dataset.</li><li>tabPlots - plots the grid as a filled contour plot (can be overloaded if required for a specific application).</li></ul></div><p>These methods are supplemented by the methods available in <a href="matlab:doc('muidataset')">muiDataSet</a> as well as the <a href="matlab:doc('fgdinterface')">FGDinterface</a> and <a href="matlab:doc('gdinterface')">GDinterface</a> summarised above.</p><h2 id="21">Grid property functions</h2><p>Summary of functions that derive and manipulte properties of the grid such as basin/channel dimensions and available in the <i>muiAppGridFcns</i> folder. Use the Matlab&#8482; help function in the command window to get further details of each function.</p><p><b>gd_basin_hypsometry</b> - compute area and volume hypsometry from gridded elevation data and return as a cell array of along-channel values, containing <i>z-intervals</i>, <i>zsurf(z)</i> and <i>zvol(z)</i>, and a dstable of the surface area hyspometry, <i>SArea(x,z)</i>.</p><pre class="language-matlab">[hyps,hdst] = gd_basin_hypsometry(grid,wl,histint,limits,isHW); <span class="comment">%see below for explantion of input variables</span>
 </pre><p><b>gd_basin_properties</b> - uses the hypsometry, <i>hdst</i>, obtained from gd_basin_hypsometry to compute a number of along-channel/x-axis morphological properties. Returns <i>cprops</i>, a table of cumulative (from head) along-channel/x-axis properties and <i>xprops</i>, a table of incremental properties for each x-interval.</p><pre class="language-matlab">[cprops,xprops] = gd_basin_properties(grid,wl,hdst); <span class="comment">%see below for explantion of input variables</span>
 </pre><p><b>gd_gross_properties</b> - compute the gross properties of a gridded bathymetry</p><pre class="language-matlab">grossprops = gd_gross_properties(grid,wl,props); <span class="comment">%see below for explantion of input variables</span>
 </pre><p><b>gd_section_properties</b> - compute the width, cross-sectional area and prism along channel.</p><pre class="language-matlab">props = gd_section_properties(grid,wl,hdst); <span class="comment">%see below for explantion of input variables</span>
 </pre><p>where <i>grid</i> is a struct containing the gridded data, <i>wl</i> is a struct for water levels at 3 elevations (high water, mean tide and low water), <i>histint</i> is the vertical interval to be used for the hypsometry, <i>limits</i> defines the upper and lower limits for vertical range of the hypsometry, <i>isHW</i> is a flag to apply mask to data to apply an upper bound to a given data set at high water within limits that might be set for multiple grids. <i>props</i> is the table returned by gd_section_properties and <i>hdst</i> is the dstable returned by gd_basin_hypsometry.</p><p><b>gd_property_plots</b> - plots displayed on Proprety tab or stand-alone figure in Apps that use GDinterface, such as ChannelForm and ModelSkill.</p><pre class="language-matlab">gd_property_plots(obj,irec,src)
 </pre><p>where <i>obj</i> is an instance of any form model that uses the GDinterface abstract class, <i>irec</i> the row/timestep to use to access grid data and <i>src</i> is a handle to the calling menu, create Figure button, or a figure handle.</p><h2 id="34">Grid utility functions</h2><p>Summary of utility functions available in the <i>muiAppGridFcns</i> folder. Use the Matlab&#8482; help function in the command window to get further details of each function.</p><p><b>gd_ax_dir</b> - check direction of grid axes and reverse if descending, OR find grid orientation using ishead and direction of x-axis, OR check a grid axis direction by prompting user.</p><pre class="language-matlab">output = gd_ax_dir(ax,x,y,ischeck);
 </pre><p>where (i) if <i>ax</i> is a graphic axes handle the functions checks the direction of <i>x</i> and <i>y</i> and reverses <i>ax.XDir</i> or <i>ax.YDir</i> if descending, or (ii) if <i>ax</i> is a grid struct then uses grid.ishead and grid.x to determine orientation, or (iii) if <i>ax</i> is empty the <i>x</i> and <i>y</i> values are assigned to as vecotrs, then if <i>ischeck</i> is empty or omitted, user is prompted to confirm each axis direction, whearas if <i>ischeck</i> is a [1x2] logical array, for x and y axes respectively, reversing the axis direction if true. To use the function for a single axis, assign the unwanted axis input to be empty. See function Help for further details.</p><p><b>gd_basin_indices</b> - get the indices of the grid x-axis that fall within the basin or channel, when the mouth is offset from the grid origin. (NB: assumes basin/channel is aligned with the x-axis). Also returns the index of mouth position, ixM, and head, or tidal limit, position, ixH, on the x-axis.</p><pre class="language-matlab">[idx,ixM,ixH] = gd_basin_indices(grid,Lt);    <span class="comment">%Lt is optional</span>
-</pre><p>where <i>grid</i> is a struct of x, y, z (e.g. as used in getGrid in the GDinterface) and <i>Lt</i> is the distance from the mouth to the head or tidal limit.</p><p><b>gd_colormap</b> - check if Mapping toolbox is installed to use land/sea colormap, or call <i>cmap_selection</i> (see <a href="matlab:doc('psfunctions')">Plotting and statistical functions</a> in the <a href="matlab:doc('muitoolbox')">muitoolbox</a>) if not available.</p><pre class="language-matlab">gd_colormap(zlimits);  <span class="comment">%zlimits - minimum and maximum elevations [minz,maxz]</span>
-</pre><p><b>gd_digitisepoints</b> - accept figure to interactively digitise points on a grid and add elevations if required.</p><pre class="language-matlab">points = gd_digitisepoints(grid,promptxt,isxyz,isdel);
-</pre><p>where <i>grid</i> is a struct of x, y, z (e.g. as used in getGrid in the GDinterface); <i>promptxt</i> is a cell array of prompts to be used for each point being defined; <i>isxyz</i> is a logical flag true to input z values - optional, default is false; and <i>isdel</i> is a logical flag true to delete figure on completion - optional, default is false.</p><p><b>gd_dimensions</b> - get the grid dimensions for a grid struct (as used in classes that inherit GDinterface). Outputs a table of grid dimensions including: delx, dely - grid interval in the x and y dimensions; xsgn, ysgn - direction of x, y axes (-ve is descending); xint, yint - number of grid intervals in the x and y dimensions; xmin, xmax, ymin, ymax, zmin, zmax - minimum and maximum x, y and z dimensions.</p><pre class="language-matlab">gdims = gd_dimensions(grid)
+</pre><p>where <i>grid</i> is a struct of x, y, z (e.g. as used in getGrid in the GDinterface) and <i>Lt</i> is the distance from the mouth to the head or tidal limit.</p><p><b>gd_centreline.m</b> - create a centreline of a channel using function <i>a_star</i> to trace the shortest path between start and end points whilst finding the deepest, where <i>cline</i> is a struct of x and y values.</p><pre class="language-matlab">cline = gd_centreline(grid);
+</pre><p><b>gd_colormap</b> - check if Mapping toolbox is installed to use land/sea colormap, or call <i>cmap_selection</i> (see <a href="matlab:doc('psfunctions')">Plotting and statistical functions</a> in the <a href="matlab:doc('muitoolbox')">muitoolbox</a>) if not available.</p><pre class="language-matlab">gd_colormap(zlimits);  <span class="comment">%zlimits - minimum and maximum elevations [minz,maxz]</span>
+</pre><p><b>gd_convergencelength</b> -  least squares fit using fminsearch to find the convergence length of a channel from a distance-width xy data set, where yi is the variable with respect to xi (e.g. area as a function of distance) and x0 is an initial guess used in fminsearch.</p><pre class="language-matlab">convergencelength = getconvergencelength(xi,yi,x0);
+</pre><p><b>gd_digitisepoints</b> - accept figure to interactively digitise points on a grid and add elevations if required.</p><pre class="language-matlab">points = gd_digitisepoints(grid,figtxt,outype,isxyz,isde);
+</pre><p>where <i>grid</i> is a struct of x, y, z (e.g. as used in getGrid in the GDinterface); <i>figtxt</i> character string used for title of figure; <i>outype</i> is an output format flag, <i>isxyz</i> is a logical flag true to input z values - optional, default is false; and <i>isdel</i> is a logical flag true to delete figure on completion - optional, default is false. The ouput format depends on the <i>outype</i> flag. If <i>outype</i>=0: array of structs with x, y and z fields defining selected points, <i>outype</i>=1: Nx2 or Nx3 array, <i>outype</i>=2: struct with x, y (and z) vector fields, and <i>points</i> = [] if user closes figure, or no points defined.</p><p><b>gd_dimensions</b> - get the grid dimensions for a grid struct (as used in classes that inherit GDinterface). Outputs a table of grid dimensions including: delx, dely - grid interval in the x and y dimensions; xsgn, ysgn - direction of x, y axes (-ve is descending); xint, yint - number of grid intervals in the x and y dimensions; xmin, xmax, ymin, ymax, zmin, zmax - minimum and maximum x, y and z dimensions.</p><pre class="language-matlab">gdims = gd_dimensions(grid)
+</pre><p><b>gd_getpoint.m</b> - interactively select a point on a plot and return the point coordinates, where <i>ax</i> is a graphic axes handle and <i>promptxt</i> is the prompt to be used for the point being defined.</p><pre class="language-matlab">point = gd_getpoint(ax,promptxt);
 </pre><p><b>gd_grid_line</b> - create a grid from scattered data points input as xyz tuples.</p><pre class="language-matlab">[X,Y,Z] = gd_grid_line(xin,yin,zin,missing); <span class="comment">%where xin, yin, zin are vectors</span>
 [X,Y,Z] = gd_grid_line(xyz,missing);         <span class="comment">%where xyz is a an nx3 array</span>
 </pre><p><b>gd_plan_form</b> - compute planform variation along the x-axis at specified planar levels.</p><pre class="language-matlab">yz = gd_plan_form(grid,wl);   <span class="comment">%see below for explantion of input variables</span>
 </pre><p><b>gd_plotgrid</b> - create pcolor plot of gridded surface.</p><pre class="language-matlab">ax = gd_plotgrid(hfig,grid);  <span class="comment">%hfig is figure handle and ax is axes handle</span>
 </pre><p><b>gd_plotsections</b> - display grid and allow user to interactively define start and end points of a section line to be plotted in a figure.</p><pre class="language-matlab">gd_plotsections(grid);  <span class="comment">%where grid is a struct of x, y, z</span>
-</pre><p><b>gd_selectpoints</b> - accept figure to interactively select one or more points on a grid.</p><pre class="language-matlab">points = gd_selectpoints(grid,npts,promptxt,isdel) <span class="comment">%uses graphical selection</span>
-</pre><p><b>gd_setpoint</b> - interactively select a point on a plot and return the point coordinates. Includes an option to enter an additional value at the selected point (e.g. elevation).</p><pre class="language-matlab">point = gd_setpoint(ax,promptxt,isxyz);
+</pre><p><b>gd_pnt2vec.m</b> - convert an array of structs with x,y (and z) fields to a [Nx2] or [Nx3] array of points, or a single stuct with vectors for the x, y (and z) fields, where <i>points</i> is an array of structs containing x, y (and z) points and defining one or more lines (separated by NaN values), <i>isarray</i> is a logical value defining the format to be returned in <i>vecpnts</i>. True returns a numerical array and false returns a struct of x,y (z) vectors.</p><pre class="language-matlab">vecpnts = gd_pnt2vec(points,isarray);
+</pre><p><b>gd_readshapefile.m</b> - read the x and y coordinates from a shape file. Lines are concatenated and separated by NaNs in single x and y vectors. Suitable for reading boundaries or sections into a single array. The output, <i>shp</i>, is a struct with x and y fields from the XY data in the shape file.</p><pre class="language-matlab">shp = gd_readshapefile(path,filename);
+</pre><p><b>gd_selectpoints</b> - accept figure to interactively select one or more points on a grid.</p><pre class="language-matlab">points = gd_selectpoints(grid,figtitle,promptxt,outype,npts,isdel);
+</pre><p>where <i>grid</i> is a struct of x, y, z (e.g. as used in getGrid in the GDinterface); <i>figtitle</i> character string used for title of figure; <i>promptxt</i> is cell array of prompts to be used for each point being defined, <i>outype</i> is an output format flag, <i>npts</i> is the number of points to be defined, <i>isxyz</i> is a logical flag true to input z values - optional, default is false; and <i>isdel</i> is a logical flag true to delete figure on completion - optional, default is false. The ouput format depends on the <i>outype</i> flag. If <i>outype</i>=0: array of structs with x, y and z fields defining selected points, <i>outype</i>=1: Nx2 or Nx3 array, <i>outype</i>=2: struct with x, y (and z) vector fields, and <i>points</i> = [] if user closes figure, or no points defined.</p><p><b>gd_setpoint</b> - interactively select a point on a plot and return the point coordinates. Includes an option to enter an additional value at the selected point (e.g. elevation).</p><pre class="language-matlab">point = gd_setpoint(ax,promptxt,isxyz);
+</pre><p>where <i>ax</i> is the figure axes to be uses,  <i>promptxt</i> is the user prompt for the point being defined and <i>isxyz</i> is a logical flag, which is true if a value is to be assigned to the point.</p><p><b>gd_setpoints.m</b> - interactively create a set of points on a plot and return the point coordinates. Includes an option to enter an additional value at the selected points (e.g. elevation).</p><pre class="language-matlab">points = gd_setpoints(ax,promptxt,isxyz);
 </pre><p>where <i>ax</i> is the figure axes to be uses,  <i>promptxt</i> is the user prompt for the point being defined and <i>isxyz</i> is a logical flag, which is true if a value is to be assigned to the point.</p><p><b>gd_startendpoints</b> - accept figure to interactively select start and end points on a grid.</p><pre class="language-matlab">points = gd_startendpoints(grid,isdel); <span class="comment">%uses dialogue box for input</span>
 </pre><p><b>gd_subdomain</b> - accept figure to interactively select a subdomain of a grid.</p><pre class="language-matlab">[subdomain,sublimitxt] = gd_subdomain(grid);
-</pre><p>where <i>grid</i> is a struct containing the gridded data, <i>npts</i> is the number of points to be selected, <i>promptxt</i> is the text used for the selection of each point, <i>isdel</i> deletes the selection figure if true, <i>points</i> is an x, y struct of the selected points, <i>subdomain</i> is an array of [min(x),max(x),min(y),max(y)] of the selected domain and <i>sublimitxt</i> is a text description of the subdomain.</p><p><b>gd_xy2sn</b> - map grid from cartesian to curvilinear coordinates with option to return elevations on the source cartesian grid, or as a curvilinear grid.</p><pre class="language-matlab">sngrid = gd_xy2sn(grid,cline,isxy,isplot);
+</pre><p>where <i>grid</i> is a struct containing the gridded data, <i>npts</i> is the number of points to be selected, <i>promptxt</i> is the text used for the selection of each point, <i>isdel</i> deletes the selection figure if true, <i>points</i> is an x, y struct of the selected points, <i>subdomain</i> is an array of [min(x),max(x),min(y),max(y)] of the selected domain and <i>sublimitxt</i> is a text description of the subdomain.</p><p><b>gd_subgrid</b> - extract a subdomain from a grid and return the extracted grid and the source grid indices of the bounding rectangle.</p><pre class="language-matlab">[subgrid,ixo,iyo] = gd_subgrid(grid,subdomain);
+</pre><p>where <i>grid</i> is an x,y,z struct of the grid and <i>subdomain</i> defines the bounding rectangle using [x0,xN,y0,yN], <i>subgrid</i> is an x,y,z struct with the grid of the subdomain, <i>ixo</i> and <i>iyo</i> are the indices of the bounding rectangle in the form xo = [ix0,ix0,ixN,ixN,ix0] and iyo = [iyN,iy0,iy0,iyN,iyN].</p><p><b>gd_xy2sn</b> - map grid from cartesian to curvilinear coordinates with option to return elevations on the source cartesian grid, or as a curvilinear grid.</p><pre class="language-matlab">sngrid = gd_xy2sn(grid,cline,isxy,isplot);
 </pre><p><b>gd_sn2xy</b> - map grid from curvilinear to cartesian coordinates to return   elevations on the source cartesian grid.</p><pre class="language-matlab">sngrid = gd_sn2xy(grid,cline,isplot);
-</pre><p><b>gd_lineongrid_plot</b> -  plots a defined line onto a countour or surface plot of a grid (e.g a   channel centre-line). If z values are included the plot is a 3D plot.</p><pre class="language-matlab">hfig = gd_lineongrid_plot(grid,cline,plotxt);
+</pre><h2 id="87">Additional utility functions</h2><p><b>gd_lineongrid_plot</b> -  plots a defined line onto a countour or surface plot of a grid (e.g a   channel centre-line). If z values are included the plot is a 3D plot.</p><pre class="language-matlab">hfig = gd_lineongrid_plot(grid,cline,plotxt);
 </pre><p>where <i>grid</i> is the source grid, <i>cline</i> is an x,y struct of centre-line path, <i>isxy</i> is true to return cartesian grid and false to return curvilinear grid, <i>isplot</i> is true to generate a plot of the grid and <i>plotxt</i> is the title text for the plot.</p><p><b>gd_user_function</b> - function for user to define bespoke use of grids and grid tools</p><pre class="language-matlab">gd_user_functions(obj,mobj);
-</pre><p>where <i>obj</i> is an instance of a class that inherits <i>GDinterface</i> abstract class and <i>mobj</i> is an instance of a model class (i.e. a class that inherits <i>muiModelUI</i>). <i>mobj</i> enables access to other classes and data sets from the user function.</p><p><b>getconvergencelength</b> -  least squares fit using fminsearch to find the convergence length of a channel from a distance-width xy data set, where yi is the variable with respect to xi (e.g. area as a function of distance) and x0 is an initial guess used in fminsearch.</p><pre class="language-matlab">convergencelength = getconvergencelength(xi,yi,x0);
-</pre><p><b>getsubgrid</b> - extract a subdomain from a grid and return the extracted grid and the source grid indices of the bounding rectangle.</p><pre class="language-matlab">[subgrid,ixo,iyo] = getsubgrid(grid,subdomain);
-</pre><p>where <i>grid</i> is an x,y,z struct of the grid and <i>subdomain</i> defines the bounding rectangle using [x0,xN,y0,yN], <i>subgrid</i> is an x,y,z struct with the grid of the subdomain, <i>ixo</i> and <i>iyo</i> are the indices of the bounding rectangle in the form xo = [ix0,ix0,ixN,ixN,ix0] and iyo = [iyN,iy0,iy0,iyN,iyN].</p><p><b>a_star</b> - implements the A* search algorithm to find the shortest path given constraints (inaccessible cells) and a cost function (e.g. water depths). Author: Alex Ranaldi, 2022, <a href="https://github.com/alexranaldi/A_STAR">https://github.com/alexranaldi/A_STAR</a></p><p><b>InterX</b> - intersection of two curves. MATLAB Central File Exchange, Author: NS, 2010, <a href="https://www.mathworks.com/matlabcentral/fileexchange/22441-curve-intersections">https://www.mathworks.com/matlabcentral/fileexchange/22441-curve-intersections</a>.</p><p><b>xy2sn</b> -  Converts the Cartesian coordinates Xi and Yi to the channel fitted coordinate Si and Ni using the centreline defined through the Cartesian coordinates of its vertices Xc and Yc. MATLAB Central File Exchange, Author: Bart Vermeulen,2022, Cartesian to Curvilinear coordinate forward and backward transformation. <a href="https://www.mathworks.com/matlabcentral/fileexchange/55039-cartesian-to-curvilinear-coordinate-forward-and-backward-transformation">https://www.mathworks.com/matlabcentral/fileexchange/55039-cartesian-to-curvilinear-coordinate-forward-and-backward-transformation</a></p><pre class="language-matlab">[Si,Ni]=xy2sn(Xc,Yc,Xi,Yi);
+</pre><p>where <i>obj</i> is an instance of a class that inherits <i>GDinterface</i> abstract class and <i>mobj</i> is an instance of a model class (i.e. a class that inherits <i>muiModelUI</i>). <i>mobj</i> enables access to other classes and data sets from the user function.</p><h2 id="94">Functions from Matlab&#8482; Exchange Forum</h2><p><b>a_star</b> - implements the A* search algorithm to find the shortest path given constraints (inaccessible cells) and a cost function (e.g. water depths). Author: Alex Ranaldi, 2022, <a href="https://github.com/alexranaldi/A_STAR">https://github.com/alexranaldi/A_STAR</a></p><p><b>InterX</b> - intersection of two curves. MATLAB Central File Exchange, Author: NS, 2010, <a href="https://www.mathworks.com/matlabcentral/fileexchange/22441-curve-intersections">https://www.mathworks.com/matlabcentral/fileexchange/22441-curve-intersections</a>.</p><p><b>xy2sn</b> -  Converts the Cartesian coordinates Xi and Yi to the channel fitted coordinate Si and Ni using the centreline defined through the Cartesian coordinates of its vertices Xc and Yc. MATLAB Central File Exchange, Author: Bart Vermeulen,2022, Cartesian to Curvilinear coordinate forward and backward transformation. <a href="https://www.mathworks.com/matlabcentral/fileexchange/55039-cartesian-to-curvilinear-coordinate-forward-and-backward-transformation">https://www.mathworks.com/matlabcentral/fileexchange/55039-cartesian-to-curvilinear-coordinate-forward-and-backward-transformation</a></p><pre class="language-matlab">[Si,Ni]=xy2sn(Xc,Yc,Xi,Yi);
 </pre><p><b>sn2xy</b> - Converts the channel fitted coordinate Si and Ni to the Cartesian coordinates Xi and Yi using the centreline defined through the Cartesian coordinates of its vertices Xc and Yc. MATLAB Central File Exchange, Author: Bart Vermeulen,2022, Cartesian to Curvilinear coordinate forward and backward transformation. <a href="https://www.mathworks.com/matlabcentral/fileexchange/55039-cartesian-to-curvilinear-coordinate-forward-and-backward-transformation">https://www.mathworks.com/matlabcentral/fileexchange/55039-cartesian-to-curvilinear-coordinate-forward-and-backward-transformation</a></p><pre class="language-matlab">[Xi,Yi]=sn2xy(Xc,Yc,Si,Ni);
-</pre><h2 id="87">See Also</h2><p>The grid classes make use of the <a href="matlab:doc('gdinterface')">GDinterface</a> abstract class or link to classes that use interface properties.</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
+</pre><h2 id="101">See Also</h2><p>The grid classes make use of the <a href="matlab:doc('gdinterface')">GDinterface</a> abstract class or link to classes that use interface properties.</p><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
 %% Grid classes and functions
 % The _muiAppGridFcns_ folder contains classes and functions to support the 
@@ -305,6 +310,14 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 % limit.
 
 %%
+% *gd_centreline.m*
+% - create a centreline of a channel using function _a_star_ to trace the
+% shortest path between start and end points whilst finding the deepest,
+% where _cline_ is a struct of x and y values.
+%%
+%   cline = gd_centreline(grid);
+
+%%
 % *gd_colormap*
 % - check if Mapping toolbox is installed to use land/sea colormap, or call
 % _cmap_selection_ (see <matlab:doc('psfunctions') Plotting and statistical functions> 
@@ -313,17 +326,30 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 %   gd_colormap(zlimits);  %zlimits - minimum and maximum elevations [minz,maxz]
 
 %%
+% *gd_convergencelength* 
+% -  least squares fit using fminsearch to
+% find the convergence length of a channel from a distance-width xy data set,
+% where yi is the variable with respect to xi (e.g. area as a function of
+% distance) and x0 is an initial guess used in fminsearch.
+%%
+%   convergencelength = getconvergencelength(xi,yi,x0);
+
+%%
 % *gd_digitisepoints*
 % - accept figure to interactively digitise points on a grid and add
 % elevations if required.
 %% 
-%   points = gd_digitisepoints(grid,promptxt,isxyz,isdel);
+%   points = gd_digitisepoints(grid,figtxt,outype,isxyz,isde);
 %% 
 % where _grid_ is a struct of x, y, z (e.g. as used in getGrid in the
-% GDinterface); _promptxt_ is a cell array of prompts to be used for each
-% point being defined; _isxyz_ is a logical flag true to input z values -
+% GDinterface); _figtxt_ character string used for title of figure; _outype_ 
+% is an output format flag, _isxyz_ is a logical flag true to input z values -
 % optional, default is false; and _isdel_ is a logical flag true to delete
-% figure on completion - optional, default is false.
+% figure on completion - optional, default is false. The ouput format
+% depends on the _outype_ flag. If _outype_=0: array of structs with x, y and z 
+% fields defining selected points, _outype_=1: Nx2 or Nx3 array,
+% _outype_=2: struct with x, y (and z) vector fields, and _points_ = [] if 
+% user closes figure, or no points defined.
 
 %%
 % *gd_dimensions*
@@ -336,6 +362,15 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 % dimensions.
 %%
 %   gdims = gd_dimensions(grid)
+
+
+%%
+% *gd_getpoint.m*
+% - interactively select a point on a plot and return the point
+% coordinates, where _ax_ is a graphic axes handle and _promptxt_ is the prompt 
+% to be used for the point being defined.
+%%
+%   point = gd_getpoint(ax,promptxt);
 
 %%
 % *gd_grid_line*
@@ -363,11 +398,44 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 %%
 %   gd_plotsections(grid);  %where grid is a struct of x, y, z
 
+
+%%
+% *gd_pnt2vec.m*
+% - convert an array of structs with x,y (and z) fields to a [Nx2] or [Nx3] 
+% array of points, or a single stuct with vectors for the x, y (and z)
+% fields, where _points_ is an array of structs containing x, y (and z) points
+% and defining one or more lines (separated by NaN values), _isarray_ is a
+% logical value defining the format to be returned in _vecpnts_. True
+% returns a numerical array and false returns a struct of x,y (z) vectors. 
+%%
+%   vecpnts = gd_pnt2vec(points,isarray);
+
+%%
+% *gd_readshapefile.m*
+% - read the x and y coordinates from a shape file. Lines are concatenated
+% and separated by NaNs in single x and y vectors. Suitable for reading
+% boundaries or sections into a single array. The output, _shp_, is a struct 
+% with x and y fields from the XY data in the shape file.
+%%
+%   shp = gd_readshapefile(path,filename);
+
 %%
 % *gd_selectpoints*
 % - accept figure to interactively select one or more points on a grid.
 %%
-%   points = gd_selectpoints(grid,npts,promptxt,isdel) %uses graphical selection
+%   points = gd_selectpoints(grid,figtitle,promptxt,outype,npts,isdel);
+%%
+% where _grid_ is a struct of x, y, z (e.g. as used in getGrid in the
+% GDinterface); _figtitle_ character string used for title of figure; 
+% _promptxt_ is cell array of prompts to be used for each point being defined, _outype_ 
+% is an output format flag, _npts_ is the number of points to be defined, 
+% _isxyz_ is a logical flag true to input z values -
+% optional, default is false; and _isdel_ is a logical flag true to delete
+% figure on completion - optional, default is false. The ouput format
+% depends on the _outype_ flag. If _outype_=0: array of structs with x, y and z 
+% fields defining selected points, _outype_=1: Nx2 or Nx3 array,
+% _outype_=2: struct with x, y (and z) vector fields, and _points_ = [] if 
+% user closes figure, or no points defined.
 
 %%
 % *gd_setpoint*
@@ -380,6 +448,19 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 % where _ax_ is the figure axes to be uses,  _promptxt_ is the user prompt
 % for the point being defined and _isxyz_ is a logical flag, which is true
 % if a value is to be assigned to the point.
+
+%%
+% *gd_setpoints.m*
+% - interactively create a set of points on a plot and return the point
+% coordinates. Includes an option to enter an additional value at the
+% selected points (e.g. elevation).
+%%
+%   points = gd_setpoints(ax,promptxt,isxyz);
+%%
+% where _ax_ is the figure axes to be uses,  _promptxt_ is the user prompt
+% for the point being defined and _isxyz_ is a logical flag, which is true
+% if a value is to be assigned to the point.
+
 %% 
 % *gd_startendpoints*
 % - accept figure to interactively select start and end points on a grid.
@@ -400,6 +481,18 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 % [min(x),max(x),min(y),max(y)] of the selected domain and _sublimitxt_ is
 % a text description of the subdomain.
 
+%% 
+% *gd_subgrid*
+% - extract a subdomain from a grid and return the extracted
+% grid and the source grid indices of the bounding rectangle.
+%%
+%   [subgrid,ixo,iyo] = gd_subgrid(grid,subdomain);
+%%
+% where _grid_ is an x,y,z struct of the grid and _subdomain_ defines the 
+% bounding rectangle using [x0,xN,y0,yN], _subgrid_ is an x,y,z struct with the grid of
+% the subdomain, _ixo_ and _iyo_ are the indices of the bounding rectangle in
+% the form xo = [ix0,ix0,ixN,ixN,ix0] and iyo = [iyN,iy0,iy0,iyN,iyN].
+
 %%
 % *gd_xy2sn*
 % - map grid from cartesian to curvilinear coordinates with option to return 
@@ -414,6 +507,7 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 %%
 %   sngrid = gd_sn2xy(grid,cline,isplot);
 
+%% Additional utility functions
 %%
 % *gd_lineongrid_plot*
 % -  plots a defined line onto a countour or surface plot of a grid (e.g a
@@ -437,27 +531,8 @@ table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px soli
 % and _mobj_ is an instance of a model class (i.e. a class that inherits
 % _muiModelUI_). _mobj_ enables access to other classes and data sets from the
 % user function.
-%%
-% *getconvergencelength* 
-% -  least squares fit using fminsearch to
-% find the convergence length of a channel from a distance-width xy data set,
-% where yi is the variable with respect to xi (e.g. area as a function of
-% distance) and x0 is an initial guess used in fminsearch.
-%%
-%   convergencelength = getconvergencelength(xi,yi,x0);
 
-%% 
-% *getsubgrid*
-% - extract a subdomain from a grid and return the extracted
-% grid and the source grid indices of the bounding rectangle.
-%%
-%   [subgrid,ixo,iyo] = getsubgrid(grid,subdomain);
-%%
-% where _grid_ is an x,y,z struct of the grid and _subdomain_ defines the 
-% bounding rectangle using [x0,xN,y0,yN], _subgrid_ is an x,y,z struct with the grid of
-% the subdomain, _ixo_ and _iyo_ are the indices of the bounding rectangle in
-% the form xo = [ix0,ix0,ixN,ixN,ix0] and iyo = [iyN,iy0,iy0,iyN,iyN].
-
+%% Functions from Matlab(TM) Exchange Forum
 %%
 % *a_star*
 % - implements the A* search algorithm to find the shortest path given

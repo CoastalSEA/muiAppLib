@@ -13,7 +13,7 @@ function gd_plotsections(grid)
 % OUTPUT
 %   one or more figures of the user defined sections
 % NOTES
-
+%
 % SEE ALSO
 %   used in GDinterface.plotSections.
 %   
@@ -162,7 +162,7 @@ function getsectionplot(src,~)
     %WindowButtonDownFcn callback function for section figures. when user 
     % clicks on figure. Resets the UserData value in figure panel (h_plt)
     % which is used by waitfor when adding sections to detect when a 
-    % figure selection has sbeen made
+    % figure selection has been made
     %disp(src.Number);
     src.UserData.UserData = true;
 end

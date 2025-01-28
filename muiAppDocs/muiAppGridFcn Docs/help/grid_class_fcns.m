@@ -207,6 +207,14 @@
 % limit.
 
 %%
+% *gd_centreline.m*
+% - create a centreline of a channel using function _a_star_ to trace the
+% shortest path between start and end points whilst finding the deepest,
+% where _cline_ is a struct of x and y values.
+%%
+%   cline = gd_centreline(grid);
+
+%%
 % *gd_colormap*
 % - check if Mapping toolbox is installed to use land/sea colormap, or call
 % _cmap_selection_ (see <matlab:doc('psfunctions') Plotting and statistical functions> 
@@ -215,17 +223,30 @@
 %   gd_colormap(zlimits);  %zlimits - minimum and maximum elevations [minz,maxz]
 
 %%
+% *gd_convergencelength* 
+% -  least squares fit using fminsearch to
+% find the convergence length of a channel from a distance-width xy data set,
+% where yi is the variable with respect to xi (e.g. area as a function of
+% distance) and x0 is an initial guess used in fminsearch.
+%%
+%   convergencelength = getconvergencelength(xi,yi,x0);
+
+%%
 % *gd_digitisepoints*
 % - accept figure to interactively digitise points on a grid and add
 % elevations if required.
 %% 
-%   points = gd_digitisepoints(grid,promptxt,isxyz,isdel);
+%   points = gd_digitisepoints(grid,figtxt,outype,isxyz,isde);
 %% 
 % where _grid_ is a struct of x, y, z (e.g. as used in getGrid in the
-% GDinterface); _promptxt_ is a cell array of prompts to be used for each
-% point being defined; _isxyz_ is a logical flag true to input z values -
+% GDinterface); _figtxt_ character string used for title of figure; _outype_ 
+% is an output format flag, _isxyz_ is a logical flag true to input z values -
 % optional, default is false; and _isdel_ is a logical flag true to delete
-% figure on completion - optional, default is false.
+% figure on completion - optional, default is false. The ouput format
+% depends on the _outype_ flag. If _outype_=0: array of structs with x, y and z 
+% fields defining selected points, _outype_=1: Nx2 or Nx3 array,
+% _outype_=2: struct with x, y (and z) vector fields, and _points_ = [] if 
+% user closes figure, or no points defined.
 
 %%
 % *gd_dimensions*
@@ -238,6 +259,15 @@
 % dimensions.
 %%
 %   gdims = gd_dimensions(grid)
+
+
+%%
+% *gd_getpoint.m*
+% - interactively select a point on a plot and return the point
+% coordinates, where _ax_ is a graphic axes handle and _promptxt_ is the prompt 
+% to be used for the point being defined.
+%%
+%   point = gd_getpoint(ax,promptxt);
 
 %%
 % *gd_grid_line*
@@ -265,11 +295,44 @@
 %%
 %   gd_plotsections(grid);  %where grid is a struct of x, y, z
 
+
+%%
+% *gd_pnt2vec.m*
+% - convert an array of structs with x,y (and z) fields to a [Nx2] or [Nx3] 
+% array of points, or a single stuct with vectors for the x, y (and z)
+% fields, where _points_ is an array of structs containing x, y (and z) points
+% and defining one or more lines (separated by NaN values), _isarray_ is a
+% logical value defining the format to be returned in _vecpnts_. True
+% returns a numerical array and false returns a struct of x,y (z) vectors. 
+%%
+%   vecpnts = gd_pnt2vec(points,isarray);
+
+%%
+% *gd_readshapefile.m*
+% - read the x and y coordinates from a shape file. Lines are concatenated
+% and separated by NaNs in single x and y vectors. Suitable for reading
+% boundaries or sections into a single array. The output, _shp_, is a struct 
+% with x and y fields from the XY data in the shape file.
+%%
+%   shp = gd_readshapefile(path,filename);
+
 %%
 % *gd_selectpoints*
 % - accept figure to interactively select one or more points on a grid.
 %%
-%   points = gd_selectpoints(grid,npts,promptxt,isdel) %uses graphical selection
+%   points = gd_selectpoints(grid,figtitle,promptxt,outype,npts,isdel);
+%%
+% where _grid_ is a struct of x, y, z (e.g. as used in getGrid in the
+% GDinterface); _figtitle_ character string used for title of figure; 
+% _promptxt_ is cell array of prompts to be used for each point being defined, _outype_ 
+% is an output format flag, _npts_ is the number of points to be defined, 
+% _isxyz_ is a logical flag true to input z values -
+% optional, default is false; and _isdel_ is a logical flag true to delete
+% figure on completion - optional, default is false. The ouput format
+% depends on the _outype_ flag. If _outype_=0: array of structs with x, y and z 
+% fields defining selected points, _outype_=1: Nx2 or Nx3 array,
+% _outype_=2: struct with x, y (and z) vector fields, and _points_ = [] if 
+% user closes figure, or no points defined.
 
 %%
 % *gd_setpoint*
@@ -282,6 +345,19 @@
 % where _ax_ is the figure axes to be uses,  _promptxt_ is the user prompt
 % for the point being defined and _isxyz_ is a logical flag, which is true
 % if a value is to be assigned to the point.
+
+%%
+% *gd_setpoints.m*
+% - interactively create a set of points on a plot and return the point
+% coordinates. Includes an option to enter an additional value at the
+% selected points (e.g. elevation).
+%%
+%   points = gd_setpoints(ax,promptxt,isxyz);
+%%
+% where _ax_ is the figure axes to be uses,  _promptxt_ is the user prompt
+% for the point being defined and _isxyz_ is a logical flag, which is true
+% if a value is to be assigned to the point.
+
 %% 
 % *gd_startendpoints*
 % - accept figure to interactively select start and end points on a grid.
@@ -302,6 +378,18 @@
 % [min(x),max(x),min(y),max(y)] of the selected domain and _sublimitxt_ is
 % a text description of the subdomain.
 
+%% 
+% *gd_subgrid*
+% - extract a subdomain from a grid and return the extracted
+% grid and the source grid indices of the bounding rectangle.
+%%
+%   [subgrid,ixo,iyo] = gd_subgrid(grid,subdomain);
+%%
+% where _grid_ is an x,y,z struct of the grid and _subdomain_ defines the 
+% bounding rectangle using [x0,xN,y0,yN], _subgrid_ is an x,y,z struct with the grid of
+% the subdomain, _ixo_ and _iyo_ are the indices of the bounding rectangle in
+% the form xo = [ix0,ix0,ixN,ixN,ix0] and iyo = [iyN,iy0,iy0,iyN,iyN].
+
 %%
 % *gd_xy2sn*
 % - map grid from cartesian to curvilinear coordinates with option to return 
@@ -316,6 +404,7 @@
 %%
 %   sngrid = gd_sn2xy(grid,cline,isplot);
 
+%% Additional utility functions
 %%
 % *gd_lineongrid_plot*
 % -  plots a defined line onto a countour or surface plot of a grid (e.g a
@@ -339,27 +428,8 @@
 % and _mobj_ is an instance of a model class (i.e. a class that inherits
 % _muiModelUI_). _mobj_ enables access to other classes and data sets from the
 % user function.
-%%
-% *getconvergencelength* 
-% -  least squares fit using fminsearch to
-% find the convergence length of a channel from a distance-width xy data set,
-% where yi is the variable with respect to xi (e.g. area as a function of
-% distance) and x0 is an initial guess used in fminsearch.
-%%
-%   convergencelength = getconvergencelength(xi,yi,x0);
 
-%% 
-% *getsubgrid*
-% - extract a subdomain from a grid and return the extracted
-% grid and the source grid indices of the bounding rectangle.
-%%
-%   [subgrid,ixo,iyo] = getsubgrid(grid,subdomain);
-%%
-% where _grid_ is an x,y,z struct of the grid and _subdomain_ defines the 
-% bounding rectangle using [x0,xN,y0,yN], _subgrid_ is an x,y,z struct with the grid of
-% the subdomain, _ixo_ and _iyo_ are the indices of the bounding rectangle in
-% the form xo = [ix0,ix0,ixN,ixN,ix0] and iyo = [iyN,iy0,iy0,iyN,iyN].
-
+%% Functions from Matlab(TM) Exchange Forum
 %%
 % *a_star*
 % - implements the A* search algorithm to find the shortest path given

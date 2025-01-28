@@ -1,0 +1,245 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>gd_centreline</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2025-01-28"><meta name="DC.source" content="gd_centreline.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">function</span> cline = gd_centreline(grid)
+<span class="comment">%</span>
+<span class="comment">%-------function help------------------------------------------------------</span>
+<span class="comment">% NAME</span>
+<span class="comment">%   gd_centreline.m</span>
+<span class="comment">% PURPOSE</span>
+<span class="comment">%   create a centreline of a channel using function a_star to trace the</span>
+<span class="comment">%   shortest path between start and end points whilst finding the deepest</span>
+<span class="comment">%   points (ie a thalweg).</span>
+<span class="comment">% USAGE</span>
+<span class="comment">%   cline = gd_centreline(grid);</span>
+<span class="comment">% INPUTS</span>
+<span class="comment">%   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)</span>
+<span class="comment">%   figtxt - character string used for title of figure</span>
+<span class="comment">%   outype - format of output - see Outputs for details</span>
+<span class="comment">%   isxyz - logical flag true to input z values - optional, default is false</span>
+<span class="comment">%   isdel - logical flag true to delete figure on completion - optional,</span>
+<span class="comment">%           default is false</span>
+<span class="comment">% OUTPUTS</span>
+<span class="comment">%   cline - struct of x,y vectors defining the centre-line</span>
+<span class="comment">% SEE ALSO</span>
+<span class="comment">%   called in ??? uses gd_selectpoints and a_star</span>
+<span class="comment">%--------------------------------------------------------------------------</span>
+<span class="comment">%</span>
+    <span class="comment">%     gridclasses = {'EDBimport'}; %add other classes if needed</span>
+    <span class="comment">%     promptxt1 = {'Select Case to plot (Cancel to quit):','Select timestep:'};</span>
+    <span class="comment">%     [obj,~,irec] = selectCaseDatasetRow(mobj.Cases,[],...</span>
+    <span class="comment">%                                                  gridclasses,promptxt1,1);</span>
+    <span class="comment">%     if isempty(obj) || isempty(irec), return; end</span>
+    <span class="comment">%</span>
+    <span class="comment">%     desc = sprintf('%s at %s',obj.Data.Grid.Description,char(obj.Data.Grid.RowNames(irec)));</span>
+    <span class="comment">%     grid = getGrid(obj,irec);   %grid for selected year</span>
+    [X,Y] = meshgrid(grid.x,grid.y);
+    N = numel(X);
+    xy = [reshape(X,[N,1]),reshape(Y,[N,1])];
+    Z = grid.z';
+
+    <span class="comment">%get maximum water level to define</span>
+    promptxt2 = {<span class="string">'Maximum accessible water level?'</span>,<span class="string">'Depth exponent'</span>};
+    defaults = {num2str(max(Z,[],<span class="string">'all'</span>)),<span class="string">'5'</span>};
+    answer = inputdlg(promptxt2,<span class="string">'Water level'</span>,1,defaults);
+    <span class="keyword">if</span> isempty(answer), <span class="keyword">return</span>; <span class="keyword">end</span> <span class="comment">%user cancelled</span>
+    maxwl = str2double(answer{1});
+    dexp = str2double(answer{2});
+
+    <span class="comment">%accessible map (water) and use -Z as the cost map</span>
+    water = true(size(Z));
+    water(isnan(Z) | Z&gt;maxwl) = false;
+    promptxt3 = {<span class="string">'Select start of path'</span>,<span class="string">'Select end of path'</span>};
+    gridmasked = grid;        gridmasked.z(~water') = NaN;
+    points = gd_selectpoints(gridmasked,2,promptxt3,true);
+    <span class="keyword">if</span> any(isnan([points(:).x])), <span class="keyword">return</span>; <span class="keyword">end</span>
+
+    <span class="comment">%index of nearest grid point to selected start end end points</span>
+    start = dsearchn(xy,[points(1).x,points(1).y]);
+    goal = dsearchn(xy,[points(2).x,points(2).y]);
+
+    hwb = progressbar(mobj,[],<span class="string">'Computing centre-line'</span>);
+    <span class="comment">%find the shortest path taking account of the cost (depths)</span>
+    <span class="comment">%Z(Z&gt;maxwl) = 0;</span>
+    costfnc = @(z) -(min(z,[],<span class="string">'all'</span>)-z).^dexp; <span class="comment">%weighted inverse depth to favour staying deep</span>
+    thalweg = a_star(water, costfnc(Z), start, goal);
+    [idy,idx] = ind2sub(size(Z),thalweg);
+    progressbar(mobj,hwb);
+
+    cline.x = grid.x(idx);
+    cline.y = grid.y(idy);
+    <span class="comment">%plot base map of initial grid selection and defined mask</span>
+    hf = figure(<span class="string">'Name'</span>,<span class="string">'Thalwegs'</span>,<span class="string">'Units'</span>,<span class="string">'normalized'</span>,<span class="string">'Tag'</span>,<span class="string">'PlotFig'</span>);
+    ax = gd_plotgrid(hf,grid);
+    colormap(ax,<span class="string">'gray'</span>);
+    lines = {<span class="string">'-'</span>,<span class="string">'--'</span>,<span class="string">':'</span>,<span class="string">'-.'</span>};
+
+    hs = findobj(ax.Children,<span class="string">'Type'</span>,<span class="string">'surface'</span>);
+    hs.Annotation.LegendInformation.IconDisplayStyle = <span class="string">'off'</span>;
+    hold <span class="string">on</span>
+    hp = plot(ax,[points(:).x],[points(:).y],<span class="string">'ok'</span>,<span class="string">'MarkerSize'</span>,8,<span class="string">'MarkerFaceColor'</span>,<span class="string">'w'</span>,<span class="string">'Tag'</span>,<span class="string">'mypoints'</span>);
+    hp.Annotation.LegendInformation.IconDisplayStyle = <span class="string">'off'</span>;
+    plot(ax,cline.x,cline.y,<span class="string">'r'</span>,<span class="string">'LineStyle'</span>,lines{1},<span class="string">'LineWidth'</span>,1,<span class="keyword">...</span>
+                                                      <span class="string">'DisplayName'</span>,desc);
+    hold <span class="string">off</span>
+    title(<span class="string">'Thalwegs between defined start and end points'</span>)
+    legend
+<span class="keyword">end</span>
+</pre><pre class="codeoutput error">Not enough input arguments.
+
+Error in gd_centreline (line 33)
+    [X,Y] = meshgrid(grid.x,grid.y);
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function cline = gd_centreline(grid)
+%
+%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH-function helpREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+% NAME
+%   gd_centreline.m
+% PURPOSE
+%   create a centreline of a channel using function a_star to trace the
+%   shortest path between start and end points whilst finding the deepest
+%   points (ie a thalweg).
+% USAGE
+%   cline = gd_centreline(grid);
+% INPUTS
+%   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
+%   figtxt - character string used for title of figure
+%   outype - format of output - see Outputs for details
+%   isxyz - logical flag true to input z values - optional, default is false
+%   isdel - logical flag true to delete figure on completion - optional, 
+%           default is false
+% OUTPUTS
+%   cline - struct of x,y vectors defining the centre-line
+% SEE ALSO
+%   called in ??? uses gd_selectpoints and a_star
+%REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH
+%
+    %     gridclasses = {'EDBimport'}; %add other classes if needed
+    %     promptxt1 = {'Select Case to plot (Cancel to quit):','Select timestep:'};
+    %     [obj,~,irec] = selectCaseDatasetRow(mobj.Cases,[],...
+    %                                                  gridclasses,promptxt1,1);
+    %     if isempty(obj) || isempty(irec), return; end
+    % 
+    %     desc = sprintf('%s at %s',obj.Data.Grid.Description,char(obj.Data.Grid.RowNames(irec)));
+    %     grid = getGrid(obj,irec);   %grid for selected year
+    [X,Y] = meshgrid(grid.x,grid.y);
+    N = numel(X);
+    xy = [reshape(X,[N,1]),reshape(Y,[N,1])];
+    Z = grid.z';    
+
+    %get maximum water level to define 
+    promptxt2 = {'Maximum accessible water level?','Depth exponent'};
+    defaults = {num2str(max(Z,[],'all')),'5'};
+    answer = inputdlg(promptxt2,'Water level',1,defaults);
+    if isempty(answer), return; end %user cancelled
+    maxwl = str2double(answer{1});
+    dexp = str2double(answer{2});
+
+    %accessible map (water) and use -Z as the cost map
+    water = true(size(Z));
+    water(isnan(Z) | Z>maxwl) = false;
+    promptxt3 = {'Select start of path','Select end of path'};
+    gridmasked = grid;        gridmasked.z(~water') = NaN;
+    points = gd_selectpoints(gridmasked,2,promptxt3,true);
+    if any(isnan([points(:).x])), return; end
+    
+    %index of nearest grid point to selected start end end points    
+    start = dsearchn(xy,[points(1).x,points(1).y]); 
+    goal = dsearchn(xy,[points(2).x,points(2).y]);
+    
+    hwb = progressbar(mobj,[],'Computing centre-line');
+    %find the shortest path taking account of the cost (depths)
+    %Z(Z>maxwl) = 0;
+    costfnc = @(z) -(min(z,[],'all')-z).^dexp; %weighted inverse depth to favour staying deep
+    thalweg = a_star(water, costfnc(Z), start, goal);
+    [idy,idx] = ind2sub(size(Z),thalweg);
+    progressbar(mobj,hwb);
+
+    cline.x = grid.x(idx);
+    cline.y = grid.y(idy);
+    %plot base map of initial grid selection and defined mask
+    hf = figure('Name','Thalwegs','Units','normalized','Tag','PlotFig');                            
+    ax = gd_plotgrid(hf,grid);
+    colormap(ax,'gray');
+    lines = {'-','REPLACE_WITH_DASH_DASH',':','-.'};
+    
+    hs = findobj(ax.Children,'Type','surface');
+    hs.Annotation.LegendInformation.IconDisplayStyle = 'off';
+    hold on
+    hp = plot(ax,[points(:).x],[points(:).y],'ok','MarkerSize',8,'MarkerFaceColor','w','Tag','mypoints');
+    hp.Annotation.LegendInformation.IconDisplayStyle = 'off';  
+    plot(ax,cline.x,cline.y,'r','LineStyle',lines{1},'LineWidth',1,...
+                                                      'DisplayName',desc);
+    hold off
+    title('Thalwegs between defined start and end points')
+    legend
+end    
+##### SOURCE END #####
+--></body></html>
