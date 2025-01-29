@@ -4,9 +4,9 @@ function points = gd_boundary(grid,figtitle,promptxt,outype,npts,isdel)
 % NAME
 %   gd_boundary.m
 % PURPOSE
-%   Accept figure to interactively select start and end points on a grid
+%   
 % USAGE
-%   points = gd_boundary(grid,figtitle,promptxt,outype,npts,isdel);
+%   
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   figtitle- character string used for title of figure
