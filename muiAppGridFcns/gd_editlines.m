@@ -1,54 +1,39 @@
-function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
-%
+function points = gd_editlines(grid,paneltxt,promptxt,nlines,isdel)
+%npts,
 %-------function help------------------------------------------------------
-% NAMEpnts = 
-%   gd_digitisepoints.m
+% NAME
+%   gd_editlines.m
 % PURPOSE
-%   Accept figure to interactively digitise x,y points on a grid and add
-%   z elevations, if required
+%   Accept figure to interactively edit a line
 % USAGE
-%   points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
+%   points = gd_editlines(grid,paneltxt,promptxt,nlines,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
-%   paneltxt - character string used for title of figure
-%   outype - format of output - see Outputs for details
-%   isxyz - logical flag true to input z values - optional, default is false
+%   paneltxt- character string used for title of figure
+%   promptxt - cell array of prompts to be used for each line
+%   nlines - struct or table of x,y vectors to be edited
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
-%   points - outype=0: array of structs with x, y and z fields defining selected points,
-%            outype=1: Nx2 or Nx3 array.
-%            outype=2: struct with x, y (and z) vector fields
-%            outype=3: table with x, y (and z) vector fields
-%            points = [] if user closes figure, or no points defined
-%            outype=1: 
+%   points - array of structs with x, y and z fields defining selected points,
 % NOTES
-%   Each new line is separated by NaN values in the xyz vectors. When using
-%   the View button the start of each line is indicated by a red circle
-%   marker.
+% 
 % SEE ALSO
-%   called in GDinterface.getGridLine, similar to gd_selectpoints which
-%   only a specified number of x,y points
+%   called in
 %
 % Author: Ian Townend
-% CoastalSEA (c) Jun 2022
+% CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 %
-    if nargin<5
-        isdel = false; 
-    elseif nargin<4
-        isxyz = false; 
-        isdel = false;
-    end
-
-    figtitle = sprintf('Digitise points');
+    if nargin<5, isdel = false; end
+    isxyz = false;                      %assume just lines
+    figtitle = sprintf('Edit lines');
     tag = 'PlotFig'; %used for collective deletes of a group
-    butnames = {'New line','Add','Edit','Insert','Delete','View','Save/Exit'};
-    tooltips = {'Start a new line of points',...
-                'Add points to the last line created',...
-                'Edit a point in any line',...
+    butnames = {'Add','Edit','Insert','Delete','View','Save'};
+    tooltips = {'Add point to set',...
+                'Edit a point from the set',...
                 'Insert one or more point between two existing points of a line',...
-                'Delete a point in any line',...
+                'Delete a point from the set',...
                 'Toggle display of connecting lines on and off',...
                 'Save digitised points and exit. Close figure window to Quit without saving'};
     position = [0.3,0.4,0.35,0.5];
@@ -57,38 +42,26 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
     axis equal  %assume geographical projection or grid of similar dimensions
     axis tight
     %get user to define the required points
-    points = [];
+    [points,outype] = gd_vec2pnt(nlines);
+    ax = plotPoints(ax,points,isxyz);                         
     ok = 0;
     while ok<1
         waitfor(h_but,'Tag')
-        if ~ishandle(h_but)   %this handles the user deleting figure window 
-            points = []; 
-            return;    
-
-        elseif strcmp(h_but.Tag,'New line') 
-            if ~isempty(points)
-                newpnts.x = NaN; newpnts.y = NaN;        %line termination
-                if isxyz
-                    newpnts.z = NaN;
-                end
-                points = [points,newpnts];                     %#ok<AGROW> 
-            end            
+        if ~ishandle(h_but) %this handles the user deleting figure window 
+            points = [];
+            return;
+        elseif strcmp(h_but.Tag,'Add') 
             promptxt = 'Left click to create points, right click to finish';
-            newpnts = gd_setpoints(ax,promptxt,isxyz);   %get points to add
-            points = [points,newpnts];                         %#ok<AGROW> 
-            
-        elseif strcmp(h_but.Tag,'Add')             
-            promptxt = 'Left click to create points, right click to finish';
-            newpnts = gd_setpoints(ax,promptxt,isxyz);   %get points to add
-            points = [points,newpnts];                         %#ok<AGROW> 
+            newpnt = gd_setpoints(ax,promptxt,isxyz);         
+            points = [points,newpnt];                         %#ok<AGROW> 
 
-        elseif strcmp(h_but.Tag,'Edit')
+        elseif strcmp(h_but.Tag,'Edit') 
             promptxt = 'Select point to edit';
             delpnt = gd_getpoint(ax,promptxt); 
             if ~isempty(delpnt)
-                promptxt = 'Left click to create points, right click to quit';
-                newpnt = gd_setpoint(ax,promptxt,isxyz);
-                points = deletepoint(ax,points,delpnt,newpnt,isxyz);
+                promptxt = 'Left click to create points, right click on any point to quit';
+                newpnt = gd_setpoint(ax,promptxt,isxyz);     
+                points = deletepoint(ax,points,delpnt,newpnt);
             end
 
         elseif strcmp(h_but.Tag,'Insert')
@@ -101,42 +74,27 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
                 end
             end
 
-        elseif strcmp(h_but.Tag,'Delete')
-            promptxt = 'Select point to Delete';
+        elseif strcmp(h_but.Tag,'Delete') 
+            promptxt = 'Select point to Delete, right click on any point to quit';
             delpnt = gd_getpoint(ax,promptxt);   %get point to delete
             if ~isempty(delpnt)
-                points = deletepoint(ax,points,delpnt,[],isxyz);  %delete the point                
+                points = deletepoint(ax,points,delpnt,[]);  %delete the point                
             end
 
-        elseif strcmp(h_but.Tag,'View')
+        elseif strcmp(h_but.Tag,'View') 
             ax = toggle_view(ax,points);
-          
-        elseif strcmp(h_but.Tag,'Quit') 
-            %no longer used as a button - use close figure
-            points = [];
-            ok = 1;
-            isdel = true;
 
         else   %user accepted
-            h_pnts = findobj(ax,'Tag','mypoints');  %remove construction points
-            delete(h_pnts)
-            if exist('points','var')                %plot points to be returned
-                hold on
-                plot(ax,[points(:).x],[points(:).y],'.-k','MarkerEdgeColor','r')                                                   
-                hold off
-            else                                    %no points to be returned
-                points = [];
-                isdel = true;
-            end
-            ok = 1;                                 %accepted so end loop
-        end     
-         newpnts = resetpoints(ax,points,isxyz);
-         h_but = resetbutton(ax,h_but);
+            ok = 1;                                  %accepted so end loop
+
+        end   
+        h_but = resetbutton(ax,h_but);
+        resetpoints(ax);
     end
 
     %convert format of output if required
     points = gd_pnt2vec(points,outype);
-
+    
     %delete figure if isdel has been set by call.
     if isdel
         delete(h_plt.Parent)
@@ -153,30 +111,44 @@ function h_but = resetbutton(ax,h_but)
 end
 
 %%
-function newpnts = resetpoints(ax,points,isxyz)
+function resetpoints(ax)
     %gd_getpoint sets point UserData and color when clicked on. Reset in 
     %case user clicked on points without making an action selection
     h_pnts = findobj(ax,'Tag','mypoints');
-    if isempty(h_pnts), newpnts = [];  return; end
+    if isempty(h_pnts), return; end
     idx = [h_pnts.UserData]>0;
     if any(idx)
         [h_pnts(idx).UserData] = repmat(int32(0),sum(idx),1);
         cellobj = {[h_pnts(idx)]};
         [cellobj{:}.Color] = repmat(zeros(1,3),sum(idx),1);
-    end
-    %
-    if isxyz
-        h_txt = findobj(ax,'Tag','ztext');
-        delete(h_txt)
-        for i=1:length(points)
-            txt= sprintf('  %.1f',points(i).z);
-            text(ax,[points(i).x],[points(i).y],txt,...
-                'Color','white','FontSize',6,'Tag','ztext');
-        end
-    end
-    newpnts = [];    
+    end 
 end
 
+%%
+function ax = plotPoints(ax,points,isxyz)
+    %plot the imported lines
+    hold on
+    for i=1:length(points)
+        H = plot(ax,points(i).x,points(i).y,'ok','MarkerSize',4,...
+                                   'MarkerFaceColor','w','Tag','mypoints');
+        H.ButtonDownFcn = {@LineSelected, H};
+        H.UserData = int32(0);
+        if isxyz
+            text(ax,points(i).x,points(i).y,sprintf('  %.1f',point.z),...
+                               'Color','white','FontSize',6,'Tag','ztext');
+        end
+    end
+    hold off
+    %nested function
+        function LineSelected(src, evt, H)
+            if evt.Button==1
+                H(H==src).Color = 'r';
+            elseif evt.Button==3
+                H(H==src).Color = 'k';        
+            end
+            H(H==src).UserData = evt.Button;
+        end
+end
 %%
 function pnt = startendpoints(ax,points)
     %find two adjacent points and return in pnt struct: start and adjacent
@@ -233,9 +205,8 @@ function points = insertpoints(ax,points,pnt,newpnts)
     h_pnts(idpos(1)).Color = zeros(1,3);
     h_pnts(idpos(2)).Color = zeros(1,3);
 end
-
 %%
-function points = deletepoint(ax,points,delpoint,newpnt,isxyz)
+function points = deletepoint(ax,points,delpoint,newpnt)
     %delete point defined by delpnt if newpnt is empty, otherwise edit
     %point to new value as defined in newpnt
     h_pnts = findobj(ax,'Tag','mypoints');
@@ -247,21 +218,12 @@ function points = deletepoint(ax,points,delpoint,newpnt,isxyz)
         if strcmp(answer,'Yes')
             delete([h_pnts(idx)]);  %remove any existing points
             points(idp) = [];
-            if isxyz
-                h_txt = findobj(ax,'Tag','ztext');
-                delete(h_txt(idx))
-            end
         end
     else                            %call to edit point (newpnt is new point)
         h_pnts(idx).XData = newpnt.x;
         h_pnts(idx).YData = newpnt.y;        
         points(idp).x = newpnt.x;
         points(idp).y = newpnt.y;
-        if isxyz
-            points(idp).z = newpnt.z;
-            h_txt = findobj(ax,'Tag','ztext');
-            delete(h_txt(idp))
-        end
     end
 end
 

@@ -32,7 +32,7 @@ function point = gd_setpoint(ax,promptxt,isxyz)
         try
             [xval,yval,but] = ginput(1);  %use mouse to select points
         catch        %user closes figure while selection is in progress
-            point.x = NaN;   point.y = NaN;
+            point = [];
             return;
         end
         if but==3, point = []; return; end %user right clicks mouse

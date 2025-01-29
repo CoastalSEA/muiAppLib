@@ -1,4 +1,4 @@
-function points = gd_selectpoints(grid,figtitle,promptxt,outype,npts,isdel)
+function points = gd_selectpoints(grid,paneltxt,promptxt,outype,npts,isdel)
 %npts,
 %-------function help------------------------------------------------------
 % NAME
@@ -7,10 +7,10 @@ function points = gd_selectpoints(grid,figtitle,promptxt,outype,npts,isdel)
 %   Accept figure to interactively create a specified number of x,y points
 %   on a grid
 % USAGE
-%   points = gd_selectpoints(grid,figtitle,promptxt,outype,npts,isdel);
+%   points = gd_selectpoints(grid,paneltxt,promptxt,outype,npts,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
-%   figtitle- character string used for title of figure
+%   paneltxt- character string used for title of figure
 %   promptxt - cell array of prompts to be used for each point being defined
 %              a single char string cell is apended with a count for each point,
 %              whereas a cell array should have a length of npts.
@@ -36,19 +36,16 @@ function points = gd_selectpoints(grid,figtitle,promptxt,outype,npts,isdel)
 %--------------------------------------------------------------------------
 %
     if nargin<6, isdel = false; end
-    
-    if isempty(figtitle)
-        figtitle = sprintf('Select points');
-    end
 
+    figtitle = sprintf('Select points');
     tag = 'PlotFig'; %used for collective deletes of a group
     butnames = {'Add','Edit','Delete','Save'};
     tooltips = {'Add point to set',...
                 'Edit a point from the set',...
                 'Delete a point from the set',...
                 'Save digitised points and exit. Close figure window to Quit without saving'};
-    position = [0.2,0.4,0.4,0.4];
-    [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position,tooltips);
+    position = [0.3,0.4,0.35,0.5];
+    [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
     ax = gd_plotgrid(h_plt,grid);
     axis equal  %assume geographical projection or grid of similar dimensions
     axis tight
@@ -95,11 +92,7 @@ function points = gd_selectpoints(grid,figtitle,promptxt,outype,npts,isdel)
     end
 
     %convert format of output if required
-    if outype==1                %return as an array
-        points = gd_pnt2vec(points,outype);
-    elseif outype==2            %return as a struc of vectors
-        points = gd_pnt2vec(points,outype);
-    end
+    points = gd_pnt2vec(points,outype);
     
     %delete figure if isdel has been set by call.
     if isdel
@@ -111,7 +104,7 @@ end
 function points = setPoints(ax,npts,promptxt)
     %use mouse to select points
     h_pnts = findobj(ax,'Tag','mypoints');
-    delete(h_pnts)  %remove any existing points
+    delete(h_pnts)  %remove any existing points   
     hold on
     for i=1:npts
         if length(promptxt)~=npts  && ~isempty(promptxt)
@@ -121,13 +114,16 @@ function points = setPoints(ax,npts,promptxt)
         end
         point = gd_setpoint(ax,prompt,false);
         if isempty(point)
-            ax.Title.String = 'Input cancelled';
+            if isvalid(ax), ax.Title.String = 'Input cancelled'; end
+            if ~exist('points','var'), points = []; end
+            hold off
             return;   %user cancelled
         else
             points(i) = point; %#ok<AGROW> 
         end
     end
     ax.Title.String = 'Input complete';
+    hold off
 end
 
 %%

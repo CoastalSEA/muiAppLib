@@ -1,4 +1,4 @@
-function vecpnts = gd_pnt2vec(points,isarray)
+function vecpnts = gd_pnt2vec(points,outype)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -10,10 +10,17 @@ function vecpnts = gd_pnt2vec(points,isarray)
 %   vecpnts = gd_pnt2vec(points,isarray);
 % INPUTS
 %   points - struct array of x, y and optionally z 
-%   isarray - true to return array, false to return a struct (optional -
-%             default is false
+%   outype - format of output - see Outputs for details
 % OUTPUTS
-%   vecpnts - struct with x, y (and z) vector fields or Nx2 or Nx3 array.
+%   vecpnts - outype=0: array of structs with x, y and z fields defining selected points,
+%             outype=1: Nx2 or Nx3 array.
+%             outype=2: struct with x, y (and z) vector fields
+%             outype=3: table with x, y (and z) vector fields
+% NOTES
+%   digitising functions work with an array of structs each one defining a
+%   point. The output is converted to one of the formats defined for
+%   vecpnts. This function converts the points format to any of the vecpnts 
+%   formats.
 % SEE ALSO
 %   used to reformat output from gd_digitisepoints and gd_selectpoints
 %
@@ -21,26 +28,34 @@ function vecpnts = gd_pnt2vec(points,isarray)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 % 
-    if nargin<2
-        isarray = false;  %return a struct of x,y vectors
+    if nargin<2 || outype==0
+        vecpnts = points;             %return unchanged
+        return;
     end
 
     x = [points(:).x]; if isrow(x), x = x'; end
     y = [points(:).y]; if isrow(y), y = y'; end
 
-    if isarray
+    if outype==1
         vecpnts = [x,y];
-    else
+    elseif outype==2
         vecpnts.x = x;
         vecpnts.y = y;
+    elseif outype==3
+        vecpnts = table(x,y,'VariableNames',{'x','y'});
+    else
+        warndlg('Unrecognised format type (outype should be 0-3)')
+        return
     end
 
     if isfield(points,'z')
         z = [points(:).z];  if isrow(z), z = z'; end
-        if isarray
+        if outype==1
             vecpnts = [vecpnts,z];
-        else
+        elseif outype==2
             vecpnts.z = z;
+        elseif outype==3
+            vecpnts = addvars(vecpnts,z,'NewVariableNames','z');
         end
     end
 end

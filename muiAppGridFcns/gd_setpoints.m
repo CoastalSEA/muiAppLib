@@ -24,7 +24,6 @@ function points = gd_setpoints(ax,promptxt,isxyz)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 %
-    %points = struct('x',[],'y',[]);
     count = 1;
     ok = 0;
     while ok<1          

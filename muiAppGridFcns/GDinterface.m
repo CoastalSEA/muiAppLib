@@ -758,10 +758,10 @@ function [grid,orient] = orientGrid(obj,grid0)
             
             %desc = sprintf('%s at %s',obj.Data.Grid.Description,char(obj.Data.Grid.RowNames(irec)));
             grid = getGrid(obj,irec);   %grid for selected year
-            points = gd_digitisepoints(grid,{'Digitise a Line'},isxyz,false);
+            points = gd_digitisepoints(grid,{'Digitise Lines'},isxyz,false);
 %             obj = GD_DataUI.getGridLine(grid,{'Select point'},isxyz,false);
 %             points = obj.Data.points;
-            if any(isinf([points(:).x])), points = []; return; end
+            if isempty(points), return; end
 
             % Save as a text file
             if issave && ~isempty(points)
