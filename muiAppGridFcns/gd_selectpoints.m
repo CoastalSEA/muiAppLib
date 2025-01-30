@@ -1,4 +1,4 @@
-function points = gd_selectpoints(grid,paneltxt,promptxt,outype,npts,isdel)
+function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,outype,isdel)
 %npts,
 %-------function help------------------------------------------------------
 % NAME
@@ -7,15 +7,16 @@ function points = gd_selectpoints(grid,paneltxt,promptxt,outype,npts,isdel)
 %   Accept figure to interactively create a specified number of x,y points
 %   on a grid
 % USAGE
-%   points = gd_selectpoints(grid,paneltxt,promptxt,outype,npts,isdel);
+%   points = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt- character string used for title of figure
 %   promptxt - cell array of prompts to be used for each point being defined
 %              a single char string cell is apended with a count for each point,
 %              whereas a cell array should have a length of npts.
-%   outype - format of output - see Outputs for details
+%   inlines
 %   npts - number of points to be selected
+%   outype - format of output - see Outputs for details
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
@@ -24,6 +25,7 @@ function points = gd_selectpoints(grid,paneltxt,promptxt,outype,npts,isdel)
 %            outype=2: struct with x, y (and z) vector fields
 %            points = [] if user closes figure, or no points defined
 %            outype=1:
+%   h_fig - handle to accept figure;
 % NOTES
 %   Captures x,y for the number of points specified in npts. However, the
 %   user can add, edit and/or delete the initial input of npts. Edit and
@@ -49,6 +51,9 @@ function points = gd_selectpoints(grid,paneltxt,promptxt,outype,npts,isdel)
     ax = gd_plotgrid(h_plt,grid);
     axis equal  %assume geographical projection or grid of similar dimensions
     axis tight
+    if ~isempty(inlines)
+        ax = plotLines(ax,inlines);
+    end
     %get user to define the required points
     points = setPoints(ax,npts,promptxt);    
     ok = 0;
@@ -169,4 +174,13 @@ function points = deletepoint(ax,points,delpoint,newpnt)
         points(idp).x = newpnt.x;
         points(idp).y = newpnt.y;
     end
+end
+
+%%
+function ax = plotLines(ax,inlines)
+    %plot any points or lines thar are imported
+    
+    hold on
+        plot(ax,inlines(:,1),inlines(:,2),'-.b','Tag','clines')
+    hold off
 end

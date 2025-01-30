@@ -49,10 +49,10 @@ function [points,outype] = gd_vec2pnt(vecpnts)
         end
         outype = 3;
     elseif ismatrix(vecpnts)  %NB this assumes two column vectors for x and y
-        [points.x] = vecpnts(:,1);
-        [points.y] = vecpnts(:,2);
+        points = assignPoints(points,vecpnts(:,1),'x');
+        points = assignPoints(points,vecpnts(:,2),'y');
         if size(vecpnts,2)==3
-            [points(:).z] = vecpnts(:,3);
+            points = assignPoints(points,vecpnts(:,3),'z');
         end
         outype = 1;
     else

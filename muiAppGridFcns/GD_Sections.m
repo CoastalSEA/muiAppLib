@@ -20,7 +20,8 @@ classdef GD_Sections < handle
     properties
         %
         Boundary
-        ChannelNetwork
+        ChannelLine
+        ChannelTopo
         SectionsLines
     end
     
@@ -34,14 +35,14 @@ classdef GD_Sections < handle
     end
 %%  
     methods (Static)  
-        function sectionsMenu(mobj,src,gridclasses)
+        function sectionMenuOptions(mobj,src,gridclasses)
             %default set of menu options for use in Model UIs
             % mobj - mui model instance
             % src - handle to calling menu option
             % gridclasses - cell array list of classes to use in case selection
             %
-            % Sub-menu for using Grid Tools:
-            % menu.Setup(X).List = {'Bounary',...
+            % Sub-menu for using Section Tools:
+            % menu.Setup(X).List = {'Boundary',...
             %                       'Channel network',...
             %                       'Section lines',...
             %                       'Sections'};                                                                        
@@ -61,13 +62,13 @@ classdef GD_Sections < handle
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj), return; end
                     obj = GD_Sections;
-                    setChannelNetwork(obj,cobj,muicat); 
+                    setChannelNetwork(obj,cobj,mobj); 
                 case 'Section lines'
                     promptxt = 'Select a Case to use to define section lines:'; 
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj), return; end
                     obj = GD_Sections;
-                    setSectionLines(obj,cobj,muicat); 
+                    setSectionLines(obj,cobj,muicat);
                 case 'Sections'
                     promptxt = 'Select a Case to use to extract sections:'; 
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
@@ -82,14 +83,59 @@ classdef GD_Sections < handle
         function setBoundary(obj,cobj,muicat)
             %load a grid and interactively define a bouindary line with
             %options to autogenerate and edit or digistise the line.
+            gridclasses = {'EDBimport'}; %add other classes if needed
+            grid = getGrid(cobj,1);   %grid for selected year
+
             
+
         end
 %%
-        function setChannelNetwork(obj,cobj,muicat)
+        function setChannelNetwork(obj,cobj,mobj)
             %load a grid and extract the centre lines of the channels in
             %the network, or digitise them manually, and combine into a 
-            %vector of points and a directed graph.
+            %vector of points and a directed graph to define the topology
+            if ~isfield(cobj.Data,'Grid'), return; end
+            grid = getGrid(cobj,1);   %grid for selected year
+
+            %get maximum water level to define
+            promptxt = {'Maximum accessible water level?','Depth exponent','Sampling interval (m)'};
+            defaults = {num2str(max(grid.z,[],'all')),'5','100'};
+            inp = inputdlg(promptxt,'Water level',1,defaults);
+            if isempty(inp), return; end %user cancelled
+            props.maxwl = str2double(inp{1});
+            props.dexp = str2double(inp{2});
+            cint = str2double(inp{3});
+            clines = [];
+            ok = 0;
+            while ok<1
+                [cline,hf] = gd_centreline(grid,mobj,props,clines); 
+                if isempty(cline), ok = 1; continue; end
+                answer = questdlg('Accept the centreline?','Centre-line','Yes','No','Yes');
+                if strcmp(answer,'Yes')
+                     %convert format of output if required
+                    cline = gd_pnt2vec(cline,1);
+                    clength = sum(vecnorm(diff(cline),2,2));
+
+                    cpoints = round(clength/cint);
+                    newcline = curvspace(cline,cpoints);
+                    clines = [clines;newcline;[NaN,NaN]]; %#ok<AGROW> 
+                end
+                delete(hf)
+            end
+
+           answer = questdlg('Check/Edit the centre-lines?','Centre-line','Yes','No','Yes');
+           if strcmp(answer,'Yes')
+               paneltxt = 'Edit the centre-lines';
+               promptxt = {'Select line to edit'};
+               clines = gd_editlines(grid,paneltxt,promptxt,clines,true);
+           end
+
+            obj.ChannelLine = clines;
             
+
+            cobj.Data.Grid.UserData.cline.x = clines(:,1);
+            cobj.Data.Grid.UserData.cline.y = clines(:,2);
+
         end
 %%
         function setSectionLines(obj,cobj,muicat)
@@ -104,4 +150,11 @@ classdef GD_Sections < handle
             %from the mouth.
         end
     end
+%%
+%     methods (Access=private)
+%         function shplines = shapeLines(~,clines)
+% 
+%         end
+% 
+%     end
 end
