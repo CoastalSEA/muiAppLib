@@ -41,11 +41,11 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
 
     figtitle = sprintf('Select points');
     tag = 'PlotFig'; %used for collective deletes of a group
-    butnames = {'Add','Edit','Delete','Save'};
+    butnames = {'Add','Edit','Delete','Use'};
     tooltips = {'Add point to set',...
                 'Edit a point from the set',...
                 'Delete a point from the set',...
-                'Save digitised points and exit. Close figure window to Quit without saving'};
+                'Use digitised points and exit. Close figure window to Quit without saving'};
     position = [0.3,0.4,0.35,0.5];
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
     ax = gd_plotgrid(h_plt,grid);

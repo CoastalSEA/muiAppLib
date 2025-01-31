@@ -1,25 +1,33 @@
-function points = gd_editlines(grid,paneltxt,promptxt,nlines,isdel)
+function points = gd_editlines(grid,paneltxt,nlines,isdel)
 %npts,
 %-------function help------------------------------------------------------
 % NAME
 %   gd_editlines.m
 % PURPOSE
-%   Accept figure to interactively edit a line
+%   Accept figure to interactively edit a line or lines
 % USAGE
-%   points = gd_editlines(grid,paneltxt,promptxt,nlines,isdel);
+%   points = gd_editlines(grid,paneltxt,nlines,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt- character string used for title of figure
-%   promptxt - cell array of prompts to be used for each line
-%   nlines - struct or table of x,y vectors to be edited
+%   nlines - struct or table of x,y vectors to be edited or the format 
+%            of output if no lines are being input (see Outputs for details)
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
-%   points - array of structs with x, y and z fields defining selected points,
+%   points - if lines are input, format is the same as the input, otherwise
+%            outype=0: array of structs with x, y and z fields defining selected points,
+%            outype=1: Nx2 or Nx3 array.
+%            outype=2: struct with x, y (and z) vector fields
+%            outype=3: table with x, y (and z) vector fields
+%            points = [] if user closes figure, or no points defined
 % NOTES
-% 
+%   NB: if the figure window is closed the function returns points=[] and
+%       not the input points
+%   Functions is similar to gd_digitisepoints which handles x,y points, 
+%   whearas gd_editlines handles x,y or x,y,z points
 % SEE ALSO
-%   called in
+%   called in GD_Sections
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jan 2025
@@ -29,31 +37,52 @@ function points = gd_editlines(grid,paneltxt,promptxt,nlines,isdel)
     isxyz = false;                      %assume just lines
     figtitle = sprintf('Edit lines');
     tag = 'PlotFig'; %used for collective deletes of a group
-    butnames = {'Add','Edit','Insert','Delete','View','Save'};
-    tooltips = {'Add point to set',...
-                'Edit a point from the set',...
+    butnames = {'New','Add','Edit','Insert','Join/Split','Delete','View','Use'};
+    tooltips = {'Start a new line of points',...
+                'Add points to a selected line',...
+                'Edit a point in any line',...
                 'Insert one or more point between two existing points of a line',...
-                'Delete a point from the set',...
+                'Join two lines or split existing line (after point selected)',...
+                'Delete a point from a line',...
                 'Toggle display of connecting lines on and off',...
-                'Save digitised points and exit. Close figure window to Quit without saving'};
+                'Use digitised points and exit. Close figure window to Quit without saving points/lines'};
     position = [0.3,0.4,0.35,0.5];
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
     ax = gd_plotgrid(h_plt,grid);
     axis equal  %assume geographical projection or grid of similar dimensions
     axis tight
     %get user to define the required points
-    [points,outype] = gd_vec2pnt(nlines);
-    ax = plotPoints(ax,points,isxyz);                         
+    if isscalar(nlines)            %handle call to function with no lines
+        outype = nlines;
+        points = [];        
+    else                            %plot imported lines
+        [points,outype] = gd_vec2pnt(nlines);
+        ax = plotPoints(ax,points); 
+    end
     ok = 0;
     while ok<1
         waitfor(h_but,'Tag')
         if ~ishandle(h_but) %this handles the user deleting figure window 
             points = [];
             return;
-        elseif strcmp(h_but.Tag,'Add') 
+
+        elseif strcmp(h_but.Tag,'New') 
+            if ~isempty(points)
+                newpnts.x = NaN; newpnts.y = NaN;        %line termination
+                points = [points,newpnts];                     %#ok<AGROW> 
+            end            
             promptxt = 'Left click to create points, right click to finish';
-            newpnt = gd_setpoints(ax,promptxt,isxyz);         
-            points = [points,newpnt];                         %#ok<AGROW> 
+            newpnts = gd_setpoints(ax,promptxt,isxyz);   %get points to add
+            points = [points,newpnts];                         %#ok<AGROW> 
+
+        elseif strcmp(h_but.Tag,'Add') 
+            promptxt = 'Select point at end of line to extend';
+            endpnt = gd_getpoint(ax,promptxt); 
+            if ~isempty(endpnt)
+                promptxt = sprintf('Left click to create points, right click to finish\nFirst new point should be closest to selected end point');
+                newpnts = gd_setpoints(ax,promptxt,isxyz);  
+                points = addpoints(points,newpnts,endpnt,true);     
+            end
 
         elseif strcmp(h_but.Tag,'Edit') 
             promptxt = 'Select point to edit';
@@ -74,6 +103,25 @@ function points = gd_editlines(grid,paneltxt,promptxt,nlines,isdel)
                 end
             end
 
+        elseif strcmp(h_but.Tag,'Join/Split')
+            promptxt = 'Select point within a line to Split line and end point to Join to another line';
+            initpnt = gd_getpoint(ax,promptxt); 
+            if ~isempty(initpnt)
+                location = findPointonLine(points,initpnt);
+                if location<5
+                    resetpoints(ax); %reset the selected point
+                    promptxt = 'Select point to Join to line';
+                    joinpnt =gd_getpoint(ax,promptxt); 
+                    if ~isempty(joinpnt)
+                        points = joinlines(points,initpnt,joinpnt);
+                    end
+                else
+                    points = splitlines(points,initpnt);
+                end
+                delete(findobj(ax,'Tag','viewline'));
+                ax = toggle_view(ax,points);
+            end
+
         elseif strcmp(h_but.Tag,'Delete') 
             promptxt = 'Select point to Delete, right click on any point to quit';
             delpnt = gd_getpoint(ax,promptxt);   %get point to delete
@@ -89,7 +137,7 @@ function points = gd_editlines(grid,paneltxt,promptxt,nlines,isdel)
 
         end   
         h_but = resetbutton(ax,h_but);
-        resetpoints(ax);
+        newpnts = resetpoints(ax);
     end
 
     %convert format of output if required
@@ -111,9 +159,10 @@ function h_but = resetbutton(ax,h_but)
 end
 
 %%
-function resetpoints(ax)
+function newpnts = resetpoints(ax)
     %gd_getpoint sets point UserData and color when clicked on. Reset in 
     %case user clicked on points without making an action selection
+    newpnts = [];    %reset newpnts in case user Quits when adding, etc
     h_pnts = findobj(ax,'Tag','mypoints');
     if isempty(h_pnts), return; end
     idx = [h_pnts.UserData]>0;
@@ -121,11 +170,11 @@ function resetpoints(ax)
         [h_pnts(idx).UserData] = repmat(int32(0),sum(idx),1);
         cellobj = {[h_pnts(idx)]};
         [cellobj{:}.Color] = repmat(zeros(1,3),sum(idx),1);
-    end 
+    end    
 end
 
 %%
-function ax = plotPoints(ax,points,isxyz)
+function ax = plotPoints(ax,points)
     %plot the imported lines
     hold on
     for i=1:length(points)
@@ -133,10 +182,6 @@ function ax = plotPoints(ax,points,isxyz)
                                    'MarkerFaceColor','w','Tag','mypoints');
         H.ButtonDownFcn = {@LineSelected, H};
         H.UserData = int32(0);
-        if isxyz
-            text(ax,points(i).x,points(i).y,sprintf('  %.1f',point.z),...
-                               'Color','white','FontSize',6,'Tag','ztext');
-        end
     end
     hold off
     %nested function
@@ -149,6 +194,63 @@ function ax = plotPoints(ax,points,isxyz)
             H(H==src).UserData = evt.Button;
         end
 end
+
+%%
+function points = addpoints(points,newpnts,endpnt,isadd)
+    %find end to add points to and extend existing line
+    idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y); 
+    if isadd
+        %check direction of new points relative to existing line
+        xlen = [endpnt.x-newpnts(1).x,endpnt.x-newpnts(end).x];
+        ylen = [endpnt.y-newpnts(1).y,endpnt.y-newpnts(end).y];
+        [~,ide] = min(hypot(xlen,ylen));                %index of nearest point
+        if ide>1
+            newpnts = fliplr(newpnts);
+        end
+    end
+
+    %find location and add new points
+    location = findPointonLine(points,endpnt);
+    switch location
+        case 1  %first point in vector
+            points = [fliplr(newpnts),points];
+        case 2  %last point in vector
+            points = [points,newpnts];
+        case 3  %first point of line (after a NaN)
+            points = [points(1:idp-1),fliplr(newpnts),points(idp:end)];
+        case 4  %last point of line (before a NaN)
+            points = [points(1:idp),newpnts,points(idp+1:end)];
+    end
+end
+
+%%
+function location = findPointonLine(points,endpnt)
+    %find the location of a point in a vector of lines
+    % location is an index:
+    % empty = point not found
+    % 1 - first point
+    % 2 - last point
+    % 3 - first point of line in vector (after a NaN)
+    % 4 - last point of line in vector (before a NaN)
+    % 5 - point within line 
+    nrec = length(points);
+    idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y); 
+
+    if sum(idp)==0
+        location = []; return;
+    elseif idp==1
+        location = 1;  %first point in vector
+    elseif idp==nrec
+        location = 2;  %last point in vector
+    elseif isnan(points(idp-1).x)
+        location = 3;  %first point of line (after a NaN)
+    elseif isnan(points(idp+1).x)
+        location = 4;  %last point of line (before a NaN)
+    else
+        location = 5;  %point found lies on line (ie not an end point of a line segment)
+    end
+end
+
 %%
 function pnt = startendpoints(ax,points)
     %find two adjacent points and return in pnt struct: start and adjacent
@@ -205,6 +307,66 @@ function points = insertpoints(ax,points,pnt,newpnts)
     h_pnts(idpos(1)).Color = zeros(1,3);
     h_pnts(idpos(2)).Color = zeros(1,3);
 end
+
+%%
+function points = joinlines(points,initpnt,joinpnt)
+    %join two lines based on selected end points
+    nrec = length(points);
+    msg = 'Cannot join line to itself';
+    newpnts.x = NaN; newpnts.y = NaN;        %line termination
+    idi = find([points(:).x]==initpnt.x & [points(:).y]==initpnt.y); 
+    idj = find([points(:).x]==joinpnt.x & [points(:).y]==joinpnt.y); 
+    
+    %check not trying to join a line to itself
+    if idi==idj, warndlg(msg); return; end
+    Lineidi = gd_findline(points,initpnt);
+    Lineidj = gd_findline(points,joinpnt);
+    if Lineidi==Lineidj, warndlg(msg); return; end
+
+    idN = find(isnan([points(:).x]));
+    idN = [1,idN,nrec];   
+    %extract lines, concatenate and add to end of points array
+    [line1,idL1] = getIndex(points,idN,Lineidi);
+    [line2,idL2] = getIndex(points,idN,Lineidj);
+    idx = [idL1,idL2];
+    points(idx) = [];
+    if ~isempty(points) && ~isnan(points(end).x)          
+        points = [points,newpnts];      %add NaNs to end of existing line
+    end
+    %add the two lines. NB this sorts the lines to minimise the distance
+    %from the point selected on line1 to the start or end of line 2
+    isend = line2(end).x==joinpnt.x & line2(end).y==joinpnt.y;
+    if isend, line2 = fliplr(line2); end %line direction based on selected join point       
+    newline = addpoints(line1,line2,initpnt,false);
+
+    points = [points,newline];
+
+    %nested function-------------------------------------------------------
+    function [aline,idL] = getIndex(points,idN,line)
+        %get the indices of the line to be extracted
+        % idL - indices of line including trailing NaNs
+        idL =idN(line):idN(line+1);
+        aline = points(idL);
+        if isnan(aline(1).x)
+            idL = idN(line)+1:idN(line+1);
+            aline(1) = [];
+        end
+        %
+        if ~isnan(aline(end).x)
+            aline = [aline,newpnts];
+        end
+        aline = aline(1:end-1);
+    end %------------------------------------------------------------------
+end
+
+%%
+function points = splitlines(points,initpnt)
+    %split a line at the defined point
+    idi = find([points(:).x]==initpnt.x & [points(:).y]==initpnt.y); 
+    newpnts.x = NaN; newpnts.y = NaN;        %line termination
+    points = [points(1:idi),newpnts,points(idi+1:end)];
+end
+
 %%
 function points = deletepoint(ax,points,delpoint,newpnt)
     %delete point defined by delpnt if newpnt is empty, otherwise edit
