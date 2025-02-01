@@ -13,10 +13,9 @@ function points = gd_startendpoints(grid,isdel)
 %           default is false
 % OUTPUTS
 %  points - struct with x and y fields defining selected start and end points
-% NOTES
-% 
 % SEE ALSO
-%   called in
+%   REPLACED BY gd_selectpoints.m which is more generic and has improved
+%   interactive editing options.                         ***************
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jun 2022

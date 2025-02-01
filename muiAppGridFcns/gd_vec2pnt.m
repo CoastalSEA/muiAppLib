@@ -34,21 +34,23 @@ function [points,outype] = gd_vec2pnt(vecpnts)
     end
 
     points = struct('x',[],'y',[]);
-    if isstruct(vecpnts)
-        [points.x] = vecpnts.x;
-        [points.y]= vecpnts.y;
-        if isfield(vecpnts,'z')
-            [points(:).z] = vecpnts.z;
-        end
-        outype = 2;
-    elseif istable(vecpnts)
+    if isstruct(vecpnts) || istable(vecpnts)
         points = assignPoints(points,vecpnts.x,'x');
         points = assignPoints(points,vecpnts.y,'y');
-        if ismember('z', vecpnts.Properties.VariableNames)
-            points = assignPoints(points,vecpnts.z,'z');
+        if isstruct(vecpnts)
+            outype = 2;
+            if isfield(vecpnts,'z')
+                points = assignPoints(points,vecpnts.z,'z');
+            end
+        else
+            outype = 3;
+            if ismember('z', vecpnts.Properties.VariableNames)
+                points = assignPoints(points,vecpnts.z,'z');
+            end
         end
-        outype = 3;
     elseif ismatrix(vecpnts)  %NB this assumes two column vectors for x and y
+        %corrects large vectors but may fail for short vectors <=3 points
+        if size(vecpnts,2)>3, vecpnts = vecpnts'; end  
         points = assignPoints(points,vecpnts(:,1),'x');
         points = assignPoints(points,vecpnts(:,2),'y');
         if size(vecpnts,2)==3

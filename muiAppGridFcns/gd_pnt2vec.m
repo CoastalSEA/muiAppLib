@@ -29,7 +29,17 @@ function vecpnts = gd_pnt2vec(points,outype)
 %--------------------------------------------------------------------------
 % 
     if nargin<2 || outype==0
-        vecpnts = points;             %return unchanged
+        vecpnts = points; return;            %return unchanged        
+    elseif ~isstruct(points)
+        %not points array struct as input - return unchanged
+        vecpnts = points; return;        
+    elseif (isstruct(points) && length(points)==1)
+        vecpnts = points; %return struct of vectors unchanged
+        if outype==1      %convert to array
+            vecpnts = cell2mat(struct2cell(points)');    %struct to [Nx2] array
+        elseif outype==3  %convert to table
+            vecpnts = struct2table(points);
+        end
         return;
     end
 

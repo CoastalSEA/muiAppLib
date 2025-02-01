@@ -52,7 +52,8 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
                 'Delete a point from a line',...
                 'Toggle display of connecting lines on and off',...
                 'Use digitised points and exit. Close figure window to Quit without saving points/lines'};
-    position = [0.3,0.4,0.35,0.5];
+    % position = [0.3,0.4,0.35,0.5];
+    position = [0,0,1,1];
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
     ax = gd_plotgrid(h_plt,grid);
     axis equal  %assume geographical projection or grid of similar dimensions

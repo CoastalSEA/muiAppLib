@@ -14,17 +14,18 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
 %   promptxt - cell array of prompts to be used for each point being defined
 %              a single char string cell is apended with a count for each point,
 %              whereas a cell array should have a length of npts.
-%   inlines
+%   inlines - struct or table of x,y vectors to show on base plot
 %   npts - number of points to be selected
 %   outype - format of output - see Outputs for details
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
-%   points - outype=0: array of structs with x, y and z fields defining selected points,
+%   points - if lines are input, format is the same as the input, otherwise
+%            outype=0: array of structs with x, y and z fields defining selected points,
 %            outype=1: Nx2 or Nx3 array.
 %            outype=2: struct with x, y (and z) vector fields
+%            outype=3: table with x, y (and z) vector fields
 %            points = [] if user closes figure, or no points defined
-%            outype=1:
 %   h_fig - handle to accept figure;
 % NOTES
 %   Captures x,y for the number of points specified in npts. However, the
@@ -46,8 +47,10 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
                 'Edit a point from the set',...
                 'Delete a point from the set',...
                 'Use digitised points and exit. Close figure window to Quit without saving'};
-    position = [0.3,0.4,0.35,0.5];
+    % position = [0.3,0.4,0.35,0.5];
+    position = [0,0,1,1];
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
+    pause(0.1)
     ax = gd_plotgrid(h_plt,grid);
     axis equal  %assume geographical projection or grid of similar dimensions
     axis tight
@@ -178,9 +181,19 @@ end
 
 %%
 function ax = plotLines(ax,inlines)
-    %plot any points or lines thar are imported
-    
+    %plot any points or lines thar are imported    
     hold on
-        plot(ax,inlines(:,1),inlines(:,2),'-.b','Tag','clines')
+    if istable(inlines) || isstruct(inlines)
+        plot(ax,inlines.x,inlines.y,'-.k','LineWidth',1,'Tag','clines')
+        idx = [1;find(isnan(inlines.x))+1];
+        plot(ax,[inlines.x(idx)],[inlines.y(idx)],'ob','PickableParts','none',...
+                  'MarkerSize',6,'MarkerEdgeColor','r', 'Tag','clines'); 
+    else
+        plot(ax,inlines(:,1),inlines(:,2),'-.k','LineWidth',1,'Tag','clines')
+        idx = [1;find(isnan(inlines(:,1)))+1];
+
+        plot(ax,inlines(idx,1),inlines(idx,2),'ob','PickableParts','none',...
+                  'MarkerSize',6,'MarkerEdgeColor','r', 'Tag','clines');
+    end
     hold off
 end

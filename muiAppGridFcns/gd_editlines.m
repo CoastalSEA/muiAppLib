@@ -33,7 +33,7 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 %
-    if nargin<5, isdel = false; end
+    if nargin<4, isdel = false; end
     isxyz = false;                      %assume just lines
     figtitle = sprintf('Edit lines');
     tag = 'PlotFig'; %used for collective deletes of a group
@@ -46,17 +46,22 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
                 'Delete a point from a line',...
                 'Toggle display of connecting lines on and off',...
                 'Use digitised points and exit. Close figure window to Quit without saving points/lines'};
-    position = [0.3,0.4,0.35,0.5];
+    % position = [0.3,0.4,0.35,0.5];
+    position = [0,0,1,1];
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
     ax = gd_plotgrid(h_plt,grid);
     axis equal  %assume geographical projection or grid of similar dimensions
     axis tight
     %get user to define the required points
-    if isscalar(nlines)            %handle call to function with no lines
+    if (isnumeric(nlines) && isscalar(nlines)) || isempty(nlines)   
+        %handle call to function with no lines
         outype = nlines;
         points = [];        
     else                            %plot imported lines
-        [points,outype] = gd_vec2pnt(nlines);
+        [points,outype] = gd_vec2pnt(nlines);      
+        if length(points)>5000
+            getdialog(sprintf('Large number of points (N=%d)\nLoading linework my take some time',length(points)));
+        end
         ax = plotPoints(ax,points); 
     end
     ok = 0;
