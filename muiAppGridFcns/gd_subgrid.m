@@ -1,13 +1,13 @@
-function [subgrid,ixo,iyo] = getsubgrid(grid,subdomain)
+function [subgrid,ixo,iyo] = gd_subgrid(grid,subdomain)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   getsubgrid.m
+%   gd_subgrid.m
 % PURPOSE
 %   extract a subdomain from a grid (xi,yi,zi) and return the extracted
 %   grid and the source grid indices of the bounding rectangle 
 % USAGE
-%   [subgrid,ixo,iyo] = getsubgrid(grid,subdomain)
+%   [subgrid,ixo,iyo] = gd_subgrid(grid,subdomain)
 % INPUTS
 %   grid - x,y,z struct of input grid as x,y vectors and z array
 %   subdomain - subdomain to be extracted, defined as [x0,xN,y0,yN]
@@ -16,6 +16,7 @@ function [subgrid,ixo,iyo] = getsubgrid(grid,subdomain)
 %   ixo,iyo - indices of bounding subdomain in the input xi,yi grid 
 % SEE ALSO
 %   used in ModelSkill App getUserTools function.
+%   previously called getsubgrid. moved to muiuAppGrdFcns in Jan 2025
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jan 2021

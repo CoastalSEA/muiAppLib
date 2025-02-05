@@ -475,7 +475,7 @@ function [var,txt] = getChannelVariables(varname,sprop,indices,Rv)
             else
                 evar = var(:,i)-Rv;  evar(evar<0) = 0; %remove any offset at the head
             end
-            Lv = -getconvergencelength(xj,evar);
+            Lv = -gd_convergencelength(xj,evar);
             txt.desc{i} = sprintf('%s (L_v = %.0f)',txt.names{i},Lv);
         end
     end

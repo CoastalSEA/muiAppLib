@@ -62,9 +62,9 @@ function gdst = gd_gross_properties(grid,wl,pdst)
 
     %convergence length from mouth accounting for any offset
     ewidth = pdst.Wmt-Wr; ewidth(ewidth<0) = 0;
-    Lw = -getconvergencelength(xi(ich),ewidth(ich)); %width convergence length at mean tide level
+    Lw = -gd_convergencelength(xi(ich),ewidth(ich)); %width convergence length at mean tide level
     ecsa = pdst.CSAmt-Ar; ecsa(ecsa<0) = 0;
-    La = -getconvergencelength(xi(ich),ecsa(ich)); %csa convergence length at mean tide level
+    La = -gd_convergencelength(xi(ich),ecsa(ich)); %csa convergence length at mean tide level
 
     %check width and CSA at mouth
     % z0 = wl.zmt;              %mean tide level(m)

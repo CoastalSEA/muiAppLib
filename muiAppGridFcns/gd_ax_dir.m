@@ -55,28 +55,32 @@ function output = gd_ax_dir(ax,x,y,ischeck)
     if isgraphics(ax,'Axes') %check direction of axes to be plotted
         output = ax;
         if ~isempty(x) && issorted(x,'strictdescend')  %only change if descending
-            output.XDir = 'reverse'; 
+            output.XDir = 'reverse';
         else
-            output.XDir = 'normal'; 
+            output.XDir = 'normal';
         end
         %
         if ~isempty(y) && issorted(y,'strictdescend')  %only change if descending
             output.YDir = 'reverse';
         else
-            output.YDir = 'normal';     
+            output.YDir = 'normal';
         end
-    elseif isstruct(ax) %determine orientation of grid using ishead and x-direction
-        grid = ax;
-        output.x = findaxesdirection(grid,'x');
-        output.y = findaxesdirection(grid,'y');
-    else                %prompt user to confirm direction of each axis
-        if ~isempty(x)
-            [output.x,output.isrev(1)] = checkaxesdirection(x,'X',ischeck);
-        end
-        %
-        if ~isempty(y)
-            [output.y,output.isrev(2)] = checkaxesdirection(y,'Y',ischeck);
-        end
+    elseif isstruct(ax) && isfield(ax,'ishead')
+        %determine orientation of grid using ishead and x-direction
+        output.x = findaxesdirection(ax,'x');
+        output.y = findaxesdirection(ax,'y');
+    elseif  ~isempty(x) &&  ~isempty(y)
+         %prompt user to confirm direction of each axis
+        [output.x,output.isrev(1)] = checkaxesdirection(x,'X',ischeck);
+        [output.y,output.isrev(2)] = checkaxesdirection(y,'Y',ischeck);
+    elseif ~isempty(x)
+       [output.x,output.isrev(1)] = checkaxesdirection(x,'X',ischeck);
+    elseif ~isempty(y)
+        [output.y,output.isrev(2)] = checkaxesdirection(y,'Y',ischeck);
+    else
+        %determine orientation of grid using just x-direction
+        output.x = 1;
+        output.y = 1;
     end
 end
 %%

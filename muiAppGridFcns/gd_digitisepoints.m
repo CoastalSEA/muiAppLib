@@ -34,10 +34,10 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 %
-    if nargin<5
+    if nargin<4
+        isxyz = false;
         isdel = false; 
-    elseif nargin<4
-        isxyz = false; 
+    elseif nargin<5         
         isdel = false;
     end
 
@@ -56,8 +56,8 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
     position = [0,0,1,1];
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
     ax = gd_plotgrid(h_plt,grid);
-    axis equal  %assume geographical projection or grid of similar dimensions
-    axis tight
+    axis equal tight %assume geographical projection or grid of similar dimensions
+    
     %get user to define the required points
     points = [];
     ok = 0;

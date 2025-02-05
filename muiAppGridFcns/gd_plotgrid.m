@@ -26,7 +26,11 @@ function ax = gd_plotgrid(hfig,grid)
     hpc.Tag = 'PlotGrid';
     ax = gd_ax_dir(ax,grid.x,grid.y);
     shading interp
-    colormap('parula')
+    mnmx = minmax(grid.z);
+    if abs(diff(mnmx))>0 
+        %only call if there is some variation in the grid
+        gd_colormap([mnmx(1),mnmx(2)]);
+    end
     colorbar
     xlabel('Length (m)'); 
     ylabel('Width (m)')

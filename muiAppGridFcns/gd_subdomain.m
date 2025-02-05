@@ -36,7 +36,7 @@ function [subdomain,sublimitxt] = gd_subdomain(grid,isdel)
     position = [0.2,0.4,0.4,0.4];
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position);
     ax = gd_plotgrid(h_plt,grid);
-    [~,ix0,iy0] = getsubgrid(grid,subdomain1);
+    [~,ix0,iy0] = gd_subgrid(grid,subdomain1);%muifunction
     hold on
     plot(ax,x(ix0),y(iy0),'--r','LineWidth',0.8)
     hold off
@@ -73,7 +73,7 @@ function [subdomain,sublimitxt] = gd_subdomain(grid,isdel)
                 figure(h_plt.Parent); %make figure current again
                 subdomain = subdomain1;
             end
-            [~,ixo,iyo] = getsubgrid(grid,subdomain);
+            [~,ixo,iyo] = gd_subgrid(grid,subdomain);
             h_sd = findobj(ax,'Type','line');  %remove existing subdomain rectangle
             delete(h_sd);
             hold on

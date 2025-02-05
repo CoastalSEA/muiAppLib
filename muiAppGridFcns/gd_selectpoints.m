@@ -38,7 +38,7 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
 % CoastalSEA (c) Jun 2022
 %--------------------------------------------------------------------------
 %
-    if nargin<6, isdel = false; end
+    if nargin<7, isdel = false; end
 
     figtitle = sprintf('Select points');
     tag = 'PlotFig'; %used for collective deletes of a group
@@ -52,8 +52,8 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
     pause(0.1)
     ax = gd_plotgrid(h_plt,grid);
-    axis equal  %assume geographical projection or grid of similar dimensions
-    axis tight
+    axis equal tight %assume geographical projection or grid of similar dimensions
+    
     if ~isempty(inlines)
         ax = plotLines(ax,inlines);
     end

@@ -30,7 +30,7 @@ classdef (Abstract = true) GDinterface < muiDataSet
 % Author: Ian Townend
 % CoastalSEA (c)Jan 2022
 %--------------------------------------------------------------------------
-% 
+%
     methods
         function obj = setGrid(obj,griddata,dims,meta)
             %load the grid results into a dstable 
@@ -75,19 +75,29 @@ classdef (Abstract = true) GDinterface < muiDataSet
             obj.Data.Grid = zdst;             
         end
 %%
-        function grid = getGrid(obj,irow,promptxt)
+function grid = getGrid(obj,irow,promptxt,dsetname)
             %retrieve a grid and the index for the case and row
             % obj - any GDinterface subclass that contains a Grid dstable
             % irow - row index of the dstable to extract grid from (optional)
             % promptxt - user input prompt (optional)
+            % dsetname - default is 'Grid'. Option to enable mutliple instances
+            %           for a given case with a name 'GridN' wher N is numeric
             if nargin<2
                 irow = [];
                 promptxt = 'Select grid:';
+                dsetname = 'Grid';
             elseif nargin<3
+                promptxt = 'Select grid:';
+                dsetname = 'Grid';
+            elseif nargin<4
+                dsetname = 'Grid';
+            end
+
+            if isempty(promptxt)
                 promptxt = 'Select grid:';
             end
             
-            dst = obj.Data.Grid;
+            dst = obj.Data.(dsetname);
             if height(dst)>1 && isempty(irow)
                 %propmpt user to select timestep
                 list = dst.DataTable.Properties.RowNames;
@@ -342,17 +352,19 @@ classdef (Abstract = true) GDinterface < muiDataSet
             if isempty(subdomain), return; end
             
             %extract selected grid
-            [subgrid,ixo,iyo] = getsubgrid(grid,subdomain); %muifunction
+            [subgrid,ixo,iyo] = gd_subgrid(grid,subdomain); %muifunction
             xo = subgrid.x; yo = subgrid.y;
             Nx = length(xo); Ny = length(yo);
             for i=1:height(formdst)
                 zi =squeeze(formdst.DataTable.Z(i,:,:));
                 zo = zi(min(ixo):max(ixo),min(iyo):max(iyo));
-                impdata(i,:,:) = reshape(zo,1,Nx,Ny); %#ok<AGROW>
-                %adjust distance to mouth, if changed
-                xM = formdst.UserData.xM(i,1);
-                delX0 = min(grid.x)-min(xo);
-                formdst.UserData.xM(i,1) = xM+delX0;
+                impdata(i,:,:) = reshape(zo,1,Nx,Ny); %#ok<AGROW>                
+                if isfield(formdst.UserData,'xM')
+                    %adjust distance to mouth, if changed
+                    xM = formdst.UserData.xM(i,1);
+                    delX0 = min(grid.x)-min(xo);
+                    formdst.UserData.xM(i,1) = xM+delX0;
+                end
             end 
             %extract defined subgrid for each row in table
             formdst.DataTable.Z = impdata;
@@ -553,10 +565,12 @@ function [grid,orient] = orientGrid(obj,grid0)
             promptxt = 'Flip or rotate grid?';
             tag = 'PlotFig'; %used for collective deletes of a group
             butnames = {'Accept','Flip LR','Flip UD','+90','-90','invX','invY','Reset'};
-            position = [0.2,0.4,0.4,0.4];
+            % position = [0.3,0.4,0.35,0.5];
+            position = [0,0,1,1];
             [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position);
             %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
             gd_plotgrid(h_plt,grid0);
+            axis equal tight %assume geographical projection or grid of similar dimensions
             ok = 0;
             orient = [];
             grid = grid0;
@@ -735,7 +749,11 @@ function [grid,orient] = orientGrid(obj,grid0)
             promptxt = {'Select Case to use (Cancel to quit):','Select timestep:'};
             [obj,~,irec] = selectCaseDatasetRow(muicat,[],...
                                                          gridclasses,promptxt,1);
-            if isempty(obj) || isempty(irec), return; end
+            if isempty(obj) || isempty(irec)
+                return;
+            elseif ~isfield(obj.Data,'Grid')
+                warndlg('No grid for selected Case'); return; 
+            end
             grid = getGrid(obj,irec);   %grid for selected year
             gd_plotsections(grid);      %function plots selected sections  
         end
@@ -748,7 +766,11 @@ function [grid,orient] = orientGrid(obj,grid0)
             promptxt = {'Select Case to use (Cancel to quit):','Select timestep:'};
             [obj,~,irec] = selectCaseDatasetRow(muicat,[],...
                                                          gridclasses,promptxt,1);
-            if isempty(obj) || isempty(irec), return; end
+            if isempty(obj) || isempty(irec)
+                return;
+            elseif ~isfield(obj.Data,'Grid')
+                warndlg('No grid for selected Case'); return; 
+            end
             
             %check whether z values are also to be captured
             isxyz = false;
@@ -759,8 +781,6 @@ function [grid,orient] = orientGrid(obj,grid0)
             %desc = sprintf('%s at %s',obj.Data.Grid.Description,char(obj.Data.Grid.RowNames(irec)));
             grid = getGrid(obj,irec);   %grid for selected year
             points = gd_digitisepoints(grid,{'Digitise Lines'},isxyz,false);
-%             obj = GD_DataUI.getGridLine(grid,{'Select point'},isxyz,false);
-%             points = obj.Data.points;
             if isempty(points), return; end
 
             % Save as a text file
@@ -781,6 +801,143 @@ function [grid,orient] = orientGrid(obj,grid0)
                 end
                 fclose(fid);
             end
+        end
+
+%%
+        function gridImage(muicat,gridclasses)
+            %generate a tiff image of a grid
+             promptxt = {'Select Case to use (Cancel to quit):','Select timestep:'};
+            [obj,classrec,irec] = selectCaseDatasetRow(muicat,[],...
+                                                         gridclasses,promptxt,1);
+            if isempty(obj) || isempty(irec)
+                return;
+            elseif ~isfield(obj.Data,'Grid')
+                warndlg('No grid for selected Case'); return; 
+            end
+
+            grid = getGrid(obj,irec);   %grid for selected year
+            xmnmx = minmax(grid.x);  %limits of grid data
+            ymnmx = minmax(grid.y);
+%             delX = abs(grid.x(2)-grid.x(1))/2;   
+%             delY = abs(grid.y(2)-grid.y(1))/2;             
+%             xmnmx = [xmnmx(1)+delX,xmnmx(2)-delX];
+%             ymnmx = [ymnmx(1)+delY,ymnmx(2)-delY];
+            hf = figure('Tag','PlotFig','Visible','on');
+            ax = axes(hf);
+            Z = grid.z';
+            C = pcolor(ax,Z);
+            xlim(xmnmx);  ylim(ymnmx);
+            cmap = gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')]);
+            shading interp
+            axis equal tight
+            cLimits = clim;
+            im = struct('XData',xmnmx,'YData',ymnmx,'CData',C.CData,'CMap',cmap,'CLim',cLimits);
+            hold(ax,'on')
+            h_im = imagesc('XData',im.XData,'YData',im.YData,'CData',im.CData);
+            h_im.AlphaData = 0.5;
+            hold(ax,'off')
+
+
+
+            
+% %             ax = axes(hf);
+% %             Z = grid.z';
+% %             C = pcolor(ax,grid.x,grid.y,Z);
+% %             shading interp
+% %             axis equal tight
+% 
+%              ax = gd_plotgrid(hf,grid);
+%             cmap = gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')]);
+%             axis equal tight
+%             frame = getframe(hf);
+%             frame.colormap = cmap;
+% 
+%             him = imshow(frame.cdata,'XData',xmnmx,'YData',ymnmx);
+%             im = struct('XData',xmnmx,'YData',ymnmx,'CData',him.CData,'CMap',cmap);
+% 
+% figure
+% h_im = imshow(im.CData, 'XData',im.XData,'YData',im.YData); 
+
+% 
+% % if any(isnan(Z(1,1))), Z(1,1) = 0;
+% % elseif any(isnan(Z(1,end))),Z(1,end) = 0;
+% % elseif any(isnan(Z(end,1))),Z(end,1) = 0;
+% % elseif any(isnan(Z(end,end))),Z(end,end) = 0; 
+% % end
+% % Z(end,1:end) = 0;
+% % Create a mask for NaNs
+% nan_mask = isnan(Z);
+% [X,Y] = meshgrid(grid.x,grid.y);
+% Z_filled = Z;
+% % Z_filled(nan_mask) = griddata(X(~nan_mask), Y(~nan_mask), Z(~nan_mask), X(nan_mask), Y(nan_mask));
+% 
+% Z_filled(nan_mask) = 5;
+% 
+% 
+%             hf = figure('Tag','PlotFig','Visible','on');  
+%             ax = axes(hf);
+% %             ax.XLim = xmnmx; ax.YLim = ymnmx;
+%             C = pcolor(ax,grid.x,grid.y,Z_filled);
+% 
+% %              [X,Y] = meshgrid(grid.x,grid.y);
+% %              C = surf(X,Y,grid.z');
+%             shading interp
+%             axis equal tight
+%             view(2)
+%             cmap = gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')]);
+% 
+%             cLimits = clim;
+% % 
+% % xLimits = xlim;
+% % yLimits = ylim;
+% 
+% 
+% 
+%             %delete(hf)
+% 
+%             %create image object
+% 
+%             %image uses centre of pixels for x,y, adjust the limits to match
+%             delX = abs(grid.x(2)-grid.x(1));   
+%             delY = abs(grid.y(2)-grid.y(1));             
+%             xmnmx = [xmnmx(1)-delX,xmnmx(2)+delX];
+%             ymnmx = [ymnmx(1)-delY,ymnmx(2)-10*delY];
+% 
+% %             xmnmx = [grid.x(2),grid.x(end-1)];
+% %             ymnmx = [grid.y(2),grid.y(end-1)];
+%             im = struct('XData',xmnmx,'YData',ymnmx,'CData',C.CData,'CMap',cmap,'CLim',cLimits);
+% 
+% %             ax.NextPlot =  'add';
+% %                 hold(ax,'on')     
+% figure
+%               h_im = imagesc('XData',im.XData,'YData',im.YData,'CData',im.CData, 'AlphaData', ~isnan(im.CData)); 
+%               
+% % % Handle NaNs along one boundary
+% % if any(isnan(Z(:,1))) || any(isnan(Z(:,end))) || any(isnan(Z(1,:))) || any(isnan(Z(end,:)))
+% %     set(gca, 'Clim', [min(Z(:)), max(Z(:))]); % Set color limits to avoid cropping
+% % end
+% 
+% % h_im = image(grid.x,grid.y,im.CData, 'AlphaData', ~isnan(im.CData)); 
+% % axis xy
+% set(gca, 'YDir', 'normal'); % Correct the Y direction
+% %                 h_im = imagesc(ax,grid.x,grid.y,im.CData);  
+% %                 h_im.AlphaData = 0.5;
+% %                 set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent
+%                 
+% %                 hold(ax,'off')
+%                shading interp
+%             axis equal tight 
+
+            %to use this method the calling class must include a get.formatypes method
+            %(see EDBimport for eg)
+            datasetname = 'GeoImage';
+            obj.DataFormats{2} = obj.formatypes{datasetname,1}{1};
+            [dst,ok] = callFileFormatFcn(obj,'setData',obj,im,grid.desc);
+            if ok<1 || isempty(dst), return; end
+            
+            obj.Data.(datasetname) = dst.(datasetname);
+            updateCase(muicat,obj,classrec,false);
+            getdialog(sprintf('GeoImage added to Case: %s',grid.desc),[],1)   
         end
 %%
         function gridMenuOptions(mobj,src,gridclasses)
@@ -850,6 +1007,8 @@ function [grid,orient] = orientGrid(obj,grid0)
                     GDinterface.diffGridsPlot(muicat,gridclasses);
                 case 'Plot Sections'
                     GDinterface.plotSections(muicat,gridclasses);
+                case 'Grid Image'
+                    GDinterface.gridImage(muicat,gridclasses);
                 case 'Digitise Line'
                     GDinterface.getGridLine(muicat,gridclasses);
                 case 'Export xyz Grid'
@@ -966,11 +1125,11 @@ function [grid,orient] = orientGrid(obj,grid0)
 % one of the Grid Tools (rotate, sub-grid, etc)
 %--------------------------------------------------------------------------               
         function addORupdate(obj,muicat,newdata)
-            %prompt userr to add or update existing record ad save grid
-            % newdata is either the dstable to be used or a struct of the 
+            %prompt user to add or update existing record and save grid
+            % newdata is either the dstable to be used, or a struct of the 
             % grid z and cline values (used by curvilinear functions).
             
-            answer = questdlg('Add or update existing?','Save grid','Add','Update','Quit','Add');
+            answer = questdlg('Add new case, or update/add to existing case?','Save grid','Add','Update','Quit','Add');
             
             if strcmp(answer,'Quit')
                  getdialog('Modified grid NOT saved');
@@ -986,9 +1145,19 @@ function [grid,orient] = orientGrid(obj,grid0)
                 end
                 setGridObj(obj,muicat,fdst); %copies form property table to new instance
             else            
-                %overwrite exisitng form data set with new form  
+                %overwrite exisiting grid data set with new grid
                 if isa(newdata,'dstable')
-                    obj.Data.Grid = newdata;
+                    if isfield(obj.Data,'Grid') && ~isempty(obj.Data.Grid)
+                        answer = questdlg('Add additional grid to case or Replace existing grid?','Save grid','Add','Replace','Add');
+                        if strcmp(answer,'Add')
+                            datasetnames = fieldnames(obj.Data);
+                            nrec = sum(contains(datasetnames,'Grid'))+1;
+                            datasetname = sprintf('Grid%d',nrec);
+                            obj.Data.(datasetname) = newdata;
+                        else
+                            obj.Data.Grid = newdata;
+                        end
+                    end
                 else
                     obj.Data.Grid.Z(:,:,:) = newdata.zi;  
                     obj.Data.Grid.UserData.cline = newdata.cline;

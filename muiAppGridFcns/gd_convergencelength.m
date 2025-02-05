@@ -16,6 +16,7 @@ function len = gd_convergencelength(xdata,ydata,x0)
 %   len - convergence length of ydata
 % SEE ALSO
 %   used in cf_property_plots and gd_grossproperties
+%   previously called getconvergencelength. moved to muiuAppGrdFcns in Jan 2025
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jan 2022
