@@ -816,117 +816,27 @@ function [grid,orient] = orientGrid(obj,grid0)
             end
 
             grid = getGrid(obj,irec);   %grid for selected year
-            xmnmx = minmax(grid.x);  %limits of grid data
-            ymnmx = minmax(grid.y);
-%             delX = abs(grid.x(2)-grid.x(1))/2;   
-%             delY = abs(grid.y(2)-grid.y(1))/2;             
-%             xmnmx = [xmnmx(1)+delX,xmnmx(2)-delX];
-%             ymnmx = [ymnmx(1)+delY,ymnmx(2)-delY];
-            hf = figure('Tag','PlotFig','Visible','on');
+            xLim = minmax(grid.x);  %limits of grid data
+            yLim = minmax(grid.y);
+            hf = figure('Tag','PlotFig','Visible','off');
             ax = axes(hf);
             Z = grid.z';
             C = pcolor(ax,Z);
-            xlim(xmnmx);  ylim(ymnmx);
-            cmap = gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')]);
             shading interp
-            axis equal tight
+            axis equal tight            
+            xlim(xLim);  ylim(yLim);
+            cmap = gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')]);
+
             cLimits = clim;
-            im = struct('XData',xmnmx,'YData',ymnmx,'CData',C.CData,'CMap',cmap,'CLim',cLimits);
-            hold(ax,'on')
-            h_im = imagesc('XData',im.XData,'YData',im.YData,'CData',im.CData);
-            h_im.AlphaData = 0.5;
-            hold(ax,'off')
-
-
-
+            im = struct('XData',xLim,'YData',yLim,'CData',C.CData,'CMap',cmap,'CLim',cLimits);
+            delete(hf)
             
-% %             ax = axes(hf);
-% %             Z = grid.z';
-% %             C = pcolor(ax,grid.x,grid.y,Z);
-% %             shading interp
-% %             axis equal tight
-% 
-%              ax = gd_plotgrid(hf,grid);
-%             cmap = gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')]);
-%             axis equal tight
-%             frame = getframe(hf);
-%             frame.colormap = cmap;
-% 
-%             him = imshow(frame.cdata,'XData',xmnmx,'YData',ymnmx);
-%             im = struct('XData',xmnmx,'YData',ymnmx,'CData',him.CData,'CMap',cmap);
-% 
-% figure
-% h_im = imshow(im.CData, 'XData',im.XData,'YData',im.YData); 
-
-% 
-% % if any(isnan(Z(1,1))), Z(1,1) = 0;
-% % elseif any(isnan(Z(1,end))),Z(1,end) = 0;
-% % elseif any(isnan(Z(end,1))),Z(end,1) = 0;
-% % elseif any(isnan(Z(end,end))),Z(end,end) = 0; 
-% % end
-% % Z(end,1:end) = 0;
-% % Create a mask for NaNs
-% nan_mask = isnan(Z);
-% [X,Y] = meshgrid(grid.x,grid.y);
-% Z_filled = Z;
-% % Z_filled(nan_mask) = griddata(X(~nan_mask), Y(~nan_mask), Z(~nan_mask), X(nan_mask), Y(nan_mask));
-% 
-% Z_filled(nan_mask) = 5;
-% 
-% 
-%             hf = figure('Tag','PlotFig','Visible','on');  
-%             ax = axes(hf);
-% %             ax.XLim = xmnmx; ax.YLim = ymnmx;
-%             C = pcolor(ax,grid.x,grid.y,Z_filled);
-% 
-% %              [X,Y] = meshgrid(grid.x,grid.y);
-% %              C = surf(X,Y,grid.z');
-%             shading interp
-%             axis equal tight
-%             view(2)
-%             cmap = gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')]);
-% 
-%             cLimits = clim;
-% % 
-% % xLimits = xlim;
-% % yLimits = ylim;
-% 
-% 
-% 
-%             %delete(hf)
-% 
-%             %create image object
-% 
-%             %image uses centre of pixels for x,y, adjust the limits to match
-%             delX = abs(grid.x(2)-grid.x(1));   
-%             delY = abs(grid.y(2)-grid.y(1));             
-%             xmnmx = [xmnmx(1)-delX,xmnmx(2)+delX];
-%             ymnmx = [ymnmx(1)-delY,ymnmx(2)-10*delY];
-% 
-% %             xmnmx = [grid.x(2),grid.x(end-1)];
-% %             ymnmx = [grid.y(2),grid.y(end-1)];
-%             im = struct('XData',xmnmx,'YData',ymnmx,'CData',C.CData,'CMap',cmap,'CLim',cLimits);
-% 
-% %             ax.NextPlot =  'add';
-% %                 hold(ax,'on')     
-% figure
-%               h_im = imagesc('XData',im.XData,'YData',im.YData,'CData',im.CData, 'AlphaData', ~isnan(im.CData)); 
-%               
-% % % Handle NaNs along one boundary
-% % if any(isnan(Z(:,1))) || any(isnan(Z(:,end))) || any(isnan(Z(1,:))) || any(isnan(Z(end,:)))
-% %     set(gca, 'Clim', [min(Z(:)), max(Z(:))]); % Set color limits to avoid cropping
-% % end
-% 
-% % h_im = image(grid.x,grid.y,im.CData, 'AlphaData', ~isnan(im.CData)); 
-% % axis xy
-% set(gca, 'YDir', 'normal'); % Correct the Y direction
-% %                 h_im = imagesc(ax,grid.x,grid.y,im.CData);  
-% %                 h_im.AlphaData = 0.5;
-% %                 set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent
-%                 
-% %                 hold(ax,'off')
-%                shading interp
-%             axis equal tight 
+            %check plot by overlaying image (set hf to Visible and comment
+            %delete hf to activate)
+            % hold(ax,'on')
+            % h_im = imagesc('XData',im.XData,'YData',im.YData,'CData',im.CData);
+            % h_im.AlphaData = 0.5;
+            % hold(ax,'off')
 
             %to use this method the calling class must include a get.formatypes method
             %(see EDBimport for eg)

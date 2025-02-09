@@ -49,10 +49,9 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
                 'Use digitised points and exit. Close figure window to Quit without saving'};
     % position = [0.3,0.4,0.35,0.5];
     position = [0,0,1,1];
-    [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
+    [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,0.8,tooltips);
     pause(0.1)
     ax = gd_plotgrid(h_plt,grid);
-    axis equal tight %assume geographical projection or grid of similar dimensions
     
     if ~isempty(inlines)
         ax = plotLines(ax,inlines);
@@ -89,10 +88,10 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
         elseif strcmp(h_but.Tag,'Quit') 
             %no longer used as a button - use close figure
             points = [];
-            ok = 1;
+            ok = 1;  delete(h_but);   %keep figure but delete buttons
 
         else   %user accepted
-            ok = 1;                                  %accepted so end loop
+            ok = 1;  delete(h_but);   %keep figure but delete buttons                          
 
         end   
         h_but = resetbutton(ax,h_but);

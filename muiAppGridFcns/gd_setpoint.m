@@ -1,4 +1,4 @@
-function point = gd_setpoint(ax,promptxt,isxyz)
+function [point,H] = gd_setpoint(ax,promptxt,isxyz)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -15,6 +15,7 @@ function point = gd_setpoint(ax,promptxt,isxyz)
 %   isxyz - logical flag true to input z values - optional, default is false
 % OUTPUTS
 %   point - struct with x, y fields defining added point and z if included 
+%   H - handle to graphical point object
 % NOTES
 %   Use button 3 or press Return to quit and return point = []
 % SEE ALSO
@@ -24,6 +25,7 @@ function point = gd_setpoint(ax,promptxt,isxyz)
 % CoastalSEA (c) Aug 2022
 %--------------------------------------------------------------------------
 %  
+    point = []; H = [];    
     hold on
     title(ax,promptxt)
     but=0;  
@@ -31,15 +33,14 @@ function point = gd_setpoint(ax,promptxt,isxyz)
     while (but ~= 1) %Repeat until the Left button is not clicked
         try
             [xval,yval,but] = ginput(1);  %use mouse to select points
-        catch        %user closes figure while selection is in progress
-            point = [];
+        catch        %user closes figure while selection is in progress 
             return;
         end
-        if but==3, point = []; return; end %user right clicks mouse
+        if but==3, return; end %user right clicks mouse
     end
     %
-    if isempty(xval) %user presses Return during ginput selection
-        point = [];
+    if isempty(xval) 
+        %user presses Return during ginput selection
     else
         point.x = xval;  point.y = yval; 
         if isxyz, point = setZvalue(ax,point); end
@@ -47,7 +48,7 @@ function point = gd_setpoint(ax,promptxt,isxyz)
 
     if ~isnan(xval)
         H = plot(ax,xval,yval,'ok','MarkerSize',4,'MarkerFaceColor','w','Tag','mypoints');
-        H.ButtonDownFcn = {@LineSelected, H};
+        H.ButtonDownFcn = {@pointSelected, H};
         H.UserData = int32(0);
         if isxyz
             text(ax,xval,yval,sprintf('  %.1f',point.z),'Color','white',...
@@ -79,7 +80,7 @@ function z = find_zvalue(ax,point)
 end
 
 %%
-function LineSelected(src, evt, H)
+function pointSelected(src, evt, H)
     if evt.Button==1
         H(H==src).Color = 'r';
     elseif evt.Button==3

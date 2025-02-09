@@ -67,28 +67,8 @@ function lines = cleanContours(C,level)
     lines.y = C(2,2:end);
     lines.x(idx) = NaN;
 
-    nrec = length(lines.x);
-    idN = find(isnan(lines.x));
-    idN = [1,idN,nrec]; 
-    xlines = [];  ylines = [];
-    %find each line and smooth
-    for i=1:length(idN)-1
-        xline = lines.x(idN(i):idN(i+1));
-        yline = lines.y(idN(i):idN(i+1));
-        %first line has no leading nan
-        if i>1, xline = xline(2:end); yline = yline(2:end); end
-        %last line has not trailing nan
-        if idN(i)==nrec, lend = nrec; else, lend = length(xline)-1; end
-
-        if all(xline==0) || all(yline==0)
-            %nothing to add
-        else    
-            xlines = [xlines,xline(1:lend),NaN]; %#ok<AGROW>
-            ylines = [ylines,yline(1:lend),NaN]; %#ok<AGROW>
-        end
-    end
-    lines.x = xlines(1:end-1);   %remove trainling NaN
-    lines.y = ylines(1:end-1);
+    lines.x(end+1) = NaN;            %add trailing NaN
+    lines.y(end+1) = NaN;
 end
 
 

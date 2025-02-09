@@ -40,55 +40,58 @@ function clines = gd_boundary(grid,paneltxt,outype,isdel)
                 'Reset - choose a different contour level (or NaN mask)',...
                 'Use digitised points and exit. Close figure window to Quit without saving'};
     position = [0.3,0.4,0.35,0.5];
-    [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
+    [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,0.8,tooltips);
     ax = gd_plotgrid(h_plt,grid);
-    axis equal  %assume geographical projection or grid of similar dimensions
-    axis tight
     zlevel = setLevel();
-    clines =  gd_getcontour(grid,zlevel,false);
-    ax = plotLines(ax,clines);
-%     if isempty(clines)
-%          delete(h_plt.Parent); return
-%     else
-%         ax = plotLines(ax,clines);
-%     end
+    if ~isempty(zlevel)
+        clines =  gd_getcontour(grid,zlevel,false);
+        ax = plotLines(ax,clines);
+    end
 
     ok = 0;
     while ok<1
         waitfor(h_but,'Tag');
         if ~ishandle(h_but) %this handles the user deleting figure window
             clines = []; return;
+
         elseif strcmp(h_but.Tag,'Smooth')
             %smooth the shoreline
             hlines = findobj(ax,'Tag','slines');    %remove any existing smoothed lines
             delete(hlines)  
             %get the user to define the upper limit to use for the hypsomety
-            promptxt = {'Method (0-moving av, 1-smooth)','Window size (1 or 2 elements)',...
+            promptxt = {'Method (0-moving av, 1-smooth)','Window size',...
                         'Savitzky-Golay degree (<window)','Mininum points in line to smooth'};
-            defaults = {'0','10','4','50'};
+            defaults = {'0','10','4','10'};
             inp = inputdlg(promptxt,'Boundary',1,defaults);
-            if isempty(inp), inp=defaults; end
-            idm= logical(str2double(inp{1}));
-            win = str2num(inp{2}); %#ok<ST2NM> allow input of vector [1x2]
-            deg = str2double(inp{3});  
-            npnts = str2double(inp{4});
-            if idm==0, method = 'movmean'; else, method = 'sgolay'; end
-            shore = smoothLines(clines,method,win,deg,npnts);   
-            hold on
-            plot(ax,clines.x,shore,'-.g','LineWidth',1,'Tag','slines')
-            hold off
-            clines.y = shore;
+            if ~isempty(inp)
+                idm= logical(str2double(inp{1}));
+                win = str2num(inp{2}); %#ok<ST2NM> allow input of vector [1x2]
+                deg = str2double(inp{3});  
+                npnts = str2double(inp{4});
+                if idm==0, method = 'movmean'; else, method = 'sgolay'; end
+                clines = gd_smoothlines(clines,method,win,deg,npnts);   
+                hold on
+                plot(ax,clines.x,clines.y,'-.g','LineWidth',1,'Tag','slines')
+                hold off
+            end
+
         elseif strcmp(h_but.Tag,'Resample')
             %resample as selected interval
             cint = setInterval();
-            clines = resampleLines(clines,cint);
-            ax = plotLines(ax,clines);
+            if ~isempty(cint)
+                clines = resampleLines(clines,cint);
+                ax = plotLines(ax,clines);
+            end
+
         elseif strcmp(h_but.Tag,'Reset')
             zlevel = setLevel();
-            clines =  gd_getcontour(grid,zlevel,false);            
-            ax = plotLines(ax,clines);
+            if ~isempty(zlevel)
+                clines =  gd_getcontour(grid,zlevel,false);            
+                ax = plotLines(ax,clines);
+            end
+
         else
-            ok = 1;
+            ok = 1;  delete(h_but);   %keep figure but delete buttons
         end
         h_but = resetbutton(ax,h_but);
     end
@@ -119,10 +122,7 @@ function ax = plotLines(ax,inlines)
     delete(hlines)
     hlines = findobj(ax,'Tag','slines');    
     delete(hlines)    
-    % idN = find(isnan(inlines.x));
-    % idN = [1,idN,length(inlines.x)];
-    % i=2;
-    % idl = idN(i):idN(i+1);
+
     if ~isempty(inlines)
         idl = 1:length(inlines.x);
         hold on
@@ -136,7 +136,7 @@ function zlevel = setLevel()
     %prompt user to set the level for the contour to be extracted
     promptxt = sprintf('Elevation of shoreline contour\n(or NaN for NaN mask):');
     inp = inputdlg({promptxt},'Boundary',1,{'NaN'});
-    if isempty(inp), return; end  %user cancelled
+    if isempty(inp), zlevel = []; return; end  %user cancelled
     zlevel = str2double(inp{1});
 end
 
@@ -145,70 +145,28 @@ function cint = setInterval()
     %prompt user to set point spacing interval for the contour
     promptxt = sprintf('Sampling interval (m)');
     inp = inputdlg({promptxt},'Boundary',1,{'100'});
-    if isempty(inp), return; end  %user cancelled
+    if isempty(inp), cint = []; return; end  %user cancelled
     cint = str2double(inp{1});
 end
 
 %%
 function clines = resampleLines(inlines,cint)
     %resample the contour lines at intervals of cint
-    nrec = length(inlines.x);
-    idN = find(isnan(inlines.x));
-    idN = [1,idN,nrec]; 
-    %inlines = gd_pnt2vec(inlines,1);  %convert to matrix
-    [points,~] = gd_vec2pnt(inlines);  %convert to points
+    idN = [0,find(isnan(inlines.x))];
+    [points,~] = gd_vec2pnt(inlines);                 %convert to points
     nlines = [];
     for i=1:length(idN)-1
-        cline = getIndex(points,idN,i);
-        clength = sum(vecnorm(diff(cline),2,2));  %cline is a column vector [Nx2]
-        cpoints = round(clength/cint);            %number of points in new line
-        newcline = curvspace(cline,cpoints);
+        cline = points(idN(i)+1:idN(i+1));            %extract line        
+        cline = gd_pnt2vec(cline(1:end-1),1);         %convert to matrix omit trailing NaN
+        if size(cline,1)>1                            %trap single point lines
+            clength = sum(vecnorm(diff(cline),2,2));  %cline is a column vector [Nx2]
+            cpoints = round(clength/cint);            %number of points in new line
+            newcline = curvspace(cline,cpoints);
+        else
+            newcline = cline;
+        end
         nlines = [nlines;newcline;[NaN,NaN]]; %#ok<AGROW>  
     end  
-    clines.x = nlines(:,1);
-    clines.y = nlines(:,2);
-end
-
-%%
-function smoothline = smoothLines(inlines,method,win,deg,npnts)
-    %smooth each individaul line segment
-    nrec = length(inlines.x);
-    idN = find(isnan(inlines.x));
-    idN = [1,idN,nrec]; 
-    smoothline = [];
-    %find each line and smooth
-    for i=1:length(idN)-1
-        aline = inlines.y(idN(i):idN(i+1));
-        %first line has no leading nan
-        if i>1, aline = aline(2:end); end
-        %last line has not trailing nan
-        if idN(i)==nrec, lend = nrec; else, lend = length(aline)-1; end
-
-        if length(aline)>npnts
-            if strcmp(method,'sgolay')
-                aline = smoothdata(aline,method,win,'Degree',deg);
-            else %use movmean
-                aline = smoothdata(aline,method,win,'omitnan');
-            end
-        end
-        smoothline = [smoothline,aline(1:lend),NaN]; %#ok<AGROW>
-    end
-end
-
-%%
-function [aline,idL] = getIndex(points,idN,line)
-    %get the indices of the line to be extracted
-    % idL - indices of line including trailing NaNs
-    newpnts.x = NaN; newpnts.y = NaN;        %line termination
-    idL =idN(line):idN(line+1);
-    aline = points(idL);
-    if isnan(aline(1).x)
-        idL = idN(line)+1:idN(line+1);
-        aline(1) = [];
-    end
-    %
-    if ~isnan(aline(end).x)
-        aline = [aline,newpnts];
-    end
-    aline = gd_pnt2vec(aline(1:end-1),1);
+    clines.x = nlines(:,1)';
+    clines.y = nlines(:,2)';
 end

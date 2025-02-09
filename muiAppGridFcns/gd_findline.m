@@ -26,7 +26,7 @@ function lineIndex = gd_findline(points, queryPoint)
     currentLine = [];
 
     for i = 1:length(points)
-        if isnan(points(i).x) && isnan(points(i).y)
+        if isnan(points(i).x) %|| isnan(points(i).y)
             if ~isempty(currentLine)
                 numLines = numLines + 1;
                 % Check if the queryPoint lies on the current line
@@ -37,7 +37,7 @@ function lineIndex = gd_findline(points, queryPoint)
                 currentLine = []; % Reset for the next line
             end
         else
-            currentLine = [currentLine; points(i)]; %#ok<AGROW> 
+            currentLine = [currentLine, points(i)]; %#ok<AGROW> 
         end
     end
 
@@ -53,7 +53,7 @@ end
 %%
 function isOnLine = isPointOnLine(line, point)
     isOnLine = false;
-    for i = 1:size(line, 1) - 1
+    for i = 1:size(line, 2) - 1
         p1 = line(i);
         p2 = line(i + 1);
         if isPointBetween(p1, p2, point)

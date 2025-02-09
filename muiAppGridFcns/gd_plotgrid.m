@@ -26,6 +26,7 @@ function ax = gd_plotgrid(hfig,grid)
     hpc.Tag = 'PlotGrid';
     ax = gd_ax_dir(ax,grid.x,grid.y);
     shading interp
+    axis equal tight
     mnmx = minmax(grid.z);
     if abs(diff(mnmx))>0 
         %only call if there is some variation in the grid

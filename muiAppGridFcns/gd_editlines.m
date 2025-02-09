@@ -1,5 +1,5 @@
 function points = gd_editlines(grid,paneltxt,nlines,isdel)
-%npts,
+%
 %-------function help------------------------------------------------------
 % NAME
 %   gd_editlines.m
@@ -24,7 +24,8 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
 % NOTES
 %   NB: if the figure window is closed the function returns points=[] and
 %       not the input points
-%   Functions is similar to gd_digitisepoints which handles x,y points, 
+%   All lines are terminated with a NaN (as per shapefiles)
+%   Function is similar to gd_digitisepoints which handles x,y points, 
 %   whearas gd_editlines handles x,y or x,y,z points
 % SEE ALSO
 %   called in GD_Sections
@@ -35,6 +36,7 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
 %
     if nargin<4, isdel = false; end
     isxyz = false;                      %assume just lines
+    nanpnts.x = NaN; nanpnts.y = NaN;   %line termination
     figtitle = sprintf('Edit lines');
     tag = 'PlotFig'; %used for collective deletes of a group
     butnames = {'New','Add','Edit','Insert','Join/Split','Delete','View','Use'};
@@ -48,17 +50,20 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
                 'Use digitised points and exit. Close figure window to Quit without saving points/lines'};
     % position = [0.3,0.4,0.35,0.5];
     position = [0,0,1,1];
-    [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,tooltips);
+    [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,0.8,tooltips);
     ax = gd_plotgrid(h_plt,grid);
-    axis equal tight %assume geographical projection or grid of similar dimensions
-    
+
     %get user to define the required points
     if (isnumeric(nlines) && isscalar(nlines)) || isempty(nlines)   
         %handle call to function with no lines
         outype = nlines;
         points = [];        
     else                            %plot imported lines
-        [points,outype] = gd_vec2pnt(nlines);      
+        [points,outype] = gd_vec2pnt(nlines); 
+
+        %check that lines are terminated with a NaN
+        if ~isnan(points(end).x), points = [points,nanpnts]; end
+
         if length(points)>5000
             getdialog(sprintf('Large number of points (N=%d)\nLoading linework my take some time',length(points)));
         end
@@ -71,14 +76,10 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
             points = [];
             return;
 
-        elseif strcmp(h_but.Tag,'New') 
-            if ~isempty(points)
-                newpnts.x = NaN; newpnts.y = NaN;        %line termination
-                points = [points,newpnts];                     %#ok<AGROW> 
-            end            
+        elseif strcmp(h_but.Tag,'New')        
             promptxt = 'Left click to create points, right click to finish';
             newpnts = gd_setpoints(ax,promptxt,isxyz);   %get points to add
-            points = [points,newpnts];                         %#ok<AGROW> 
+            points = [points,newpnts,nanpnts];           %#ok<AGROW> 
 
         elseif strcmp(h_but.Tag,'Add') 
             promptxt = 'Select point at end of line to extend';
@@ -138,7 +139,7 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
             ax = toggle_view(ax,points);
 
         else   %user accepted
-            ok = 1;                                  %accepted so end loop
+            ok = 1; delete(h_but);   %keep figure but delete buttons
 
         end   
         h_but = resetbutton(ax,h_but);
@@ -203,33 +204,39 @@ end
 %%
 function points = addpoints(points,newpnts,endpnt,isadd)
     %find end to add points to and extend existing line
+    %isadd true finds the point that is closest to the endpnt
     idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y); 
+
+    %find the relative position on the line
+    isend = isnan(points(idp+1).x);   %end point is at end of a line
+    if idp==1
+        isstart = false;              %special case first point in lines
+    else
+        isstart = isnan(points(idp-1).x); %end point is at start of a line
+    end    
+
     if isadd
         %check direction of new points relative to existing line
         xlen = [endpnt.x-newpnts(1).x,endpnt.x-newpnts(end).x];
         ylen = [endpnt.y-newpnts(1).y,endpnt.y-newpnts(end).y];
-        [~,ide] = min(hypot(xlen,ylen));                %index of nearest point
-        if ide>1
+        [~,ide] = min(hypot(xlen,ylen));         %index of nearest point
+        if (ide>1 && isend) || (ide==1 && ~isend)
             newpnts = fliplr(newpnts);
         end
     end
-
-    %find location and add new points
-    location = findPointonLine(points,endpnt);
-    switch location
-        case 1  %first point in vector
-            points = [fliplr(newpnts),points];
-        case 2  %last point in vector
-            points = [points,newpnts];
-        case 3  %first point of line (after a NaN)
-            points = [points(1:idp-1),fliplr(newpnts),points(idp:end)];
-        case 4  %last point of line (before a NaN)
-            points = [points(1:idp),newpnts,points(idp+1:end)];
+    
+    %insert the new points (cases ensure NaNs are maintained)
+    if isend
+        points = [points(1:idp),newpnts,points(idp+1:end)];
+    elseif isstart
+        points = [points(1:idp-1),newpnts,points(idp:end)];
+    else
+        points = [newpnts,points];     %in front of all lines
     end
 end
 
 %%
-function location = findPointonLine(points,endpnt)
+function location = findPointonLine(points,querypnt)
     %find the location of a point in a vector of lines
     % location is an index:
     % empty = point not found
@@ -238,8 +245,9 @@ function location = findPointonLine(points,endpnt)
     % 3 - first point of line in vector (after a NaN)
     % 4 - last point of line in vector (before a NaN)
     % 5 - point within line 
-    nrec = length(points);
-    idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y); 
+    nrec = length(points)-1;
+    idp = find([points(:).x]==querypnt.x & [points(:).y]==querypnt.y);
+    idp = idp(1); %polygons can have the same point twice
 
     if sum(idp)==0
         location = []; return;
@@ -297,8 +305,16 @@ end
 function points = insertpoints(ax,points,pnt,newpnts)
     %insert additional points, 'newpnts', between the selected points,
     %'pnt', in the digitised points vector,'points'.
-    idpos(1) = find([points(:).x]==pnt.start.x & [points(:).y]==pnt.start.y); 
-    idpos(2) = find([points(:).x]==pnt.adjacent.x & [points(:).y]==pnt.adjacent.y); 
+    idposs = find([points(:).x]==pnt.start.x & [points(:).y]==pnt.start.y); 
+    idposa = find([points(:).x]==pnt.adjacent.x & [points(:).y]==pnt.adjacent.y); 
+    %polygons can have the same point twice
+    idx = abs(idposs-idposa)==1;  %finds the adjacent point, assuming more than 3 points
+    if length(idposs)>1
+        idposs = idposs(idx);
+    elseif length(idposa)>1
+        idposa = idposa(idx);
+    end
+    idpos = [idposs,idposa];
     if idpos(2)<idpos(1), idpos = fliplr(idpos); end  %check that in ascending order
     %insert the new points in the correct interval for the line
     %to be in the right order they need to be created in the same direction
@@ -316,9 +332,8 @@ end
 %%
 function points = joinlines(points,initpnt,joinpnt)
     %join two lines based on selected end points
-    nrec = length(points);
     msg = 'Cannot join line to itself';
-    newpnts.x = NaN; newpnts.y = NaN;        %line termination
+    nanpnts.x = NaN; nanpnts.y = NaN;        %line termination
     idi = find([points(:).x]==initpnt.x & [points(:).y]==initpnt.y); 
     idj = find([points(:).x]==joinpnt.x & [points(:).y]==joinpnt.y); 
     
@@ -326,41 +341,50 @@ function points = joinlines(points,initpnt,joinpnt)
     if idi==idj, warndlg(msg); return; end
     Lineidi = gd_findline(points,initpnt);
     Lineidj = gd_findline(points,joinpnt);
-    if Lineidi==Lineidj, warndlg(msg); return; end
+    %prevent a line being made into a polygon
+    % if Lineidi==Lineidj, warndlg(msg); return; end 
+    
+    %may need to handle breaking up a polygon
 
-    idN = find(isnan([points(:).x]));
-    idN = [1,idN,nrec];   
+
+    idN = [0,find(isnan([points(:).x]))];   
     %extract lines, concatenate and add to end of points array
     [line1,idL1] = getIndex(points,idN,Lineidi);
     [line2,idL2] = getIndex(points,idN,Lineidj);
+
+    isendi = isnan(points(idi+1).x);  %initial point is at end of a line
+    isendj = isnan(points(idj+1).x);  %join point is at end of a line
+
+    if isendi && isendj               %ends are being joined
+        line2 = fliplr(line2);        %reverse join line
+        line2 = [line2(2:end),nanpnts];
+    elseif  isendi && ~isendj         %end joined to start
+        %                             %lines are in correct order
+    elseif  ~isendi && isendj         %start joined to end
+        temp = line1;                 %swap order of lines
+        line1 = line2;  line2 = temp;
+        initpnt = joinpnt;            %swap order of selection points
+    elseif  ~isendi && ~isendj        %start joined to start
+        line2 = fliplr(line2);        %reverse initial line
+        line2 = [line2(2:end),nanpnts];
+    end
+
+    %remove the exising lines from the points set
     idx = [idL1,idL2];
     points(idx) = [];
-    if ~isempty(points) && ~isnan(points(end).x)          
-        points = [points,newpnts];      %add NaNs to end of existing line
-    end
-    %add the two lines. NB this sorts the lines to minimise the distance
-    %from the point selected on line1 to the start or end of line 2
-    isend = line2(end).x==joinpnt.x & line2(end).y==joinpnt.y;
-    if isend, line2 = fliplr(line2); end %line direction based on selected join point       
-    newline = addpoints(line1,line2,initpnt,false);
 
-    points = [points,newline];
+    %to join the two lines, treat line2 as newpoints so remove the trailing NaN
+    newline = addpoints(line1,line2(1:end-1),initpnt,false);  
+
+    points = [points,newline];   %recombine the joined line with other lines
 
     %nested function-------------------------------------------------------
     function [aline,idL] = getIndex(points,idN,line)
         %get the indices of the line to be extracted
         % idL - indices of line including trailing NaNs
-        idL =idN(line):idN(line+1);
+        % where idN = [0,find(isnan([points(:).x]))]; 
+        idL =idN(line)+1:idN(line+1);
         aline = points(idL);
-        if isnan(aline(1).x)
-            idL = idN(line)+1:idN(line+1);
-            aline(1) = [];
-        end
-        %
-        if ~isnan(aline(end).x)
-            aline = [aline,newpnts];
-        end
-        aline = aline(1:end-1);
     end %------------------------------------------------------------------
 end
 
@@ -368,8 +392,8 @@ end
 function points = splitlines(points,initpnt)
     %split a line at the defined point
     idi = find([points(:).x]==initpnt.x & [points(:).y]==initpnt.y); 
-    newpnts.x = NaN; newpnts.y = NaN;        %line termination
-    points = [points(1:idi),newpnts,points(idi+1:end)];
+    nanpnts.x = NaN; nanpnts.y = NaN;        %line termination
+    points = [points(1:idi),nanpnts,points(idi+1:end)];
 end
 
 %%
@@ -403,8 +427,9 @@ function ax = toggle_view(ax,points)
         hold on
         plot(ax,[points(:).x],[points(:).y],'.--k','PickableParts','none',...
                                    'MarkerEdgeColor','r','Tag','viewline'); 
-        idx = [1,find(isnan([points(:).x]))+1];
-        plot(ax,[points(idx).x],[points(idx).y],'ob','PickableParts','none',...
+        idN = [0,find(isnan([points(:).x]))];
+        idN = idN(1:end-1)+1;   %index to first point of each line
+        plot(ax,[points(idN).x],[points(idN).y],'ob','PickableParts','none',...
                   'MarkerSize',6,'MarkerEdgeColor','r', 'Tag','viewline'); 
         hold off  
     else                        %toggle line and points off

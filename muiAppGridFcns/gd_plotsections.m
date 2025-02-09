@@ -31,11 +31,10 @@ function gd_plotsections(grid)
                 'Add a section to an exiting plot',...
                 'Clear the current section lines. Close figure window to Quit'};
     position = [0.3,0.4,0.35,0.5];
-    [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position,tooltips);
+    [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position,0.8,tooltips);
     h_plt.UserData = false;
     ax = gd_plotgrid(h_plt,grid);
-    axis equal  %assume geographical projection or grid of similar dimensions
-    axis tight
+
     msg = 'Use ''Define'' to initialise a section';
     isxyz = false;
     points = [];
@@ -136,7 +135,6 @@ function points = setLine(ax)
     text(ax,points(1).x,points(1).y,sprintf('%d',nline+1),...
         'HorizontalAlignment','center','PickableParts','none','FontSize',6,'Tag','mytext');
     hold off
-    title(ax,'')
 end
 
 %%
@@ -191,6 +189,8 @@ end
 %%
 function updateSection(ax,points,delpoint,newpnt)
     %update the linework and text associated with sections on main figure
+    %assumes only the last section can be edited. for case of all sections
+    %available and editable see gd_sectionlines
     h_lns = findobj(ax,'Tag','mysection');
     nline = length(h_lns);
     idl = [h_lns(:).XData]==delpoint.x & [h_lns(:).YData]==delpoint.y; 

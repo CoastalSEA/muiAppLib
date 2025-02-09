@@ -15,7 +15,7 @@ function points = gd_startendpoints(grid,isdel)
 %  points - struct with x and y fields defining selected start and end points
 % SEE ALSO
 %   REPLACED BY gd_selectpoints.m which is more generic and has improved
-%   interactive editing options.                         ***************
+%   interactive editing options.            
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jun 2022
@@ -50,9 +50,9 @@ function points = gd_startendpoints(grid,isdel)
             hold off
         elseif strcmp(h_but.Tag,'Quit') 
             points= [];
-            ok = 1;
+            ok = 1; delete(h_but);   %keep figure but delete buttons
         else   %user accepted
-            ok = 1; 
+            ok = 1; delete(h_but);   %keep figure but delete buttons
         end        
     end
 

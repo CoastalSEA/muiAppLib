@@ -21,7 +21,7 @@ classdef GD_Sections < handle
         %
         Boundary
         ChannelLine
-        % ChannelTopo
+        ChannelProps
         SectionLines
     end
     
@@ -99,7 +99,7 @@ classdef GD_Sections < handle
             if nargin<1, cobj = []; end
 
             if isa(cobj.Sections,'GD_Sections')
-                obj = cobj.Data.Grid.UserData.sections;
+                obj = cobj.Sections;
             else                
                 obj = GD_Sections;
             end
@@ -214,35 +214,49 @@ classdef GD_Sections < handle
                 warndlg('No grid for selected case'); return;
             end
             grid = getGrid(cobj,1);   %grid for selected year
+            
+            if ~isempty(obj.ChannelLine)           %channel line exists
+                answer = questdlg('A centre-line exists. Extend existing or create new one?',...
+                                  'Channel','Extend','New','Extend');
+            else
+                answer = 'New';
+            end   
 
+            if strcmp(answer,'New')
             %get maximum water level to define
-            promptxt = {'Maximum accessible water level?','Depth exponent','Sampling interval (m)'};
-            defaults = {num2str(max(grid.z,[],'all')),'5','100'};
-            inp = inputdlg(promptxt,'Water level',1,defaults);
-            if isempty(inp), return; end %user cancelled
-            props.maxwl = str2double(inp{1});
-            props.dexp = str2double(inp{2});
-            cint = str2double(inp{3});
-            nlines = [];  %numerical [Nx2} array
+                promptxt = {'Maximum accessible water level?','Depth exponent','Sampling interval (m)'};
+                defaults = {num2str(max(grid.z,[],'all')),'5','100'};
+                inp = inputdlg(promptxt,'Water level',1,defaults);
+                if isempty(inp), return; end %user cancelled
+                props.maxwl = str2double(inp{1});
+                props.dexp = str2double(inp{2});
+                props.cint = str2double(inp{3});
+                nlines = [];  %numerical [Nx2} array
+            else
+                props = obj.ChannelProps;
+                clines = obj.ChannelLine;
+                nlines(:,1) = clines.x; nlines(:,2) = clines.y;  %matrix of xy points
+            end
+
             ok = 0;
             while ok<1
-                nline = gd_centreline(grid,mobj,props,nlines(1:end-1,:));
+                nline = gd_centreline(grid,mobj,props,nlines);
                 if isempty(nline), ok = 1; continue; end
-                nline = cell2mat(struct2cell(nline)');       %struct to [Nx2] array
+                nline = cell2mat(struct2cell(nline))';        %struct to [Nx2] array
                 hf = cl_checkPlot(obj,grid,nline,nlines);
                 answer = questdlg('Accept the centreline?','Centre-line','Yes','No','Yes');
                 if strcmp(answer,'Yes')
                     %convert format of output if required
                     clength = sum(vecnorm(diff(nline),2,2));  %cline is a column vector [Nx2]
-                    cpoints = round(clength/cint);            %number of points in new line
-                    newcline = curvspace(nline,cpoints);
+                    cpoints = round(clength/props.cint);      %number of points in new line
+                    newcline = curvspace(nline,cpoints);      %curvespace uses [Nx2]
                     nlines = [nlines;newcline;[NaN,NaN]];     %#ok<AGROW>
                 end
                 delete(hf)
             end
-            if isempty(nlines), return; end                   %user cancelled without creating any lines
-            nlines = nlines(1:end-1,:);                       %remove trailing NaNs
-            clines.x = nlines(:,1); clines.y =  nlines(:,2);  %x,y struct of vector points
+            if isempty(nlines), return; end                    %user cancelled without creating any lines
+            %nlines = nlines(1:end-1,:);                       %remove trailing NaNs
+            clines.x = nlines(:,1)'; clines.y =  nlines(:,2)'; %x,y struct of vector points (row vectors)
             %give user opportunity to edit the centre-line interactively
             answer = questdlg('Check/Edit or Save the shoreline?','Centre-line','Edit','Save','Quit','Edit');
             if strcmp(answer,'Edit')
@@ -255,6 +269,7 @@ classdef GD_Sections < handle
 
             %save results to grid class instance
             obj.ChannelLine = clines;
+            obj.ChannelProps = props;
             cobj.Sections = obj;
             getdialog(sprintf('Channel network added to grid for Case: %s',grid.desc),[],3)
             %option to also add to grid cline property
@@ -267,25 +282,29 @@ classdef GD_Sections < handle
             %use the centre-line to generate a set of sections at right
             %angles and interactively edit them, or digitise them manually.
             %save results to grid class instance
+            %at the moment this requires a grid to be present but not needed ** 
             if isempty(obj.Boundary) || isempty(obj.ChannelLine)
                 warndlg('Boundary and Channel network need to be defined to extract Section Lines')
                 return
             end
             %extract the section lines that are normal to the 
             %channel centre line and extend to the bounding shoreline
-            slines = gd_sectionlines(obj);
+            paneltxt = 'Extract the channel cross-sections';
+            [slines,clines] = gd_sectionlines(obj,cobj,paneltxt,false);
 
-            %give user opportunity to edit the centre-line interactively
-            answer = questdlg('Check/Edit or Save the shoreline?','Centre-line','Edit','Save','Quit','Edit');
-            if strcmp(answer,'Edit')
-                paneltxt = 'Edit the centre-lines';
-                slines = gd_editlines(grid,paneltxt,slines,true);
-                if isempty(slines), return; end
-            elseif strcmp(answer,'Quit')
-                return;
-            end
+%             %give user opportunity to edit the centre-line interactively
+%             grid = getGrid(cobj,1);   %grid for selected year
+%             answer = questdlg('Check/Edit or Save the Cross-sections?','Cross-sections','Edit','Save','Quit','Edit');
+%             if strcmp(answer,'Edit')
+%                 paneltxt = 'Edit the centre-lines';                
+%                 slines = gd_editlines(grid,paneltxt,slines,true);
+%                 if isempty(slines), return; end
+%             elseif strcmp(answer,'Quit')
+%                 return;
+%             end
 
-            obj.Boundary = shore_xy;
+            obj.SectionLines = slines;
+            obj.ChannelLine = clines;
             cobj.Sections = obj;
             getdialog(sprintf('Section lines added to grid for Case: %s',grid.desc),[],3)
         end
@@ -323,11 +342,6 @@ classdef GD_Sections < handle
                 h_im = imagesc(ax,'XData',im.XData,'YData',im.YData,'CData',im.CData);
                 set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent              
                 isimage = true;
-                ax.NextPlot =  'add';
-                hold(ax,'on')                
-                lines=obj.Boundary;
-                plot(ax,lines.x,lines.y,'Color','r','LineStyle','--','DisplayName','boundary')
-                hold(ax,'off')
             end
             %
             if isgrid || isimage 
@@ -336,47 +350,13 @@ classdef GD_Sections < handle
                 cb.Label.String = 'Elevation (mAD)';    
             end
 
-            % ok = 0;
-            % while ok<1
-            %     promptxt = 'Selection line work to add';
-            %     list = {'Boundary','Channel network','Section Lines','Quit'};
-            %     irow = listdlg('PromptString',promptxt,...
-            %         'Name','Grid selection','SelectionMode','single',...
-            %         'ListSize',[200,200],'ListString',list);
-            %     if isempty(irow), ok = 1; continue; end
-            %     switch list{irow}
-            %         case 'Boundary'
-            %             type = 'Boundary';
-            %             sc = 'k'; ss = '-';
-            %         case 'Channel network'
-            %             type = 'ChannelLine';
-            %             sc = 'b'; ss = '-.';
-            %         case  'Section Lines'
-            %             type = 'SectionLines';
-            %             sc = 'r'; ss = '-';
-            %         case 'Quit'
-            %             ok = 1;
-            %             continue
-            %     end
-            % 
-            %     if isprop(obj,type)
-            %         lines = obj.(type);
-            %         hold on
-            %         plot(ax,lines.x,lines.y,'Color',sc,'LineStyle',ss,'DisplayName',list{irow})
-            %         hold off                    
-            %     else
-            %         getdialog(sprintf('No %s data for Case: %s',list{irow},grid.desc),[],1)
-            %         continue;
-            %     end
-            % end
-
             type = {'Boundary','ChannelLine','SectionLines'};
             for i=1:3
                 switch type{i}
                     case 'Boundary'
                         sc = 'k'; ss = '-'; sw = 0.5;
                     case 'ChannelLine'
-                        sc = 'b'; ss = '-.'; sw = 1;
+                        sc = 'g'; ss = '-.'; sw = 1.5;
                     case  'SectionLines'
                         sc = 'r'; ss = '-'; sw = 1;
                 end
@@ -385,8 +365,13 @@ classdef GD_Sections < handle
                     lines = obj.(type{i});
                     hold on
                     plot(ax,lines.x,lines.y,'Color',sc,'LineStyle',ss,...
-                                     'LineWidth',sw,'DisplayName',type{i})
-                    hold off 
+                                     'LineWidth',sw,'DisplayName',type{i});
+                    if strcmp(type{i},'ChannelLine')
+                        hp = plot(ax,lines.x(1),lines.y(1),'ok','MarkerSize',4,...
+                                                        'MarkerFaceColor','w');
+                        hp.Annotation.LegendInformation.IconDisplayStyle = 'off';
+                    end
+                    hold off
                 end
             end
 
@@ -402,14 +387,11 @@ classdef GD_Sections < handle
     methods (Access=private)
         function hf = cl_checkPlot(~,grid,cline,nlines)
             %plot base map of initial grid selection and defined mask
-            % cline and nlines are both [Nx2] arrays
-            points(1,:) = cline(1,:);
-            points(2,:) = cline(end,:);
+            % cline and nlines are both [2xN] arrays
+            points = [cline(1,:);cline(end,:)];
             hf = figure('Name','Thalwegs','Units','normalized','Tag','PlotFig');  
             hf.Position = [0,0,1,1];
             ax = gd_plotgrid(hf,grid);
-            axis equal  %assume geographical projection or grid of similar dimensions
-            axis tight
             colormap(ax,'gray');
             lines = {'-','--',':','-.'};
             

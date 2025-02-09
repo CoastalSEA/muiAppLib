@@ -26,8 +26,8 @@ function cline= gd_centreline(grid,mobj,props,clines)
 %
     if nargin<4
         clines = [];
-    elseif ~isempty(clines)
-        if isnan(clines(end,1)), clines(end,:) = []; end %remove any traling NaNs
+%     elseif ~isempty(clines)
+%         if isnan(clines(end,1)), clines(end,:) = []; end %remove any traling NaNs
     end    
 
     [X,Y] = meshgrid(grid.x,grid.y);
@@ -56,6 +56,6 @@ function cline= gd_centreline(grid,mobj,props,clines)
     [idy,idx] = ind2sub(size(Z),thalweg);
     progressbar(mobj,hwb);
 
-    cline.x = flipud(grid.x(idx)); %return points in order from start point
-    cline.y = flipud(grid.y(idy));
+    cline.x = flipud(grid.x(idx))'; %return points in order from start point
+    cline.y = flipud(grid.y(idy))'; %as row vectors
 end    

@@ -18,7 +18,7 @@ function points = gd_setpoints(ax,promptxt,isxyz)
 % NOTES
 %   uses gd_setpoint to get each point
 % SEE ALSO
-%   called in gd_digitisepoints and gd_selectpoints???????????
+%   called in gd_digitisepoints and gd_editlines
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jan 2025

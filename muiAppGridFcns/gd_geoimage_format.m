@@ -128,15 +128,18 @@ function ok = getPlot(obj,src,dsetname)
     if isempty(dst), return; end
     %test for array of allowed data types for a color image
     im = dst.geoimage;     %image object
-%     h_im = imagesc(ax,'XData',im.XData,'YData',im.YData,'CData',im.CData);
-%     set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent
-h_im = imshow(im.CData, 'XData',im.XData,'YData',im.YData); 
+    him = imshow(im.CData, 'XData',im.XData,'YData',im.YData);
+    set(gca, 'YDir', 'normal'); % Correct the Y direction
+    set(him, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent
+    colormap(im.CMap);
+    clim(im.CLim);
+    shading interp
     axis equal tight
-%     cb = colorbar;
-%     cb.Label.String = 'Elevation (mAD)';
+    cb = colorbar;
+    cb.Label.String = 'Elevation (mAD)';
     xlabel('Eastings (m)'); 
     ylabel('Northings (m)');    
-    title(dst.Description);
+    title(sprintf('%s(%s)',dst.Description,dsetname));
     ax.Color = [0.96,0.96,0.96];  %needs to be set after plot
 end
 
