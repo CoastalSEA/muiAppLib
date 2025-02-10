@@ -10,7 +10,7 @@ function smoothlines = gd_smoothlines(lines,method,window,degree,npnts)
 %   smoothlines = gd_smoothlines(lines,method,win,deg,npnts)
 % INPUTS
 %   lines - struct of x,y vectors to be smoothed. NaN used as line separator
-%           x and y need to be row vectors of points [2xN]
+%           x and y need to be row vectors of points [Nx2]
 %   method - 'movmean' for moving average; or 'sgolay' for Savitzky-Golay smoothing;
 %   window - window size to use for moving average (1 or 2 elements)
 %   degree - Savitzky-Golay degree (<window)
@@ -26,7 +26,8 @@ function smoothlines = gd_smoothlines(lines,method,window,degree,npnts)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 % 
-    idN = [0,find(isnan(lines.x))];
+    if isrow(lines.x), lines.x = lines.x'; end 
+    idN = [0;find(isnan(lines.x))];
     smlines = [];
     %find each line and smooth
     for i=1:length(idN)-1
@@ -38,8 +39,8 @@ function smoothlines = gd_smoothlines(lines,method,window,degree,npnts)
                 aline = smoothdata(aline,method,window);
             end
         end
-        smlines = [smlines,aline(1:end-1),NaN]; %#ok<AGROW>
+        smlines = [smlines;aline(1:end-1);NaN]; %#ok<AGROW>
     end
-    smoothlines.x = lines.x;
+    smoothlines.x = lines.x;  %return as column vectors
     smoothlines.y = smlines;
 end

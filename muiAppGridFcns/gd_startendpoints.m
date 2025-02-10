@@ -1,6 +1,6 @@
 function points = gd_startendpoints(grid,isdel)
 %npts,
-%-------function help------------------------------------------------------
+%-------function help-----------------------------------SUPERSEDED---------
 % NAME
 %   gd_startendpoints.m
 % PURPOSE

@@ -9,12 +9,14 @@ function point = gd_getpoint(ax,promptxt)
 % USAGE
 %   point = gd_getpoint(ax,promptxt);
 % INPUTS
-%   ax - figure axes to use to interactivvely select point
-%   promptxt - prompt to be used for point being defined
+%   ax - figure axes to use to interactively select point
+%   promptxt - prompt to be used for point being selected
 % OUTPUTS
 %   point - struct with x and y fields defining selected point
 % NOTES
-%    
+%   point needs to be defined using gd_setpoint so that the callback
+%   provides additional information about the type of point selection
+%   (left or right mouse click) in the graphical point UserData property.
 % SEE ALSO
 %   called in gd_digitisepoints and gd_selectpoints
 %

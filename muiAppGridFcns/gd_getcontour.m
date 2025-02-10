@@ -4,9 +4,9 @@ function clines = gd_getcontour(grid,zlevel,isplt)
 % NAME
 %   gd_getcontour.m
 % PURPOSE
-%   
+%   extract a contour at a defined level
 % USAGE
-%   points = gd_getcontour(grid,zlevel)
+%   clines = gd_getcontour(grid,zlevel)
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   zlevel - level of contour to be extracted
@@ -61,14 +61,15 @@ end
 %%
 function lines = cleanContours(C,level)
     %extract line segments separate with NaN values. return as points struct
-    idx = find(C(1,2:end)==level);   %should always return first value
+    idx = find(C(1,2:end)==level);      %should always return first value
     lines.x = C(1,2:end);
     lines.x(idx) = NaN;
     lines.y = C(2,2:end);
     lines.x(idx) = NaN;
 
-    lines.x(end+1) = NaN;            %add trailing NaN
+    lines.x(end+1) = NaN;               %add trailing NaN
     lines.y(end+1) = NaN;
+    lines = strucfun(@transpose,lines); %output as column vectors
 end
 
 

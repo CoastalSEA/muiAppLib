@@ -4,20 +4,23 @@ function [point,H] = gd_setpoint(ax,promptxt,isxyz)
 % NAME
 %   gd_setpoint.m
 % PURPOSE
-%   interactively create a sinle point on a plot and return the point
+%   interactively create a single point on a plot and return the point
 %   coordinates. Includes an option to enter an additional value at the
 %   selected point (e.g. elevation).
 % USAGE
 %   point = gd_setpoint(ax,promptxt,isxyz)
 % INPUTS
-%   ax - figure axes to use to interactivvely select point
+%   ax - figure axes to use to interactively select point
 %   promptxt - prompt to be used for point being defined
 %   isxyz - logical flag true to input z values - optional, default is false
 % OUTPUTS
 %   point - struct with x, y fields defining added point and z if included 
 %   H - handle to graphical point object
 % NOTES
-%   Use button 3 or press Return to quit and return point = []
+%   Use button 3 (right click for right handed mouse), or press Return to
+%   quit and return point = [].
+%   When a point is defined the graphical callback stores mouse event in
+%   the UserData property (left or right mouse click).
 % SEE ALSO
 %   called in gd_digitisepoints and gd_selectpoints
 %

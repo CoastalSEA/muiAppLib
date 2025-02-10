@@ -116,9 +116,9 @@
 
 
 %% Grid property functions
-% Summary of functions that derive and manipulte properties of the grid 
-% such as basin/channel dimensions and available in the _muiAppGridFcns_ 
-% folder. Use the Matlab(TM) help function in the command window to get 
+% Functions that derive and manipulte properties of the grid 
+% such as basin/channel dimensions can be found in the _muiAppGridFcns_ 
+% folder. Use the Matlab(TM) _help_ function in the command window to get 
 % further details of each function.
 %%
 % *gd_basin_hypsometry*

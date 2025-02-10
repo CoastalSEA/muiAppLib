@@ -1,25 +1,25 @@
-function vecpnts = gd_pnt2vec(points,outype)
+function lines = gd_points2lines(points,outype)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   gd_pnt2vec.m
+%   gd_points2lines.m
 % PURPOSE
 %   convert an array of structs with x,y (and z) fields to a [Nx2] or [Nx3] 
 %   array of points, or a single stuct with vectors in the x, y (and z) fields
 % USAGE
-%   vecpnts = gd_pnt2vec(points,isarray);
+%   lines = gd_points2lines(points,outype);
 % INPUTS
-%   points - struct array of x, y and optionally z 
+%   points - a row struct array of x, y and optionally z 
 %   outype - format of output - see Outputs for details
 % OUTPUTS
-%   vecpnts - outype=0: array of structs with x, y and z fields defining selected points,
-%             outype=1: Nx2 or Nx3 array.
-%             outype=2: struct with x, y (and z) vector fields
-%             outype=3: table with x, y (and z) vector fields
+%   lines - outype=0: array of structs with x, y and z fields defining selected points,
+%           outype=1: Nx2 or Nx3 array.
+%           outype=2: struct with x, y (and z) column vector fields
+%           outype=3: table with x, y (and z) column vector fields
 % NOTES
 %   digitising functions work with an array of structs each one defining a
 %   point. The output is converted to one of the formats defined for
-%   vecpnts. This function converts the points format to any of the vecpnts 
+%   vecpnts. This function converts the points format to any of the lines
 %   formats.
 % SEE ALSO
 %   used to reformat output from gd_digitisepoints and gd_selectpoints
@@ -28,17 +28,19 @@ function vecpnts = gd_pnt2vec(points,outype)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 % 
+    lines = points; 
     if nargin<2 || outype==0
-        vecpnts = points; return;            %return unchanged        
+        %output type undefined so cannot determine what to do
+        return;                
     elseif ~isstruct(points)
         %not points array struct as input - return unchanged
-        vecpnts = points; return;        
+        return;        
     elseif (isstruct(points) && length(points)==1)
-        vecpnts = points; %return struct of vectors unchanged
+        %if struct of single point return unchanged, otherwise
         if outype==1      %convert to array
-            vecpnts = cell2mat(struct2cell(points)');    %struct to [Nx2] array
+            lines = cell2mat(struct2cell(points)');    %struct to [Nx2] array
         elseif outype==3  %convert to table
-            vecpnts = struct2table(points);
+            lines = struct2table(points);
         end
         return;
     end
@@ -47,12 +49,12 @@ function vecpnts = gd_pnt2vec(points,outype)
     y = [points(:).y]; if isrow(y), y = y'; end
 
     if outype==1
-        vecpnts = [x,y];
+        lines = [x,y];
     elseif outype==2
-        vecpnts.x = x;
-        vecpnts.y = y;
+        lines.x = x;
+        lines.y = y;
     elseif outype==3
-        vecpnts = table(x,y,'VariableNames',{'x','y'});
+        lines = table(x,y,'VariableNames',{'x','y'});
     else
         warndlg('Unrecognised format type (outype should be 0-3)')
         return
@@ -61,11 +63,11 @@ function vecpnts = gd_pnt2vec(points,outype)
     if isfield(points,'z')
         z = [points(:).z];  if isrow(z), z = z'; end
         if outype==1
-            vecpnts = [vecpnts,z];
+            lines = [lines,z];
         elseif outype==2
-            vecpnts.z = z;
+            lines.z = z;
         elseif outype==3
-            vecpnts = addvars(vecpnts,z,'NewVariableNames','z');
+            lines = addvars(lines,z,'NewVariableNames','z');
         end
     end
 end

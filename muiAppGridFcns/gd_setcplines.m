@@ -1,42 +1,50 @@
-
-function lines = gd_setlines(ax,promptxt,linepoints)
+function cplines = gd_setcplines(ax,promptxt,linepoints)
 %%-------function help------------------------------------------------------
 % NAME
-%   gd_setlines.m
+%   gd_setcplines.m
 % PURPOSE
-%   converts a set of points to a set of lines and based on NaN separators,
-%   of digistise a set of points and return as a line
+%   converts a set of points to a set of lines based on NaN separators,
+%   plots a graphical line, or digistise a set of points and return as a pline
 % USAGE
-%   points = gd_setliness(ax,promptxt,linepoints);
+%   cplines = gd_setcplines(ax,promptxt,linepoints);
 % INPUTS
-%   ax - figure axes to use to interactivvely select point
+%   ax - figure axes to use to interactively select point
 %   promptxt - prompt to be used for point being defined
-%   linepoints - input points to be set as lines x,y struct with each line
-%                define by a NaN separator (optional)
+%   linepoints - set of x,y points struct array with each line defined by a 
+%                NaN separator (optional)
 % OUTPUTS
-%   lines - struct with x, y fields defining selectable lines
+%   cplines - a cell array of plines, or a new digitised pline
 % NOTES
-%   uses gd_setpoints to create a line of points
-%   if linepoints is empty the user can digitise a new line of points
+%   If linepoints is empty the user can digitise a new line of points.
+%   Uses gd_setpoints to create a line of points.
+%   When a graphical line is defined, the callback stores mouse event in
+%   the UserData property (left or right mouse click).
 % SEE ALSO
-%   called in gd_sectionlines
+%   called in gd_sectionlines and see gd_getline
 %
 % Author: Ian Townend
 % CoastalSEA (c) Feb 2025
 %--------------------------------------------------------------------------
 %
+    if nargin<3, linepoints = []; end
     [rows, cols] = size(linepoints);
-    if nargin<3 || isempty(linepoints)
+    
+    if isempty(linepoints)
         %no lines defined so get user to create line points
+
+        %% Need to know what this returns
         linepoints = gd_setpoints(ax,promptxt,false);  %creates a single line
+
         nanpnts.x = NaN; nanpnts.y = NaN;              %line termination
         linepoints = [linepoints,nanpnts];  
+
+
     elseif isstruct(linepoints) && length(linepoints)<2
         %not enough points for a line may be a single struct of lines
         try
             linepoints = gd_vec2pnt(linepoints);
         catch
-            lines = []; return;
+            cplines = []; return;
         end
     elseif ismatrix(linepoints) && ((rows==2) || (cols==2))
         %is a matrix of xy rows 
@@ -49,8 +57,8 @@ function lines = gd_setlines(ax,promptxt,linepoints)
     idN = [0,find(isnan([linepoints(:).x]))];  
     hold on
     for i=1:length(idN)-1
-        lines{1,i} = getLine(linepoints,idN,i); %#ok<AGROW> %cell so that number of points can vary
-        H = plot(ax,[lines{1,i}.x],[lines{1,i}.y],'-r','LineWidth',1,'Tag','mylines');
+        cplines{1,i} = getLine(linepoints,idN,i); %#ok<AGROW> %cell so that number of points can vary
+        H = plot(ax,[cplines{1,i}.x],[cplines{1,i}.y],'-r','LineWidth',1,'Tag','mylines');
         H.ButtonDownFcn = {@lineSelected, H};
         H.UserData = int32(0);
     end

@@ -1,4 +1,4 @@
-function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
+function lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
 %
 %-------function help------------------------------------------------------
 % NAMEpnts = 
@@ -7,7 +7,7 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
 %   Accept figure to interactively digitise x,y,z points on a grid and edit
 %   z elevations, if required
 % USAGE
-%   points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
+%   lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt - character string used for title of figure
@@ -16,7 +16,7 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
-%   points - outype=0: array of structs with x, y and z fields defining points,
+%   lines - outype=0: array of structs with x, y and z fields defining points,
 %            outype=1: Nx2 or Nx3 array.
 %            outype=2: struct with x, y (and z) vector fields
 %            outype=3: table with x, y (and z) vector fields
@@ -65,7 +65,7 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
     while ok<1
         waitfor(h_but,'Tag')
         if ~ishandle(h_but) %this handles the user deleting figure window 
-            points = [];
+            lines = [];
             return;
 
         elseif strcmp(h_but.Tag,'New')       
@@ -154,7 +154,7 @@ function points = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
     end
 
     %convert format of output if required
-    points = gd_pnt2vec(points,outype);
+    lines = gd_pnt2vec(points,outype);  %output is either lines or plines
     
     %delete figure if isdel has been set by call.
     if isdel

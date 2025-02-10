@@ -1,35 +1,37 @@
-function line = gd_getline(ax,promptxt,ispoints)
+function pline = gd_getpline(ax,promptxt,ispoints)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   gd_getline.m
+%   gd_getpline.m
 % PURPOSE
 %   interactively select a line on a plot and return the line point
 %   coordinates.
 % USAGE
-%   line = getline(ax,promptxt,ispoints);
+%   pline = getline(ax,promptxt,ispoints);
 % INPUTS
-%   ax - figure axes to use to interactivvely select point
+%   ax - figure axes to use to interactively select point
 %   promptxt - prompt to be used for point being defined
-%   ispoints - true to return as an array of spoint structs, otherwise
-%              returns an xy struct of points (optional - default is false)
+%   ispoints - true to return as an array of point structs, otherwise
+%              returns an xy struct of points (optional - default is true)
 % OUTPUTS
-%   line - struct with x and y fields defining selected line or a struct
-%          array of points depending on value of ispoints
+%   pline -  or a struct array of points defining selected line or a struct
+%            with x and y fields, depending on value of ispoints
 % NOTES
-%    used with gd_setlines in functions such as gd_sectionlines
+%   pline needs to be defined using gd_setlines so that the callback
+%   provides additional information about the type of point selection
+%   (left or right mouse click) in the graphical point UserData property.
 % SEE ALSO
-%   called in gd_sectionlines
+%   called in gd_sectionlines and see gd_setlines
 %
 % Author: Ian Townend
 % CoastalSEA (c) Feb 2025
 %--------------------------------------------------------------------------
 % 
     if nargin<3
-        ispoints = false;
+        ispoints = true;
     end
     title(ax,promptxt)
-    line = [];
+    pline = [];
     but = 999;
     while but~=0
         try
@@ -51,9 +53,9 @@ function line = gd_getline(ax,promptxt,ispoints)
         end        
     end
     idx = [h_lines.UserData]>0;
-    line.x = h_lines(idx).XData;
-    line.y = h_lines(idx).YData;
+    pline.x = [h_lines(idx).XData';NaN]; %xy of lines are column vectors
+    pline.y = [h_lines(idx).YData';NaN];
     if ispoints
-        line = gd_vec2pnt(line);
+        pline = gd_vec2pnt(pline);
     end
 end

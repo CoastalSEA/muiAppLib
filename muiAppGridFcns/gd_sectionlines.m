@@ -7,10 +7,10 @@ function [slines,clines] = gd_sectionlines(obj,cobj,paneltxt,isdel)
 %   extract the section lines that are normal to the channel centre line
 %   and extend to the bounding shoreline
 % USAGE
-%   slines = gd_sectionlines(obj,cobj)
+%   [slines,clines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
 % INPUTS
 %   obj - instance of GD_Sections with Boundary and ChannelLine defined
-%   cobj - instance of EDBimport class with grid or geoimageslns
+%   cobj - instance of EDBimport class with grid or geoimages
 %   paneltxt- character string used for title of figure
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false

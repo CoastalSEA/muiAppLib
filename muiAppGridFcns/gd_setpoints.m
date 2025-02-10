@@ -10,13 +10,14 @@ function points = gd_setpoints(ax,promptxt,isxyz)
 % USAGE
 %   points = gd_setpoints(ax,promptxt,isxyz);
 % INPUTS
-%   ax - figure axes to use to interactivvely select point
+%   ax - figure axes to use to interactively select point
 %   promptxt - prompt to be used for point being defined
 %   isxyz - logical flag true to input z values - optional, default is false
 % OUTPUTS
 %   points - struct with x, y fields defining added points and z if included 
 % NOTES
 %   uses gd_setpoint to get each point
+%    NB: returns points type and NOT a line, which has a NaN termination.
 % SEE ALSO
 %   called in gd_digitisepoints and gd_editlines
 %

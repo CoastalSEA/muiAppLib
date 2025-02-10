@@ -107,7 +107,7 @@ classdef GD_Sections < handle
 
 %%
         function loadLines(mobj,src,gridclasses)
-            %load linework for selected line type from a shapefile
+            %load linework for selected line type 
             %can be Boundary, Channel Network or Section Lines
             muicat = mobj.Cases;   %handle to muiCatalogue
             linetype = src.Text;
@@ -209,7 +209,7 @@ classdef GD_Sections < handle
         function setChannelNetwork(obj,cobj,mobj)
             %load a grid and extract the centre lines of the channels in
             %the network, or digitise them manually, and combine into a
-            %vector of points and a directed graph to define the topology
+            %vector of points
             if ~isfield(cobj.Data,'Grid')
                 warndlg('No grid for selected case'); return;
             end
@@ -281,7 +281,6 @@ classdef GD_Sections < handle
         function setSectionLines(obj,cobj,~)
             %use the centre-line to generate a set of sections at right
             %angles and interactively edit them, or digitise them manually.
-            %save results to grid class instance
             %at the moment this requires a grid to be present but not needed ** 
             if isempty(obj.Boundary) || isempty(obj.ChannelLine)
                 warndlg('Boundary and Channel network need to be defined to extract Section Lines')
@@ -311,9 +310,9 @@ classdef GD_Sections < handle
 
 %%
         function setSections(obj,cobj,~)
-            %using the Boundary and SectionLines data extract the widths as
-            %a function of elevation and distance along the centre-line
-            %from the mouth.
+            %using the SectionLines data extract the widths as a function 
+            %of elevation and distance along the centre-line from the mouth
+
 
 
 
@@ -322,7 +321,7 @@ classdef GD_Sections < handle
 
 %%
         function viewSections(obj,cobj,src)
-            %view section line work and select sections to plot
+            %view boundary channel network and cross-sections line work
             if ~isa(src,'matlab.ui.container.Tab')
                     src = figure('Name','Sections','Units','normalized',...
                                         'Tag','PlotFig','Visible','on');  

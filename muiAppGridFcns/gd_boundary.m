@@ -1,4 +1,4 @@
-function clines = gd_boundary(grid,paneltxt,outype,isdel)
+function blines = gd_boundary(grid,paneltxt,outype,isdel)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -6,7 +6,7 @@ function clines = gd_boundary(grid,paneltxt,outype,isdel)
 % PURPOSE
 %   Accept figure to interactively generate a contour boundary
 % USAGE
-%   points = gd_boundary(grid,figtitle,promptxt,outype,npts,isdel);
+%   blines = gd_boundary(grid,paneltxt,outype,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt- character string used for title of figure
@@ -14,12 +14,12 @@ function clines = gd_boundary(grid,paneltxt,outype,isdel)
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
-%   points - if lines are input, format is the same as the input, otherwise
+%   blines - if lines are input, format is the same as the input, otherwise
 %            outype=0: array of structs with x, y and z fields defining selected points,
 %            outype=1: Nx2 or Nx3 array.
 %            outype=2: struct with x, y (and z) vector fields
 %            outype=3: table with x, y (and z) vector fields
-%            points = [] if user closes figure, or no points defined
+%            blines = [] if user closes figure, or no points defined
 % NOTES
 % 
 % SEE ALSO
@@ -44,15 +44,15 @@ function clines = gd_boundary(grid,paneltxt,outype,isdel)
     ax = gd_plotgrid(h_plt,grid);
     zlevel = setLevel();
     if ~isempty(zlevel)
-        clines =  gd_getcontour(grid,zlevel,false);
-        ax = plotLines(ax,clines);
+        blines =  gd_getcontour(grid,zlevel,false);
+        ax = plotLines(ax,blines);
     end
 
     ok = 0;
     while ok<1
         waitfor(h_but,'Tag');
         if ~ishandle(h_but) %this handles the user deleting figure window
-            clines = []; return;
+            blines = []; return;
 
         elseif strcmp(h_but.Tag,'Smooth')
             %smooth the shoreline
@@ -69,9 +69,9 @@ function clines = gd_boundary(grid,paneltxt,outype,isdel)
                 deg = str2double(inp{3});  
                 npnts = str2double(inp{4});
                 if idm==0, method = 'movmean'; else, method = 'sgolay'; end
-                clines = gd_smoothlines(clines,method,win,deg,npnts);   
+                blines = gd_smoothlines(blines,method,win,deg,npnts);   
                 hold on
-                plot(ax,clines.x,clines.y,'-.g','LineWidth',1,'Tag','slines')
+                plot(ax,blines.x,blines.y,'-.g','LineWidth',1,'Tag','slines')
                 hold off
             end
 
@@ -79,15 +79,15 @@ function clines = gd_boundary(grid,paneltxt,outype,isdel)
             %resample as selected interval
             cint = setInterval();
             if ~isempty(cint)
-                clines = resampleLines(clines,cint);
-                ax = plotLines(ax,clines);
+                blines = resampleLines(blines,cint);
+                ax = plotLines(ax,blines);
             end
 
         elseif strcmp(h_but.Tag,'Reset')
             zlevel = setLevel();
             if ~isempty(zlevel)
-                clines =  gd_getcontour(grid,zlevel,false);            
-                ax = plotLines(ax,clines);
+                blines =  gd_getcontour(grid,zlevel,false);            
+                ax = plotLines(ax,blines);
             end
 
         else
@@ -97,8 +97,8 @@ function clines = gd_boundary(grid,paneltxt,outype,isdel)
     end
 
     %convert format of output if required
-    clines = gd_vec2pnt(clines);
-    clines = gd_pnt2vec(clines,outype);
+    blines = gd_vec2pnt(blines);
+    blines = gd_pnt2vec(blines,outype);
     
     %delete figure if isdel has been set by call.
     if isdel

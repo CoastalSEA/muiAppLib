@@ -1,4 +1,4 @@
-function points = gd_editlines(grid,paneltxt,nlines,isdel)
+function lines = gd_editlines(grid,paneltxt,inlines,isdel)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -6,21 +6,22 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
 % PURPOSE
 %   Accept figure to interactively edit a line or lines
 % USAGE
-%   points = gd_editlines(grid,paneltxt,nlines,isdel);
+%   lines = gd_editlines(grid,paneltxt,inlines,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt- character string used for title of figure
-%   nlines - struct or table of x,y vectors to be edited or the format 
-%            of output if no lines are being input (see Outputs for details)
+%   inlines - struct or table of x,y vectors to be edited or the format 
+%             of output if no lines are being input (see Outputs for details)
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
-%   points - if lines are input, format is the same as the input, otherwise
+%   lines - if lines are input, format is the same as the input, otherwise
+%           if nlines is scalar (default it type 2 if nlines empty)
 %            outype=0: array of structs with x, y and z fields defining selected points,
 %            outype=1: Nx2 or Nx3 array.
 %            outype=2: struct with x, y (and z) vector fields
 %            outype=3: table with x, y (and z) vector fields
-%            points = [] if user closes figure, or no points defined
+%            lines = [] if user closes figure, or no points defined
 % NOTES
 %   NB: if the figure window is closed the function returns points=[] and
 %       not the input points
@@ -54,12 +55,13 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
     ax = gd_plotgrid(h_plt,grid);
 
     %get user to define the required points
-    if (isnumeric(nlines) && isscalar(nlines)) || isempty(nlines)   
+    if isempty(inlines) 
+        outype = 2;  points = [];   
+    elseif isnumeric(inlines) && isscalar(inlines)   
         %handle call to function with no lines
-        outype = nlines;
-        points = [];        
+        outype = inlines;  points = [];        
     else                            %plot imported lines
-        [points,outype] = gd_vec2pnt(nlines); 
+        [points,outype] = gd_vec2pnt(inlines); 
 
         %check that lines are terminated with a NaN
         if ~isnan(points(end).x), points = [points,nanpnts]; end
@@ -73,7 +75,7 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
     while ok<1
         waitfor(h_but,'Tag')
         if ~ishandle(h_but) %this handles the user deleting figure window 
-            points = [];
+            lines = [];
             return;
 
         elseif strcmp(h_but.Tag,'New')        
@@ -147,7 +149,7 @@ function points = gd_editlines(grid,paneltxt,nlines,isdel)
     end
 
     %convert format of output if required
-    points = gd_pnt2vec(points,outype);
+    lines = gd_pnt2vec(points,outype);
     
     %delete figure if isdel has been set by call.
     if isdel

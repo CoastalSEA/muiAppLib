@@ -7,7 +7,7 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
 %   Accept figure to interactively create a specified number of x,y points
 %   on a grid
 % USAGE
-%   points = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
+%   [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt- character string used for title of figure
@@ -26,6 +26,7 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
 %            outype=2: struct with x, y (and z) vector fields
 %            outype=3: table with x, y (and z) vector fields
 %            points = [] if user closes figure, or no points defined
+%            NB: returns points and NOT a line, which has a NaN termination.
 %   h_fig - handle to accept figure;
 % NOTES
 %   Captures x,y for the number of points specified in npts. However, the
@@ -33,6 +34,7 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
 %   delete retain initial order of points, add appends points to struct
 % SEE ALSO
 %   similar to gd_digitisepoints, which also captures z values at x,y points
+%   used in gd_centreline
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jun 2022

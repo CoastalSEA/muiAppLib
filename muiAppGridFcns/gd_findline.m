@@ -1,4 +1,4 @@
-function lineIndex = gd_findline(points, queryPoint)
+function lineIndex = gd_findline(plines, queryPoint)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -7,9 +7,9 @@ function lineIndex = gd_findline(points, queryPoint)
 %   find which line a given point lies on when there are multiple lines
 %   separated by NaN values in a struct array of points
 % USAGE
-%   lineIndex = gd_findline(points, queryPoint)
+%   lineIndex = gd_findline(plines, queryPoint);
 % INPUTS
-%   points - is a struct array of x,y points defining lines and each line is 
+%   plines - is a struct array of x,y points defining lines and each line is 
 %            separated by a NaN x,y point.
 %   queryPoint - is an x,y struct of the point to be tested
 % OUTPUTS
@@ -25,8 +25,8 @@ function lineIndex = gd_findline(points, queryPoint)
     numLines = 0;
     currentLine = [];
 
-    for i = 1:length(points)
-        if isnan(points(i).x) %|| isnan(points(i).y)
+    for i = 1:length(plines)
+        if isnan(plines(i).x) %|| isnan(points(i).y)
             if ~isempty(currentLine)
                 numLines = numLines + 1;
                 % Check if the queryPoint lies on the current line
@@ -37,7 +37,7 @@ function lineIndex = gd_findline(points, queryPoint)
                 currentLine = []; % Reset for the next line
             end
         else
-            currentLine = [currentLine, points(i)]; %#ok<AGROW> 
+            currentLine = [currentLine, plines(i)]; %#ok<AGROW> 
         end
     end
 
