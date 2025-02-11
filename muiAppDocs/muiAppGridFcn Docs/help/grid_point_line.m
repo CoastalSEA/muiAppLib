@@ -69,14 +69,20 @@
 
 %%
 % <html>
-% <table border=1><tr><td><u>Note</u>:<br> 
-% <li>To extract a <i>point</i> from <i>points</i> use:   point = points(i);</li>
-% <li>To extract the ith <i>pline</i> of points from a <i>plines</i> use:</li>
+% <table border=1><tr><td><u><b>Notes</b></u>:<br><br>
+% <li>To extract a <i>point</i> from <i>points</i> use: &emsp; point = points(i);</li><br>
+% <li>To extract the ith <i>pline</i> of points from a <i>plines</i>
+% use:</li><br>
 % &emsp; &emsp; idN = [0,find(isnan([points(:).x]))];<br>
 % &emsp; &emsp;   for i=1:length(idN)-1<br>
 % &emsp; &emsp; &emsp; pline{1,i} = points(idN(i)+1:idN(i+1));<br>
-% &emsp; &emsp;   end<br>
-% <li>????o extract a <i>point</i> from <i>plines</i> use: point = plines(i)???? ;</li>
+% &emsp; &emsp;   end<br><br>
+% <li>To switch between plines and cplines use <i>gd_plines2cplines</i>and <i>gd_cplines2plines</i>;</li><br>
+% <li>To switch between point, or points, and line, or lines, use
+% <i>gd_points2lines</i> and <i>gd_lines2points</i>.</li><br>
+% <li>When using lines, some functions use row vectors and others use
+% column vectors. <br>&emsp; To switch an xy struct from column to row or vice versa use:<br>
+%  &emsp; &emsp; lines = structfun(@transpose,lines,'UniformOutput',false); <br><br>
 % </td></tr></table>
 % </html>
 
@@ -161,6 +167,15 @@
 % centre-lines. The output, _cline_, is a _line_ of the extracted centre-line.
 
 %%
+% *gd_cplines2plines.m*
+% - convert cell array of plines to an array of points that define plines.
+%%
+%   plines = gd_cplines2plines(cplines);
+%%
+% where _cplines_ is a cell array of plines and _plines_ is a struct array 
+% with x and y fields defining a set of points.
+
+%%
 % *gd_digitisepoints.m*
 % - UI to interactively digitise x,y,z points on a grid and edit
 % z elevations, if required
@@ -221,6 +236,25 @@
 % is a prompt to be used for point being selected. The output is a _point_ struct.
 
 %%
+% *gd_orderplines.m*
+% - amend the order of the _plines_ in an array of _plines_
+%%
+%   plines = gd_orderlines(ax,plines);
+%%
+% where _ax_ is the figure axes being used to edit points and _plines_ is 
+% a struct of x,y vectors defining one or more lines. The output is a copy
+% of _plines_ in the revised order.
+
+%%
+% *gd_cplines2plines.m*
+% - convert an array of plines to a cell array of plines
+%%
+%   cplines = gd_plines2cplines(plines);
+%%
+% where _plines_ is a struct array with x and y fields defining one or more
+% plines, and _cplines_ is a cell array of plines'
+
+%%
 % *gd_plotgrid*
 % - create pcolor plot of gridded surface (from Grid Tools).
 %%
@@ -232,7 +266,6 @@
 % end points of a section line to be plotted in a figure (from Grid Tools).
 %%
 %   gd_plotsections(grid);  %where grid is a struct of x, y, z
-
 
 %%
 % *gd_points2lines.m*
@@ -257,21 +290,21 @@
 % -extract the section lines that are normal to the channel centre line
 % and extend to the bounding shoreline.
 %%
-%   [slines,clines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
+%   [s_lines,c_lines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
 %%
 % where _obj_ is an instance of GD_Sections with a Boundary and ChannelLine 
 % defined and _cobj_ is an instance of EDBimport class with grid or geoimage
 % _paneltext_ is a character string used for title, _outype_ is the format
 % of output (see *gd_pnt2vec*), and _isdel_ is a logical flag true to delete figure 
-% on completion (optional - default is false). The output, _sleines_ and 
-% _clines_, sets of _lines_ of the extracted sections and centreline (can
+% on completion (optional - default is false). The output, _s_lines_ and 
+% _c_lines_, sets of _lines_ of the extracted sections and centreline (can
 % be smoothed as part of workflow).
 
 %%
 % *gd_selectpoints.m*
 % - UI to interactively create a specified number of x,y point on a grid.
 %%
-%   [points,hfig] = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
+%   points = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
 %%
 % where _grid_ is a struct of x, y, z, _paneltext_ is a character string
 % used for title, _promptxt_ is a cell array of prompts to be used for each 
@@ -280,8 +313,7 @@
 % _inlines_ - struct, table or matrix of x,y column vectors to show on base
 % plot, _npts_ is the number of points to be selected, _outype_ - format of 
 % output (see *gd_pnt2vec*) and _isdel_ - logical flag true to delete figure 
-% on completion (optional - default is false). Output is a _points_ array and
-% _hfig_ a handle to the UI figure;
+% on completion (optional - default is false). Output is a _points_ array.
 
 % *gd_setcplines.m*
 % - %   converts a set of points to a set of _plines_ based on NaN separators,

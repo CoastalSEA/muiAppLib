@@ -17,10 +17,10 @@ function lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
 %           default is false
 % OUTPUTS
 %   lines - outype=0: array of structs with x, y and z fields defining points,
-%            outype=1: Nx2 or Nx3 array.
-%            outype=2: struct with x, y (and z) vector fields
-%            outype=3: table with x, y (and z) vector fields
-%            points = [] if user closes figure, or no points defined
+%           outype=1: Nx2 or Nx3 array.
+%           outype=2: struct with x, y (and z) vector fields
+%           outype=3: table with x, y (and z) vector fields
+%           points = [] if user closes figure, or no points defined
 % NOTES
 %   Each new line is separated by NaN values in the xyz vectors. When using
 %   the View button the start of each line is indicated by a red circle
@@ -149,12 +149,13 @@ function lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
             end
             ok = 1;                                 %accepted so end loop
         end     
-         newpnts = resetpoints(ax,points,isxyz);
-         h_but = resetbutton(ax,h_but);
+        h_but = resetbutton(ax,h_but); 
+        %reset newpnts in case user cancels during points capture
+        newpnts = resetpoints(ax,points,isxyz);  %#ok<NASGU> 
     end
 
     %convert format of output if required
-    lines = gd_pnt2vec(points,outype);  %output is either lines or plines
+    lines = gd_points2lines(points,outype);  %output is either lines or plines
     
     %delete figure if isdel has been set by call.
     if isdel

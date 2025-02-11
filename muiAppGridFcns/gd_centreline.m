@@ -16,7 +16,7 @@ function cline= gd_centreline(grid,mobj,props,clines)
 %   clines - any previously defined lines (optional)
 % OUTPUTS
 %   cline - struct of x,y vectors defining the centre-line
-% NOTEs
+% NOTES
 % Finds indices of the grid used to find deepest points in channel and
 % resolution depends on the xy spacing of the grid used.
 % SEE ALSO
@@ -39,9 +39,9 @@ function cline= gd_centreline(grid,mobj,props,clines)
     water = true(size(Z));
     water(isnan(Z) | Z>props.maxwl) = false;
     paneltxt = 'Define end points for a channel centre-line. Close window to Quit';
-    promptxt3 = {'Select start of path','Select end of path'};
+    promptxt = {'Select start of path','Select end of path'};
     gridmasked = grid;        gridmasked.z(~water') = NaN;
-    points = gd_selectpoints(gridmasked,paneltxt,promptxt3,clines,2,0,true); %2 points, output as struct array, delete figure
+    points = gd_selectpoints(gridmasked,paneltxt,promptxt,clines,2,0,true); %2 points, output as struct array, delete figure
     if isempty(points), cline = []; return; end
     
     %index of nearest grid point to selected start end end points    

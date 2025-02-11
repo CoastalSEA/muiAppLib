@@ -152,12 +152,12 @@ end
 %%
 function clines = resampleLines(inlines,cint)
     %resample the contour lines at intervals of cint
-    idN = [0,find(isnan(inlines.x))];
-    [points,~] = gd_vec2pnt(inlines);                 %convert to points
+    idN = [0;find(isnan(inlines.x))];
+    [points,~] = gd_lines2points(inlines);            %convert to points
     nlines = [];
     for i=1:length(idN)-1
         cline = points(idN(i)+1:idN(i+1));            %extract line        
-        cline = gd_pnt2vec(cline(1:end-1),1);         %convert to matrix omit trailing NaN
+        cline = gd_points2lines(cline(1:end-1),1);    %convert to matrix omit trailing NaN
         if size(cline,1)>1                            %trap single point lines
             clength = sum(vecnorm(diff(cline),2,2));  %cline is a column vector [Nx2]
             cpoints = round(clength/cint);            %number of points in new line
@@ -167,6 +167,6 @@ function clines = resampleLines(inlines,cint)
         end
         nlines = [nlines;newcline;[NaN,NaN]]; %#ok<AGROW>  
     end  
-    clines.x = nlines(:,1)';
-    clines.y = nlines(:,2)';
+    clines.x = nlines(:,1);    %return struct of column vectors
+    clines.y = nlines(:,2);
 end

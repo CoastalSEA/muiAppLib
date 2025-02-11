@@ -240,10 +240,11 @@ classdef GD_Sections < handle
 
             ok = 0;
             while ok<1
-                nline = gd_centreline(grid,mobj,props,nlines);
+                nline = gd_centreline(grid,mobj,props,clines);
                 if isempty(nline), ok = 1; continue; end
-                nline = cell2mat(struct2cell(nline))';        %struct to [Nx2] array
+                nline = cell2mat(struct2cell(nline)');        %struct to [Nx2] array
                 hf = cl_checkPlot(obj,grid,nline,nlines);
+                nline = nline(1:end-1,:);                       %remove trailing NaNs
                 answer = questdlg('Accept the centreline?','Centre-line','Yes','No','Yes');
                 if strcmp(answer,'Yes')
                     %convert format of output if required
@@ -255,7 +256,7 @@ classdef GD_Sections < handle
                 delete(hf)
             end
             if isempty(nlines), return; end                    %user cancelled without creating any lines
-            %nlines = nlines(1:end-1,:);                       %remove trailing NaNs
+
             clines.x = nlines(:,1)'; clines.y =  nlines(:,2)'; %x,y struct of vector points (row vectors)
             %give user opportunity to edit the centre-line interactively
             answer = questdlg('Check/Edit or Save the shoreline?','Centre-line','Edit','Save','Quit','Edit');

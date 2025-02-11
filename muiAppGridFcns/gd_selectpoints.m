@@ -1,4 +1,4 @@
-function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,outype,isdel)
+function points = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,outype,isdel)
 %npts,
 %-------function help------------------------------------------------------
 % NAME
@@ -7,7 +7,7 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
 %   Accept figure to interactively create a specified number of x,y points
 %   on a grid
 % USAGE
-%   [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
+%   points = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt- character string used for title of figure
@@ -20,14 +20,12 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
-%   points - if lines are input, format is the same as the input, otherwise
+%   points - NB: returns points and NOT a line, which has a NaN termination.
 %            outype=0: array of structs with x, y and z fields defining selected points,
 %            outype=1: Nx2 or Nx3 array.
 %            outype=2: struct with x, y (and z) vector fields
 %            outype=3: table with x, y (and z) vector fields
-%            points = [] if user closes figure, or no points defined
-%            NB: returns points and NOT a line, which has a NaN termination.
-%   h_fig - handle to accept figure;
+%            points = [] if user closes figure, or no points defined           
 % NOTES
 %   Captures x,y for the number of points specified in npts. However, the
 %   user can add, edit and/or delete the initial input of npts. Edit and
@@ -101,7 +99,7 @@ function [points,h_fig] = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,ou
     end
 
     %convert format of output if required
-    points = gd_pnt2vec(points,outype);
+    points = gd_points2lines(points,outype);  
     
     %delete figure if isdel has been set by call.
     if isdel
@@ -182,16 +180,16 @@ end
 
 %%
 function ax = plotLines(ax,inlines)
-    %plot any points or lines thar are imported    
+    %plot any points or lines that are imported    
+    idx = [1;find(isnan(inlines.x))];
     hold on
     if istable(inlines) || isstruct(inlines)
         plot(ax,inlines.x,inlines.y,'-.k','LineWidth',1,'Tag','clines')
-        idx = [1;find(isnan(inlines.x))+1];
+        
         plot(ax,[inlines.x(idx)],[inlines.y(idx)],'ob','PickableParts','none',...
                   'MarkerSize',6,'MarkerEdgeColor','r', 'Tag','clines'); 
     else
         plot(ax,inlines(:,1),inlines(:,2),'-.k','LineWidth',1,'Tag','clines')
-        idx = [1;find(isnan(inlines(:,1)))+1];
 
         plot(ax,inlines(idx,1),inlines(idx,2),'ob','PickableParts','none',...
                   'MarkerSize',6,'MarkerEdgeColor','r', 'Tag','clines');

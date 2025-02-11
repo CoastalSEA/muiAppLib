@@ -40,12 +40,13 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
     nanpnts.x = NaN; nanpnts.y = NaN;   %line termination
     figtitle = sprintf('Edit lines');
     tag = 'PlotFig'; %used for collective deletes of a group
-    butnames = {'New','Add','Edit','Insert','Join/Split','Delete','View','Use'};
+    butnames = {'New','Add','Edit','Insert','Join/Split','Reorder','Delete','View','Use'};
     tooltips = {'Start a new line of points',...
                 'Add points to a selected line',...
                 'Edit a point in any line',...
                 'Insert one or more point between two existing points of a line',...
                 'Join two lines or split existing line (after point selected)',...
+                'Change the order of the lines in the line vector',...
                 'Delete a point from a line',...
                 'Toggle display of connecting lines on and off',...
                 'Use digitised points and exit. Close figure window to Quit without saving points/lines'};
@@ -61,7 +62,7 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
         %handle call to function with no lines
         outype = inlines;  points = [];        
     else                            %plot imported lines
-        [points,outype] = gd_vec2pnt(inlines); 
+        [points,outype] = gd_lines2points(inlines); 
 
         %check that lines are terminated with a NaN
         if ~isnan(points(end).x), points = [points,nanpnts]; end
@@ -129,6 +130,10 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
                 delete(findobj(ax,'Tag','viewline'));
                 ax = toggle_view(ax,points);
             end
+        
+        elseif strcmp(h_but.Tag,'Reorder')
+            points = gd_orderlines(ax,points);
+            ax = plotPoints(ax,points);
 
         elseif strcmp(h_but.Tag,'Delete') 
             promptxt = 'Select point to Delete, right click on any point to quit';
@@ -144,12 +149,13 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
             ok = 1; delete(h_but);   %keep figure but delete buttons
 
         end   
-        h_but = resetbutton(ax,h_but);
-        newpnts = resetpoints(ax);
-    end
+        h_but = resetbutton(ax,h_but); 
+        %reset newpnts in case user cancels during points capture
+        newpnts = resetpoints(ax);  %#ok<NASGU> 
+    end                                 
 
     %convert format of output if required
-    lines = gd_pnt2vec(points,outype);
+    lines = gd_points2lines(points,outype);
     
     %delete figure if isdel has been set by call.
     if isdel

@@ -6,7 +6,7 @@
    <!--
 This HTML was auto-generated from MATLAB code.
 To make changes, update the MATLAB code and republish this document.
-      --><title>Points, Lines, Sections and Segments</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2025-02-10"><meta name="DC.source" content="grid_point_line.m"><style type="text/css">
+      --><title>Points, Lines, Sections and Segments</title><meta name="generator" content="MATLAB 9.13"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2025-02-11"><meta name="DC.source" content="grid_point_line.m"><style type="text/css">
 html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
 
 html { min-height:100%; margin-bottom:1px; }
@@ -84,33 +84,42 @@ Can be a matrix, struct or table.</li>
 <li><i>plines</i> - cell array of <i>pline</i> segments concatenated as a row struct array,
 with individual <i>pline</i> segments defined by NaN terminators.</li>
 </ul></ul>
+</p><div><ul><li><b>Segments</b>: multiple sets of lines held in a single cell array.</li></ul></div><p>
+<ul><ul>
+<li><i>cplines</i> - a cell array of <i>plines</i> (each of any length and any number of lines).</li>
+</ul></ul>
 </p><div><ul><li><b>Sections</b>: a special case of a <i>pline</i> with only 2 <i>points</i> (start and end) and a NaN <i>point</i>.</li></ul></div><p>
 <ul><ul>
 <li><i>pslice</i> - a <i>pline</i> defined by two end <i>points</i>.</li>
 <li><i>pslices</i> - multiple <i>pslice</i> segments concatenated as a row struct array,
 with individual <i>pslice</i> segments defined by NaN terminators.</li>
 </ul></ul>
-</p><div><ul><li><b>Segments</b>: multiple sets of lines held in a single cell array.</li></ul></div><p>
-<ul><ul>
-<li><i>psegs</i> - a cell array of <i>pline</i> (each of any length).</li>
-</ul></ul>
 </p><p>Hence a <i>line</i> and <i>lines</i> are always a set of column vectors in a struct, table or matrix. Whereas the other formats are all different arrays of a <i>point</i> set.</p><p>
-<table border=1><tr><td><u>Note</u>:<br>
-<li>To extract a <i>point</i> from <i>points</i> use:   point = points(i);</li>
-<li>To extract the ith <i>pline</i> of points from a <i>plines</i> use:</li>
+<table border=1><tr><td><u><b>Notes</b></u>:<br><br>
+<li>To extract a <i>point</i> from <i>points</i> use: &emsp; point = points(i);</li><br>
+<li>To extract the ith <i>pline</i> of points from a <i>plines</i>
+use:</li><br>
 &emsp; &emsp; idN = [0,find(isnan([points(:).x]))];<br>
 &emsp; &emsp;   for i=1:length(idN)-1<br>
 &emsp; &emsp; &emsp; pline{1,i} = points(idN(i)+1:idN(i+1));<br>
-&emsp; &emsp;   end<br>
-<li>????o extract a <i>point</i> from <i>plines</i> use: point = plines(i)???? ;</li>
+&emsp; &emsp;   end<br><br>
+<li>To switch between plines and cplines use <i>gd_plines2cplines</i>and <i>gd_cplines2plines</i>;</li><br>
+<li>To switch between point, or points, and line, or lines, use
+<i>gd_points2lines</i> and <i>gd_lines2points</i>.</li><br>
+<li>When using lines, some functions use row vectors and others use
+column vectors. <br>&emsp; To switch an xy struct from column to row or vice versa use:<br>
+ &emsp; &emsp; lines = structfun(@transpose,lines,'UniformOutput',false); <br><br>
 </td></tr></table>
 </p><h2 id="14">Classes</h2><p>The Apps that inherit <a href="matlab:doc('gdinterface')">GDinterface</a> can make use of <b>GD_Sections</b> to manipulate points and lines, and extract boundaries and cente-lines from an imported digital terrain model. This extends the capability of the functions provided as part of the standard <a href="matlab:doc('grid_menu_help')">Grid tools Menu</a>.</p><p><b>GD_Sections</b>: provides methods to manipulate points, lines and sections using datasets in classes that inherit <a href="matlab:doc('gdinterface')">GDinterface</a>.</p><p>Properties for sections:</p><div><ul><li><i>Boundary</i> - enclosing boundary used to crop length of sections.</li><li><i>ChannelLine</i> - centre-line of channel can be multiple lines to define a network.</li><li><i>ChannelProps</i> - properties used when extracting the channel network.</li><li><i>SectionLines</i> - sections defined at right angles to points on centre-line extending to Boundaray line (if cropping applied).</li></ul></div><p>All properties are held as <i>lines</i> and the GD_Sections instance is saved to the Sections property in the calling class (e.g. EDBimport).</p><p>Methods to manipulate sections:</p><div><ul><li>setBoundary - load a grid and interactively define a boundary line with options to autogenerate and edit or digistise the line.</li><li>setChannelNetwork - load a grid and extract the centre lines of the channels in a network, or digitise them manually, and combine into a vector of points.</li><li>setSectionLines - use the centre-line to generate a set of sections at right angles and interactively edit them, or digitise them manually.</li><li>setSections - using the SectionLines data extract the widths as a function of elevation and distance along the centre-line.</li><li>viewsections - view boundary channel network and cross-sections line work.</li></ul></div><p>Static methods to manipulate sections:</p><div><ul><li>editLines - edit linework for selected line type (can be Boundary, Channel Network or Section Lines).</li><li>loadLines -  load linework for selected line type from a shapefile.</li><li>getSection - retrieve existing class object or create a new instance.</li><li>sectionMenuOptions - default set of menu options for use in Model UIs such as EstuaryDB. Can be used to call any of the methods listed above</li></ul></div><h2 id="23">Functions</h2><p>Functions that derive and manipulte sections from a Grid such as contour boundaries, channel centre-lines can be found in the <i>muiAppGridFcns</i> folder. Use the Matlab&#8482; <i>help</i> function in the command window to get further details of each function.</p><p><b>gd_boundary.m</b> - UI to interactively generate a contour line (e.g. to define a boundary).</p><pre class="language-matlab">blines = gd_boundary(grid,paneltxt,outype,isdel);
 </pre><p>where <i>grid</i> is a struct of x, y, z, <i>paneltext</i> is a character string used for title, <i>outype</i> is the format of output (see <b>gd_pnt2vec</b>), <i>inlines</i> is struct or table of x,y vectors to be edited, or the format of output if no lines are being input, and <i>isdel</i> is a logical flag true to delete figure on completion (optional - default is false). The output, <i>blines</i>, contains <i>lines</i> of the extracted contour.</p><p><b>gd_centreline</b> - create a centreline of a channel to trace the shortest path between start and end points whilst finding the deepest points (i.e. a thalweg).</p><pre class="language-matlab">cline = gd_centreline(grid,mobj,props,clines);
-</pre><p>where <i>grid</i> is a struct of x, y, z, <i>mobj</i> is a muitoolbox model instance, <i>props</i> is a struct for maximum water level and depth exponent (maxwl and dexp), <i>clines</i> is optional and passes any previously defined centre-lines. The output, <i>cline</i>, is a <i>line</i> of the extracted centre-line.</p><p><b>gd_digitisepoints.m</b> - UI to interactively digitise x,y,z points on a grid and edit z elevations, if required</p><pre class="language-matlab">lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
+</pre><p>where <i>grid</i> is a struct of x, y, z, <i>mobj</i> is a muitoolbox model instance, <i>props</i> is a struct for maximum water level and depth exponent (maxwl and dexp), <i>clines</i> is optional and passes any previously defined centre-lines. The output, <i>cline</i>, is a <i>line</i> of the extracted centre-line.</p><p><b>gd_cplines2plines.m</b> - convert cell array of plines to an array of points that define plines.</p><pre class="language-matlab">plines = gd_cplines2plines(cplines);
+</pre><p>where <i>cplines</i> is a cell array of plines and <i>plines</i> is a struct array with x and y fields defining a set of points.</p><p><b>gd_digitisepoints.m</b> - UI to interactively digitise x,y,z points on a grid and edit z elevations, if required</p><pre class="language-matlab">lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
 </pre><p>where <i>grid</i> is a struct of x, y, z, <i>paneltext</i> is a character string used for title, <i>outype</i> is the format of output (see <b>gd_pnt2vec</b>), <i>isxyz</i> is a logical flag true to input z values (optional, default is false) and <i>isdel</i> - logical flag true to delete figure on completion (optional - default is false). Output is a <i>lines</i>, or <i>plines</i> array, depending on <i>outype</i>.</p><p><b>gd_editlines.m</b> - UI to interactively digitise x,y,z points on a grid and edit z elevations, if required</p><pre class="language-matlab">lines = gd_editlines(grid,paneltxt,inlines,isdel);
 </pre><p>where <i>grid</i> is a struct of x, y, z, <i>paneltext</i> is a character string used for title, <i>outype</i> is the format of output (see <b>gd_pnt2vec</b>), <i>inlines</i> is struct or table of x,y vectors to be edited, or the format of output if no lines are being input, and <i>isdel</i> is a logical flag true to delete figure on completion (optional - default is false). Output is a <i>lines</i>, or <i>plines</i> array, depending on <i>outype</i>.</p><p><b>gd_findline.m</b> - find which <i>pline</i> a given <i>point</i> lies on when there are multiple lines separated by NaN values in a <i>plines</i> struct array.</p><pre class="language-matlab">lineIndex = gd_findline(plines,queryPoint);
 </pre><p>where <i>plines</i> - is a struct array of x,y points defining lines and each line is separated by a NaN x,y <i>point</i>, and <i>queryPoint</i> is an x,y struct of the <i>point</i> to be tested. The output <i>lineIndex</i> is an index to the line in <i>plines</i> on which the query <i>point</i> lies.</p><p><b>gd_getcontour.m</b> - extract a contour at a defined level.</p><pre>clines = gd_getcontour(grid,zlevel)</pre><p>where <i>grid</i> - struct of x, y, z, <i>zlevel</i> is the level of contour to be extracted and <i>isplt</i> is a logical flag true to create plot (optional, default is false). The output, <i>clines</i>, is a set of <i>lines</i> of the extracted contour.</p><p><b>gd_getpoint.m</b> - interactively select a single point in a UI figure and return the point coordinates.</p><pre class="language-matlab">point = gd_getpoint(ax,promptxt)
-</pre><p>where <i>ax</i> is a figure axes used to interactively select point, and <i>promptxt</i> is a prompt to be used for point being selected. The output is a <i>point</i> struct.</p><p><b>gd_plotgrid</b> - create pcolor plot of gridded surface (from Grid Tools).</p><pre class="language-matlab">ax = gd_plotgrid(hfig,grid);  <span class="comment">%hfig is figure handle and ax is axes handle</span>
+</pre><p>where <i>ax</i> is a figure axes used to interactively select point, and <i>promptxt</i> is a prompt to be used for point being selected. The output is a <i>point</i> struct.</p><p><b>gd_orderplines.m</b> - amend the order of the <i>plines</i> in an array of <i>plines</i></p><pre class="language-matlab">plines = gd_orderlines(ax,plines);;
+</pre><p>where <i>ax</i> is the figure axes being used to edit points and <i>plines</i> is a struct of x,y vectors defining one or more lines. The output is a copy of <i>plines</i> in the revised order.</p><p><b>gd_cplines2plines.m</b> - convert an array of plines to a cell array of plines</p><pre class="language-matlab">cplines = gd_plines2cplines(plines);
+</pre><p>where <i>plines</i> is a struct array with x and y fields defining one or more plines, and <i>cplines</i> is a cell array of plines'</p><p><b>gd_plotgrid</b> - create pcolor plot of gridded surface (from Grid Tools).</p><pre class="language-matlab">ax = gd_plotgrid(hfig,grid);  <span class="comment">%hfig is figure handle and ax is axes handle</span>
 </pre><p><b>gd_plotsections</b> - display grid and allow user to interactively define start and end points of a section line to be plotted in a figure (from Grid Tools).</p><pre class="language-matlab">gd_plotsections(grid);  <span class="comment">%where grid is a struct of x, y, z</span>
 </pre><p><b>gd_points2lines.m</b> - convert a <i>lines</i> array of structs with x, y (and z) fields to a [Nx2] or [Nx3] array, or a single stuct with column vectors in the x, y (and z) fields</p><pre class="language-matlab">lines = gd_point2lines(points,outype);
 </pre><p>where <i>outype</i> determines the format of the output, <i>lines</i> as follows:</p><p>
@@ -120,16 +129,16 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 <li>outype=2: struct with x, y (and z) column vectors</li>
 <li>outype=3: table with x, y (and z) column vectors.</li>
 </ul></ul>
-</p><p><b>gd_sectionlines.m</b> -extract the section lines that are normal to the channel centre line and extend to the bounding shoreline.</p><pre class="language-matlab">[slines,clines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
-</pre><p>where <i>obj</i> is an instance of GD_Sections with a Boundary and ChannelLine defined and <i>cobj</i> is an instance of EDBimport class with grid or geoimage <i>paneltext</i> is a character string used for title, <i>outype</i> is the format of output (see <b>gd_pnt2vec</b>), and <i>isdel</i> is a logical flag true to delete figure on completion (optional - default is false). The output, <i>sleines</i> and <i>clines</i>, sets of <i>lines</i> of the extracted sections and centreline (can be smoothed as part of workflow).</p><p><b>gd_selectpoints.m</b> - UI to interactively create a specified number of x,y point on a grid.</p><pre class="language-matlab">[points,hfig] = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
-</pre><p>where <i>grid</i> is a struct of x, y, z, <i>paneltext</i> is a character string used for title, <i>promptxt</i> is a cell array of prompts to be used for each point being defined (if a single cell the text is apended with a count  for each point, othewise the cell array should have a length of npts), <i>inlines</i> - struct, table or matrix of x,y column vectors to show on base plot, <i>npts</i> is the number of points to be selected, <i>outype</i> - format of output (see <b>gd_pnt2vec</b>) and <i>isdel</i> - logical flag true to delete figure on completion (optional - default is false). Output is a <i>points</i> array and <i>hfig</i> a handle to the UI figure;</p><pre class="codeinput"><span class="comment">% *gd_setplines.m*</span>
-<span class="comment">% - %   converts a set of points to a set of lines based on NaN separators,</span>
+</p><p><b>gd_sectionlines.m</b> -extract the section lines that are normal to the channel centre line and extend to the bounding shoreline.</p><pre class="language-matlab">[s_lines,c_lines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
+</pre><p>where <i>obj</i> is an instance of GD_Sections with a Boundary and ChannelLine defined and <i>cobj</i> is an instance of EDBimport class with grid or geoimage <i>paneltext</i> is a character string used for title, <i>outype</i> is the format of output (see <b>gd_pnt2vec</b>), and <i>isdel</i> is a logical flag true to delete figure on completion (optional - default is false). The output, <i>s_lines</i> and <i>c_lines</i>, sets of <i>lines</i> of the extracted sections and centreline (can be smoothed as part of workflow).</p><p><b>gd_selectpoints.m</b> - UI to interactively create a specified number of x,y point on a grid.</p><pre class="language-matlab">points = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
+</pre><p>where <i>grid</i> is a struct of x, y, z, <i>paneltext</i> is a character string used for title, <i>promptxt</i> is a cell array of prompts to be used for each point being defined (if a single cell the text is apended with a count  for each point, othewise the cell array should have a length of npts), <i>inlines</i> - struct, table or matrix of x,y column vectors to show on base plot, <i>npts</i> is the number of points to be selected, <i>outype</i> - format of output (see <b>gd_pnt2vec</b>) and <i>isdel</i> - logical flag true to delete figure on completion (optional - default is false). Output is a <i>points</i> array.</p><pre class="codeinput"><span class="comment">% *gd_setcplines.m*</span>
+<span class="comment">% - %   converts a set of points to a set of _plines_ based on NaN separators,</span>
 <span class="comment">% plots the graphical lines, or digistise a set of points and return as a</span>
-<span class="comment">% pline.</span>
-</pre><pre class="language-matlab">plines = gd_setplines(ax,promptxt,linepoints);
-</pre><p>where <i>ax</i> is a figure axes used to interactivvely select points, <i>promptxt</i> is a prompt to be used for point being defined, and <i>linepoints</i> is a set of <i>points</i> to be set as lines x,y struct with each line define by a NaN separator (optional - user prompted to define points if not set) OUTPUTS   plines - a cell array of <i>plines</i>, or a <i>pline</i>.</p><p><b>gd_setpoint.m</b> - interactively create a single point in a UI figure and return the point coordinates. Includes an option to enter an additional value at the selected point (e.g. elevation).</p><pre class="language-matlab">point = gd_setpoint(ax,promptxt,isxyz)
+<span class="comment">% _pline_.</span>
+</pre><pre class="language-matlab">cplines = gd_setcplines(ax,promptxt,linepoints);
+</pre><p>where <i>ax</i> is a figure axes used to interactivly select points, <i>promptxt</i> is a prompt to be used for point being defined, and <i>linepoints</i> is a set of <i>points</i> to be set as lines x,y struct with each line define by a NaN separator (optional - user prompted to define points if not set) cplines - a cell array of <i>plines</i>, or anew digitised <i>pline</i>.</p><p><b>gd_setpoint.m</b> - interactively create a single point in a UI figure and return the point coordinates. Includes an option to enter an additional value at the selected point (e.g. elevation).</p><pre class="language-matlab">point = gd_setpoint(ax,promptxt,isxyz)
 </pre><p>where <i>ax</i> is a figure axes used to interactively select points, <i>promptxt</i> is a prompt to be used for point being defined, and <i>isxyz</i> is a logical flag true to input z values (optional, default is false). The output is a <i>point</i> struct.</p><p><b>gd_setpoints.m</b> - interactively create a set of points in a UI figure and return the point coordinates. Includes an option to enter an additional value at the selected points (e.g. elevation).</p><pre class="language-matlab">points = gd_setpoints(ax,promptxt,isxyz);
-</pre><p>where <i>ax</i> is a figure axes used to interactivvely select points, <i>promptxt</i> is a prompt to be used for point being defined, and <i>isxyz</i> is a logical flag true to input z values (optional, default is false). The output is a <i>points</i> array.</p><p><b>gd_smoothlines.m</b> - smooth one or more line segments using either moving average, or the Savitzky-Golay method.</p><pre class="language-matlab">smoothlines = gd_smoothlines(lines,method,win,deg,npnts)
+</pre><p>where <i>ax</i> is a figure axes used to interactively select points, <i>promptxt</i> is a prompt to be used for point being defined, and <i>isxyz</i> is a logical flag true to input z values (optional, default is false). The output is a <i>points</i> array.</p><p><b>gd_smoothlines.m</b> - smooth one or more line segments using either moving average, or the Savitzky-Golay method.</p><pre class="language-matlab">smoothlines = gd_smoothlines(lines,method,win,deg,npnts)
 </pre><p>where <i>lines</i> is a struct of x,y vectors to be smoothed, with each line segment separated by a NaN, <i>method</i> can be 'movmean' for moving average, or 'sgolay' for Savitzky-Golay smoothing, <i>window</i> is the size of window to use (1 or 2 elements), <i>degree</i> is the  Savitzky-Golay degree (&lt;window) and <i>npnts</i> is the minimum number of points required to apply smoothing</p><p><b>gd_lines2points.m</b> convert <i>lines</i>  as x,y vectors in various formats (see <b>gd_pnt2vec</b>) to a <i>points</i> array of structs for each <i>point</i> with x, y (and z) fields.</p><pre class="language-matlab">[points,outype] = gd_lines2points(lines);
 </pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2022b</a><br></p></div><!--
 ##### SOURCE BEGIN #####
@@ -178,6 +187,15 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 % </html>
 
 %%
+% * *Segments*: multiple sets of lines held in a single cell array.
+%%
+% <html>
+% <ul><ul>
+% <li><i>cplines</i> - a cell array of <i>plines</i> (each of any length and any number of lines).</li>
+% </ul></ul>
+% </html>
+
+%%
 % * *Sections*: a special case of a _pline_ with only 2 _points_ (start and
 % end) and a NaN _point_.
 %%
@@ -190,27 +208,25 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 % </html>
 
 %%
-% * *Segments*: multiple sets of lines held in a single cell array.
-%%
-% <html>
-% <ul><ul>
-% <li><i>psegs</i> - a cell array of <i>pline</i> (each of any length).</li>
-% </ul></ul>
-% </html>
-%%
 % Hence a _line_ and _lines_ are always a set of column vectors in a struct,
 % table or matrix. Whereas the other formats are all different arrays of a _point_ set.
 
 %%
 % <html>
-% <table border=1><tr><td><u>Note</u>:<br> 
-% <li>To extract a <i>point</i> from <i>points</i> use:   point = points(i);</li>
-% <li>To extract the ith <i>pline</i> of points from a <i>plines</i> use:</li>
+% <table border=1><tr><td><u><b>Notes</b></u>:<br><br>
+% <li>To extract a <i>point</i> from <i>points</i> use: &emsp; point = points(i);</li><br>
+% <li>To extract the ith <i>pline</i> of points from a <i>plines</i>
+% use:</li><br>
 % &emsp; &emsp; idN = [0,find(isnan([points(:).x]))];<br>
 % &emsp; &emsp;   for i=1:length(idN)-1<br>
 % &emsp; &emsp; &emsp; pline{1,i} = points(idN(i)+1:idN(i+1));<br>
-% &emsp; &emsp;   end<br>
-% <li>????o extract a <i>point</i> from <i>plines</i> use: point = plines(i)???? ;</li>
+% &emsp; &emsp;   end<br><br>
+% <li>To switch between plines and cplines use <i>gd_plines2cplines</i>and <i>gd_cplines2plines</i>;</li><br>
+% <li>To switch between point, or points, and line, or lines, use
+% <i>gd_points2lines</i> and <i>gd_lines2points</i>.</li><br>
+% <li>When using lines, some functions use row vectors and others use
+% column vectors. <br>&emsp; To switch an xy struct from column to row or vice versa use:<br>
+%  &emsp; &emsp; lines = structfun(@transpose,lines,'UniformOutput',false); <br><br>
 % </td></tr></table>
 % </html>
 
@@ -295,6 +311,15 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 % centre-lines. The output, _cline_, is a _line_ of the extracted centre-line.
 
 %%
+% *gd_cplines2plines.m*
+% - convert cell array of plines to an array of points that define plines.
+%%
+%   plines = gd_cplines2plines(cplines);
+%%
+% where _cplines_ is a cell array of plines and _plines_ is a struct array 
+% with x and y fields defining a set of points.
+
+%%
 % *gd_digitisepoints.m*
 % - UI to interactively digitise x,y,z points on a grid and edit
 % z elevations, if required
@@ -355,6 +380,25 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 % is a prompt to be used for point being selected. The output is a _point_ struct.
 
 %%
+% *gd_orderplines.m*
+% - amend the order of the _plines_ in an array of _plines_
+%%
+%   plines = gd_orderlines(ax,plines);;
+%%
+% where _ax_ is the figure axes being used to edit points and _plines_ is 
+% a struct of x,y vectors defining one or more lines. The output is a copy
+% of _plines_ in the revised order.
+
+%%
+% *gd_cplines2plines.m*
+% - convert an array of plines to a cell array of plines
+%%
+%   cplines = gd_plines2cplines(plines);
+%%
+% where _plines_ is a struct array with x and y fields defining one or more
+% plines, and _cplines_ is a cell array of plines'
+
+%%
 % *gd_plotgrid*
 % - create pcolor plot of gridded surface (from Grid Tools).
 %%
@@ -366,7 +410,6 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 % end points of a section line to be plotted in a figure (from Grid Tools).
 %%
 %   gd_plotsections(grid);  %where grid is a struct of x, y, z
-
 
 %%
 % *gd_points2lines.m*
@@ -391,21 +434,21 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 % -extract the section lines that are normal to the channel centre line
 % and extend to the bounding shoreline.
 %%
-%   [slines,clines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
+%   [s_lines,c_lines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
 %%
 % where _obj_ is an instance of GD_Sections with a Boundary and ChannelLine 
 % defined and _cobj_ is an instance of EDBimport class with grid or geoimage
 % _paneltext_ is a character string used for title, _outype_ is the format
 % of output (see *gd_pnt2vec*), and _isdel_ is a logical flag true to delete figure 
-% on completion (optional - default is false). The output, _sleines_ and 
-% _clines_, sets of _lines_ of the extracted sections and centreline (can
+% on completion (optional - default is false). The output, _s_lines_ and 
+% _c_lines_, sets of _lines_ of the extracted sections and centreline (can
 % be smoothed as part of workflow).
 
 %%
 % *gd_selectpoints.m*
 % - UI to interactively create a specified number of x,y point on a grid.
 %%
-%   [points,hfig] = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
+%   points = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
 %%
 % where _grid_ is a struct of x, y, z, _paneltext_ is a character string
 % used for title, _promptxt_ is a cell array of prompts to be used for each 
@@ -414,22 +457,20 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 % _inlines_ - struct, table or matrix of x,y column vectors to show on base
 % plot, _npts_ is the number of points to be selected, _outype_ - format of 
 % output (see *gd_pnt2vec*) and _isdel_ - logical flag true to delete figure 
-% on completion (optional - default is false). Output is a _points_ array and
-% _hfig_ a handle to the UI figure;
+% on completion (optional - default is false). Output is a _points_ array.
 
-% *gd_setplines.m*
-% - %   converts a set of points to a set of lines based on NaN separators,
+% *gd_setcplines.m*
+% - %   converts a set of points to a set of _plines_ based on NaN separators,
 % plots the graphical lines, or digistise a set of points and return as a
-% pline.
+% _pline_.
 %%
-%   plines = gd_setplines(ax,promptxt,linepoints);
+%   cplines = gd_setcplines(ax,promptxt,linepoints);
 %%
-% where _ax_ is a figure axes used to interactivvely select points, _promptxt_
+% where _ax_ is a figure axes used to interactivly select points, _promptxt_
 % is a prompt to be used for point being defined, and _linepoints_ is a
 % set of _points_ to be set as lines x,y struct with each line
 % define by a NaN separator (optional - user prompted to define points if not set)
-% OUTPUTS
-%   plines - a cell array of _plines_, or a _pline_.
+% cplines - a cell array of _plines_, or anew digitised _pline_.
 
 %%
 % *gd_setpoint.m*
@@ -452,7 +493,7 @@ with individual <i>pslice</i> segments defined by NaN terminators.</li>
 %%
 %   points = gd_setpoints(ax,promptxt,isxyz);
 %%
-% where _ax_ is a figure axes used to interactivvely select points, _promptxt_
+% where _ax_ is a figure axes used to interactively select points, _promptxt_
 % is a prompt to be used for point being defined, and _isxyz_
 % is a logical flag true to input z values (optional, default is false).
 % The output is a _points_ array.

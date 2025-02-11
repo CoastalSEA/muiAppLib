@@ -28,34 +28,34 @@ function [points,outype] = gd_lines2points(lines)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 % 
-    if isstruct(line) && length(line)>1 && isfield(line(1),'x')
-        points = line;             %return unchanged
+    if isstruct(lines) && length(lines)>1 && isfield(lines(1),'x')
+        points = lines;             %return unchanged
         outype = 0;
         return;
     end
 
     points = struct('x',[],'y',[]);
-    if isstruct(line) || istable(line)
-        points = assignPoints(points,line.x,'x');
-        points = assignPoints(points,line.y,'y');
-        if isstruct(line)
+    if isstruct(lines) || istable(lines)
+        points = assignPoints(points,lines.x,'x');
+        points = assignPoints(points,lines.y,'y');
+        if isstruct(lines)
             outype = 2;
-            if isfield(line,'z')
-                points = assignPoints(points,line.z,'z');
+            if isfield(lines,'z')
+                points = assignPoints(points,lines.z,'z');
             end
         else
             outype = 3;
-            if ismember('z', line.Properties.VariableNames)
-                points = assignPoints(points,line.z,'z');
+            if ismember('z', lines.Properties.VariableNames)
+                points = assignPoints(points,lines.z,'z');
             end
         end
-    elseif ismatrix(line)  %NB this assumes two column vectors for x and y
+    elseif ismatrix(lines)  %NB this assumes two column vectors for x and y
         %corrects large vectors but may fail for short vectors <=3 points
-        if size(line,2)>3, line = line'; end  
-        points = assignPoints(points,line(:,1),'x');
-        points = assignPoints(points,line(:,2),'y');
-        if size(line,2)==3
-            points = assignPoints(points,line(:,3),'z');
+        if size(lines,2)>3, lines = lines'; end  
+        points = assignPoints(points,lines(:,1),'x');
+        points = assignPoints(points,lines(:,2),'y');
+        if size(lines,2)==3
+            points = assignPoints(points,lines(:,3),'z');
         end
         outype = 1;
     else

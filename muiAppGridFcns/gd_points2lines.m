@@ -27,14 +27,13 @@ function lines = gd_points2lines(points,outype)
 % Author: Ian Townend
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
-% 
-    lines = points; 
+%    
     if nargin<2 || outype==0
         %output type undefined so cannot determine what to do
-        return;                
+        lines = points; return;                
     elseif ~isstruct(points)
         %not points array struct as input - return unchanged
-        return;        
+        lines = points; return;         
     elseif (isstruct(points) && length(points)==1)
         %if struct of single point return unchanged, otherwise
         if outype==1      %convert to array

@@ -10,7 +10,7 @@ function smoothlines = gd_smoothlines(lines,method,window,degree,npnts)
 %   smoothlines = gd_smoothlines(lines,method,win,deg,npnts)
 % INPUTS
 %   lines - struct of x,y vectors to be smoothed. NaN used as line separator
-%           x and y need to be row vectors of points [Nx2]
+%           x and y should be column vectors of points [Nx2]
 %   method - 'movmean' for moving average; or 'sgolay' for Savitzky-Golay smoothing;
 %   window - window size to use for moving average (1 or 2 elements)
 %   degree - Savitzky-Golay degree (<window)

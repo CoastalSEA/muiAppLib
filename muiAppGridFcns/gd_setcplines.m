@@ -31,25 +31,20 @@ function cplines = gd_setcplines(ax,promptxt,linepoints)
     
     if isempty(linepoints)
         %no lines defined so get user to create line points
-
-        %% Need to know what this returns
-        linepoints = gd_setpoints(ax,promptxt,false);  %creates a single line
-
+        linepoints = gd_setpoints(ax,promptxt,false);  %creates points
         nanpnts.x = NaN; nanpnts.y = NaN;              %line termination
-        linepoints = [linepoints,nanpnts];  
-
-
+        linepoints = [linepoints,nanpnts];             %single line
     elseif isstruct(linepoints) && length(linepoints)<2
         %not enough points for a line may be a single struct of lines
         try
-            linepoints = gd_vec2pnt(linepoints);
+            linepoints = gd_lines2points(linepoints);
         catch
             cplines = []; return;
         end
     elseif ismatrix(linepoints) && ((rows==2) || (cols==2))
         %is a matrix of xy rows 
         if cols==2, linepoints = linepoints'; end
-        linepoints = gd_vec2pnt(linepoints);
+        linepoints = gd_lines2points(linepoints);
     end
     %
     if isempty(linepoints), return; end

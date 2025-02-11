@@ -69,7 +69,7 @@ function lines = cleanContours(C,level)
 
     lines.x(end+1) = NaN;               %add trailing NaN
     lines.y(end+1) = NaN;
-    lines = strucfun(@transpose,lines); %output as column vectors
+    lines = structfun(@transpose,lines,'UniformOutput',false); %output as column vectors
 end
 
 

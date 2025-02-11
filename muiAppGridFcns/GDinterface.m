@@ -780,7 +780,8 @@ function [grid,orient] = orientGrid(obj,grid0)
             
             %desc = sprintf('%s at %s',obj.Data.Grid.Description,char(obj.Data.Grid.RowNames(irec)));
             grid = getGrid(obj,irec);   %grid for selected year
-            points = gd_digitisepoints(grid,{'Digitise Lines'},isxyz,false);
+            %digitise points and return xy struct (outype=2)
+            points = gd_digitisepoints(grid,{'Digitise Lines'},2,isxyz,false);
             if isempty(points), return; end
 
             % Save as a text file
