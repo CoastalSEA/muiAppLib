@@ -97,8 +97,8 @@ function blines = gd_boundary(grid,paneltxt,outype,isdel)
     end
 
     %convert format of output if required
-    blines = gd_vec2pnt(blines);
-    blines = gd_pnt2vec(blines,outype);
+    blines = gd_lines2points(blines);
+    blines = gd_points2lines(blines,outype);
     
     %delete figure if isdel has been set by call.
     if isdel

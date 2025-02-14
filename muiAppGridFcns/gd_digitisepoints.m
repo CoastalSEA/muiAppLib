@@ -88,7 +88,9 @@ function lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
             if ~isempty(delpnt)
                 promptxt = 'Left click to create points, right click on any point to quit';
                 newpnt = gd_setpoint(ax,promptxt,isxyz);     
-                points = deletepoint(ax,points,delpnt,newpnt,isxyz);
+                if ~isempty(newpnt)
+                    points = deletepoint(ax,points,delpnt,newpnt);
+                end
             end
 
         elseif strcmp(h_but.Tag,'Insert')
@@ -181,9 +183,8 @@ function newpnts = resetpoints(ax,points,isxyz)
     if isempty(h_pnts), return; end
     idx = [h_pnts.UserData]>0;
     if any(idx)
-        [h_pnts(idx).UserData] = repmat(int32(0),sum(idx),1);
-        cellobj = {[h_pnts(idx)]};
-        [cellobj{:}.Color] = repmat(zeros(1,3),sum(idx),1);
+        [h_pnts(idx).UserData] = deal(int32(0));
+        [h_pnts(idx).Color] = deal([0,0,0]); 
     end
     %
     if isxyz
@@ -191,7 +192,7 @@ function newpnts = resetpoints(ax,points,isxyz)
         delete(h_txt)
         for i=1:length(points)
             txt= sprintf('  %.1f',points(i).z);
-            text(ax,[points(i).x],[points(i).y],txt,...
+            text(ax,[points(i).x],[points(i).y],txt,'Clipping', 'on',...
                 'Color','white','FontSize',6,'Tag','ztext');
         end
     end
@@ -204,30 +205,31 @@ function points = addpoints(points,newpnts,endpnt,isadd)
     idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y); 
 
     %find the relative position on the line
-    isend = isnan(points(idp+1).x);   %end point is at end of a line
+    isfirst = false; isstart = false;
     if idp==1
-        isstart = false;              %special case first point in lines
+        isfirst = true;                   %special case first point in lines
     else
-        isstart = isnan(points(idp-1).x); %end point is at start of a line
+        isstart = isnan(points(idp-1).x);  %end point is at start of a line
     end    
-
+    isend = isnan(points(idp+1).x);        %end point is at end of a line
+    
     if isadd
         %check direction of new points relative to existing line
         xlen = [endpnt.x-newpnts(1).x,endpnt.x-newpnts(end).x];
         ylen = [endpnt.y-newpnts(1).y,endpnt.y-newpnts(end).y];
-        [~,ide] = min(hypot(xlen,ylen));         %index of nearest point
+        [~,ide] = min(hypot(xlen,ylen));   %index of nearest point
         if (ide>1 && isend) || (ide==1 && ~isend)
             newpnts = fliplr(newpnts);
         end
     end
     
     %insert the new points (cases ensure NaNs are maintained)
-    if isend
-        points = [points(1:idp),newpnts,points(idp+1:end)];
+    if isfirst
+        points = [newpnts,points];         %in front of all lines        
     elseif isstart
         points = [points(1:idp-1),newpnts,points(idp:end)];
     else
-        points = [newpnts,points];     %in front of all lines
+        points = [points(1:idp),newpnts,points(idp+1:end)];
     end
 end
 

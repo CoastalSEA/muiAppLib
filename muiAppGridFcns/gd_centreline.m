@@ -17,8 +17,8 @@ function cline= gd_centreline(grid,mobj,props,clines)
 % OUTPUTS
 %   cline - struct of x,y vectors defining the centre-line
 % NOTES
-% Finds indices of the grid used to find deepest points in channel and
-% resolution depends on the xy spacing of the grid used.
+%   Finds indices of the grid used to find deepest points in channel and
+%   resolution depends on the xy spacing of the grid used.
 % SEE ALSO
 %   called in GD_sections; uses gd_selectpoints and a_star
 %

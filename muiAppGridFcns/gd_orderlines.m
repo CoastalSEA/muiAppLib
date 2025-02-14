@@ -31,6 +31,7 @@ function plines = gd_orderlines(ax,plines)
         inp = inputdlg(promptxt,'Order',1,defaults);
         if isempty(inp), clearLines(ax); return; end
         order = str2num(inp{1}); %#ok<ST2NM> handles vectors
+        if length(order)~=nlines, continue; end
         cplines = cplines(order);
         plines = gd_cplines2plines(cplines);
         [ax,cplines] = plotLines(ax,plines);

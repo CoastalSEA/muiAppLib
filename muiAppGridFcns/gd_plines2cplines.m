@@ -2,7 +2,7 @@ function cplines = gd_plines2cplines(plines)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   gd_cplines2plines.m
+%   gd_plines2cplines.m
 % PURPOSE
 %   convert an array of plines to a cell array of plines
 % USAGE
@@ -21,6 +21,7 @@ function cplines = gd_plines2cplines(plines)
 %--------------------------------------------------------------------------
 % 
     idN = [0,find(isnan([plines(:).x]))];  
+    if length(idN)==1, cplines = {plines}; return; end  %no NaNs in plines
     for i=1:length(idN)-1
         idL =idN(i)+1:idN(i+1);    
         %cell so that number of points can vary

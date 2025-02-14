@@ -75,7 +75,9 @@ function points = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,outype,isd
             if ~isempty(delpnt)
                 promptxt = 'Left click to create points, right click on any point to quit';
                 newpnt = gd_setpoint(ax,promptxt,false);      %isxyz false 
-                points = deletepoint(ax,points,delpnt,newpnt);
+                if ~isempty(newpnt)
+                    points = deletepoint(ax,points,delpnt,newpnt);
+                end
             end
 
         elseif strcmp(h_but.Tag,'Delete') 
@@ -150,9 +152,8 @@ function resetpoints(ax)
     if isempty(h_pnts), return; end
     idx = [h_pnts.UserData]>0;
     if any(idx)
-        [h_pnts(idx).UserData] = repmat(int32(0),sum(idx),1);
-        cellobj = {[h_pnts(idx)]};
-        [cellobj{:}.Color] = repmat(zeros(1,3),sum(idx),1);
+        [h_pnts(idx).UserData] = deal(int32(0));
+        [h_pnts(idx).Color] = deal([0,0,0]); 
     end 
 end
 
@@ -180,15 +181,16 @@ end
 
 %%
 function ax = plotLines(ax,inlines)
-    %plot any points or lines that are imported    
-    idx = [1;find(isnan(inlines.x))];
+    %plot any points or lines that are imported   
     hold on
     if istable(inlines) || isstruct(inlines)
+        idx = [1;find(isnan(inlines.x))];
         plot(ax,inlines.x,inlines.y,'-.k','LineWidth',1,'Tag','clines')
         
         plot(ax,[inlines.x(idx)],[inlines.y(idx)],'ob','PickableParts','none',...
                   'MarkerSize',6,'MarkerEdgeColor','r', 'Tag','clines'); 
     else
+        idx = [1;find(isnan(inlines(:,1)))];
         plot(ax,inlines(:,1),inlines(:,2),'-.k','LineWidth',1,'Tag','clines')
 
         plot(ax,inlines(idx,1),inlines(idx,2),'ob','PickableParts','none',...

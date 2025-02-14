@@ -43,8 +43,10 @@ function gd_plotsections(grid)
         waitfor(h_but,'Tag')
         if ~ishandle(h_but) %this handles the user deleting figure window 
             return; 
+
         elseif  strcmp(h_but.Tag,'Define')
             points = setLine(ax);
+
         elseif strcmp(h_but.Tag,'Edit') 
             if isempty(points), warndlg(msg); continue; end %no sections defined
             promptxt = 'Select point to edit';
@@ -52,13 +54,17 @@ function gd_plotsections(grid)
             if ~isempty(delpnt)
                 promptxt = 'Left click to create points, right click to quit';
                 newpnt = gd_setpoint(ax,promptxt,isxyz);
-                points = deletepoint(ax,points,delpnt,newpnt);
+                if ~isempty(newpnt)
+                    points = deletepoint(ax,points,delpnt,newpnt);
+                end               
             end
+
         elseif strcmp(h_but.Tag,'New')
             if isempty(points), warndlg(msg); continue; end %no sections defined
             hf_section = getfigure(grid,points);
             hf_section.UserData = h_plt;
             figure(h_plt.Parent); %make the accept figure the current figure
+
         elseif strcmp(h_but.Tag,'Add')
             %get handle to all exising section plots
             hfs = findobj('Type','figure','Tag','SectionsPlot');
@@ -78,6 +84,7 @@ function gd_plotsections(grid)
                 plot_section(ax_section,points,grid);
             end
             figure(h_plt.Parent); %make the accept figure the current figure
+
         elseif strcmp(h_but.Tag,'Clear')
             hpts = findobj(ax,'Tag','mypoints');
             delete(hpts);
@@ -85,6 +92,7 @@ function gd_plotsections(grid)
             delete(hlns);
             htxt = findobj(ax,'Tag','mytext');
             delete(htxt);
+
         elseif strcmp(h_but.Tag,'Quit') 
             ok = 1; continue; 
         end
@@ -93,30 +101,7 @@ function gd_plotsections(grid)
     end
     delete(h_plt.Parent);  
 end
-%%
-% function points = editCoords(ax,points)
-%     %Prompt user to define co-ordinates for start-end points
-%     hpts = findobj(ax,'Tag','mypoints');
-%     delete(hpts);
-%     promptxt = {'Start co-ordinates (x,y)','End co-ordinates (x,y)'};
-%     cst = num2str([points(1).x,points(1).y]);
-%     cnd = num2str([points(2).x,points(2).y]);
-%     defaults = {cst,cnd};
-%     title = 'Define co-ordinates';
-%     answer = inputdlg(promptxt,title,1,defaults);
-%     if isempty(answer), return; end
-% 
-%     st = str2num(answer{1}); %#ok<ST2NM> %vector coordinates
-%     nd = str2num(answer{2}); %#ok<ST2NM>
-%     x = num2cell([st(1),nd(1)]);
-%     y = num2cell([st(2),nd(2)]);
-%     [points.x] = x{:};
-%     [points.y] = y{:};
-%     hold on
-%     plot(ax,[points(:).x],[points(:).y],'ok','MarkerSize',4,'MarkerFaceColor','w','Tag','mypoints');
-%     plot(ax,[points(:).x],[points(:).y],'-r','Tag','mysection')
-%     hold off
-% end
+
 %%
 function points = setLine(ax)
     %define start and end of section line and plot it
@@ -132,7 +117,7 @@ function points = setLine(ax)
     hold on
     plot(ax,[points(:).x],[points(:).y],'-r','PickableParts','none','Tag','mysection')
     hpts(2).MarkerSize = 7;  %make start point marker bigger
-    text(ax,points(1).x,points(1).y,sprintf('%d',nline+1),...
+    text(ax,points(1).x,points(1).y,sprintf('%d',nline+1),'Clipping', 'on',...
         'HorizontalAlignment','center','PickableParts','none','FontSize',6,'Tag','mytext');
     hold off
 end
@@ -208,7 +193,7 @@ function updateSection(ax,points,delpoint,newpnt)
     plot(ax,[points(:).x],[points(:).y],'-r','PickableParts','none','Tag','mysection')
     if any(idt)
         %h_pnts(2).MarkerSize = 7;  %make start point marker bigger
-        text(ax,newpnt.x,newpnt.y,sprintf('%d',nline),...
+        text(ax,newpnt.x,newpnt.y,sprintf('%d',nline),'Clipping', 'on',...
             'HorizontalAlignment','center','PickableParts','none','FontSize',6,'Tag','mytext');
     end
     hold off    
