@@ -79,7 +79,9 @@ function lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
             if ~isempty(endpnt)
                 promptxt = sprintf('Left click to create points, right click to finish\nFirst new point should be closest to selected end point');
                 newpnts = gd_setpoints(ax,promptxt,isxyz);  
-                points = addpoints(points,newpnts,endpnt,true);     
+                if ~isempty(newpnt)
+                    points = addpoints(points,newpnts,endpnt,true); 
+                end
             end
 
         elseif strcmp(h_but.Tag,'Edit') 

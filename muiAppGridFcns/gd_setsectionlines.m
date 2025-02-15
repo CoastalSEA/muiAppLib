@@ -1,13 +1,13 @@
-function [s_lines,c_lines,cumlen] = gd_sectionlines(obj,cobj,paneltxt,isdel)
+function [s_lines,c_lines,cumlen] = gd_setsectionlines(obj,cobj,paneltxt,isdel)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   gd_sectionlines.m
+%   gd_setsectionlines.m
 % PURPOSE
 %   extract the section lines that are normal to the channel centre line
 %   and extend to the bounding shoreline
 % USAGE
-%   [s_lines,c_lines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
+%   [s_lines,c_lines] = gd_setsectionlines(obj,cobj,paneltxt,isdel);
 % INPUTS
 %   obj - instance of GD_Sections with Boundary and ChannelLine defined
 %   cobj - instance of EDBimport class with grid or geoimages
@@ -51,7 +51,7 @@ function [s_lines,c_lines,cumlen] = gd_sectionlines(obj,cobj,paneltxt,isdel)
 
     c_lines = obj.ChannelLine;     %Centre line coordinates
     [c_plines,outype] = gd_lines2points(c_lines);
-    ax = plotCLine(ax,c_plines);
+    ax = plotCLines(ax,c_plines);
     [s_plines,c_plines] = setInitialSections(ax,c_plines,2); %plot without labels
     h_but = resetbutton(ax,h_but);
 
@@ -59,7 +59,7 @@ function [s_lines,c_lines,cumlen] = gd_sectionlines(obj,cobj,paneltxt,isdel)
     while ok<1
         waitfor(h_but,'Tag')
         if ~ishandle(h_but) %this handles the user deleting figure window
-            s_lines = []; return;
+            s_lines = []; cumlen = []; return;
         elseif strcmp(h_but.Tag,'Set sections')
             [s_plines,c_plines] = setInitialSections(ax,c_plines,1);   
 
@@ -73,8 +73,10 @@ function [s_lines,c_lines,cumlen] = gd_sectionlines(obj,cobj,paneltxt,isdel)
 
         elseif strcmp(h_but.Tag,'Add section')
             pline = addLinePoints(ax);
-            gd_setcplines(ax,'',pline);
-            s_plines = [s_plines,pline]; %#ok<AGROW>
+            if ~isempty(pline)
+                gd_setcplines(ax,'',pline);
+                s_plines = [s_plines,pline]; %#ok<AGROW>
+            end
 
         elseif strcmp(h_but.Tag,'Edit section')
             if isempty(s_plines), warndlg(msg); continue; end %no sections defined
@@ -90,7 +92,7 @@ function [s_lines,c_lines,cumlen] = gd_sectionlines(obj,cobj,paneltxt,isdel)
 
         elseif strcmp(h_but.Tag,'Delete section')
             promptxt = 'Select section to Delete, right click on any section to quit';
-            deline = gd_getline(ax,promptxt,true);
+            deline = gd_getpline(ax,promptxt,true);
             %delpnt = gd_getpoint(ax,promptxt);   %get point to delete
             if ~isempty(deline)
                 s_plines = deleteline(ax,s_plines,deline); %delete the section
@@ -102,7 +104,7 @@ function [s_lines,c_lines,cumlen] = gd_sectionlines(obj,cobj,paneltxt,isdel)
         elseif strcmp(h_but.Tag,'Reset')
             c_lines = obj.ChannelLine;   %Centre line coordiantes
             [c_plines,~] = gd_lines2points(c_lines);
-            ax = plotCLine(ax,c_plines);
+            ax = plotCLines(ax,c_plines);
             [s_plines,c_plines] = setInitialSections(ax,c_plines,2);    
             %to plot labels on section lines and change 2 to 1 above
 
@@ -110,7 +112,9 @@ function [s_lines,c_lines,cumlen] = gd_sectionlines(obj,cobj,paneltxt,isdel)
             %get cumulative length of centre-line
             cplines = gd_plines2cplines(c_plines);
             [~,~,cumlen] = clineProperties(cplines,1);
-            ok = 1;     delete(h_but);   %keep figure but delete buttons
+            ok = 1; 
+            delete(h_but);   %keep figure but delete buttons
+            title(ax,'')
         end
         h_but = resetbutton(ax,h_but);
         resetpoints(ax);
@@ -170,13 +174,13 @@ function pline = addLinePoints(ax)
     points(1) = gd_setpoint(ax,prompt1,false);
     prompt2 = 'Select end point';
     points(2) = gd_setpoint(ax,prompt2,false);
-    plotLine(ax,points);
+    gd_plotpoints(ax,points,[],3);           %set labels
     nanpnts.x = NaN; nanpnts.y = NaN;        %line termination
     pline = [points,nanpnts];   
 end
 
 %%
-function lines = editpoint(ax,lines,edpoint,newpnt)
+function plines = editpoint(ax,plines,edpoint,newpnt)
     %edit point to new value as defined in newpnt   
     h_pnts = findobj(ax,'Tag','mypoints');
     idxp = [h_pnts(:).XData]==edpoint.x & [h_pnts(:).YData]==edpoint.y; 
@@ -191,10 +195,12 @@ function lines = editpoint(ax,lines,edpoint,newpnt)
     end 
 
     %find which line the point to be edited is on
-    [idl,idp] = findPointinLines(lines,edpoint);
+    cplines = gd_plines2cplines(plines);
+    [idl,idp] = findPointinLines(cplines,edpoint);
     if idl<1, return;  end          %line not found
-    lines{1,idl}(idp).x = newpnt.x; 
-    lines{1,idl}(idp).y = newpnt.y;
+    cplines{1,idl}(idp).x = newpnt.x; 
+    cplines{1,idl}(idp).y = newpnt.y;
+    plines = gd_cplines2plines(cplines);
     
     %find the indices of the line point being edited in graphics and lines
     h_lns = findobj(ax,'Tag','mylines');
@@ -210,19 +216,21 @@ function lines = editpoint(ax,lines,edpoint,newpnt)
         idtl = pnts(1,:)==edpoint.x & pnts(2,:)==edpoint.y;
         nline = h_txt(idtl).String;
         delete(h_txt(idtl));
-        plotLine(ax,lines{1,idl},nline);
+        gd_plotpoints(ax,cplines{1,idl},nline,3);  %set labels
     end
 end
 
 %%
-function lines = deleteline(ax,lines,deline)
+function plines = deleteline(ax,plines,deline)
     %delete lines and points for section that includes delpnt
     delpoint = deline(1);         %first point in line
     %find which line the point to be edited is on
-    [idl,~] = findPointinLines(lines,delpoint);
+    cplines = gd_plines2cplines(plines);
+    [idl,~] = findPointinLines(cplines,delpoint);
     if idl<1, return;  end          %line not found
-    deline = lines{1,idl};
-    lines(idl) = [];                %delete from lines cell array
+    deline = cplines{1,idl};
+    cplines(idl) = [];                %delete from lines cell array
+    plines = gd_cplines2plines(cplines);
 
     %find the indices of the line point being edited in graphics and lines
     h_lns = findobj(ax,'Tag','mylines');
@@ -298,23 +306,23 @@ function   [s_plines,c_plines] = setInitialSections(ax,c_plines,islabel)
     %update plot of centre-line to extend from the selected mouth point
     clearLines(ax,{'clines'})
     c_plines = gd_cplines2plines(c_cplines);  %cpoints to match selected centre-line****
-    ax = plotCLine(ax,c_plines);
+    ax = plotCLines(ax,c_plines);
 
     %generate the section lines for clinedir +pi/2 and -pi/2
     maxlen = 1000;
     s_plines = setSectionLines(c_cplines,clinedir,maxlen);
 
-    if islabel==1                                     %labelled sections
+    if islabel==1                                      %labelled sections
         s_cplines = gd_plines2cplines(s_plines); 
-        for j=1:length(s_cplines)
-            aline = (s_cplines{1,j});
-            ax = plotPoints(ax,aline,'mypoints');     %call one at a time
-            sline = gd_setcplines(ax,'',aline);       %to order numbering
-            plotLine(ax,sline{1},num2str(j));     
+        for j=1:length(s_cplines)                      %call one at a time
+            aline = (s_cplines{1,j});                  %to order numbering
+            ax = gd_plotpoints(ax,aline,'mypoints',1); %set points
+            ax = gd_plotpoints(ax,aline,'mylines',2);  %set line  
+            gd_plotpoints(ax,aline,num2str(j),3);      %set labels  
         end        
-    elseif islabel==2                                 %unlabled sections
-        ax = plotPoints(ax,s_plines,'mypoints');
-        gd_setcplines(ax,'',s_plines); 
+    elseif islabel==2                                  %unlabled sections
+        ax = gd_plotpoints(ax,s_plines,'mypoints',1);  %plot as points
+        gd_plotpoints(ax,s_plines,'mylines',2);        %plot as lines        
     else
         %dont plot
     end
@@ -372,9 +380,9 @@ function plines = setSectionLines(cplines,clinedir,maxlen)
         sldirneg = [clinedir{i}]-pi()/2;
         lpnts = cplines{1,i};
         pospnts = sectionEndPoints(lpnts,sldirpos,maxlen);
-        %plotPoints(ax,pospnts,'endpoints');
+        %gd_plotpoints(ax,pospnts,'endpoints',1);
         negpnts = sectionEndPoints(lpnts,sldirneg,maxlen);
-        %plotPoints(ax,negpnts,'endpoints');      
+        %gd_plotpoints(ax,negpnts,'endpoints',1);      
         %sections along ith length of centre-line
         nanpnts.x = NaN; nanpnts.y = NaN;        %line termination
         for j=1:length(pospnts)
@@ -449,7 +457,8 @@ function s_plines = clipSections(ax,s_plines,b_lines,c_plines)
     end
     s_plines = gd_lines2points(slines);
     clearLines(ax,{'mylines','mypoints','mytext'});
-    ax = plotPoints(ax,s_plines,'mypoints');
+	ax = plotPoints(ax,s_plines,'mypoints');
+    %ax = gd_plotpoints(ax,s_plines,'mypoints',1);
     gd_setcplines(ax,'',s_plines); 
 
     %nested function-------------------------------------------------------
@@ -491,7 +500,7 @@ function c_plines= adjustCentreLine(ax,c_plines,s_plines)
             %clear point and replot centre-line points
             delete(H)
             clearLines(ax,{'clines'})
-            plotCLine(ax,c_plines);
+            plotCLines(ax,c_plines);
         end
     end
 end
@@ -523,7 +532,7 @@ function c_plines = smoothLines(ax,c_plines)
         c_plines = gd_lines2points(c_lines);
     end
     clearLines(ax,{'smoothlines','clines'}) %remove any existing centre-lines
-    plotCLine(ax,c_plines);
+    plotCLines(ax,c_plines);
 end
 
 %%
@@ -577,7 +586,7 @@ function nc_plines = resetCentreLine(ax,c_plines,s_plines)
     end
 
     clearLines(ax,{'clines'}) %remove any existing centre-lines
-    plotCLine(ax,nc_plines);
+    plotCLines(ax,nc_plines);
 end
 
 %%
@@ -638,22 +647,7 @@ end
             end
             H(H==src).UserData = evt.Button;
         end
-end
-
-%%
-function plotLine(ax,line,nlinetxt)
-    %plot a section line
-    if nargin<3
-        nlinetxt = num2str(length(findobj(ax,'Tag','mylines'))+1); 
-    end
-    hpts = findobj(ax,'Tag','mypoints');    
-    hold on
-    %plot(ax,[points(:).x],[points(:).y],'-r','PickableParts','none','Tag','mysection')
-    hpts(1).MarkerSize = 7;                %make start point marker bigger
-    text(ax,line(1).x,line(1).y,sprintf('%s',nlinetxt), 'Clipping', 'on',...
-        'HorizontalAlignment','center','PickableParts','none','FontSize',6,'Tag','mytext');
-    hold off
-end
+ end
 
 %%
 function ax = plotGrid(cobj,src)
@@ -666,7 +660,7 @@ function ax = plotGrid(cobj,src)
         hplt = findobj(ax,'Tag','PlotGrid');
         hplt.Annotation.LegendInformation.IconDisplayStyle = 'off';  
         isgrid = true;
-    elseif isfield(cobj.Data,'GeoImage')
+    elseif isfield(cobj.Data,'GeoImage')pnts
         dst = cobj.Data.GeoImage;
         im = dst.geoimage;                      %image object
         ax = axes(src);
@@ -683,7 +677,7 @@ function ax = plotGrid(cobj,src)
 end
 
 %%
-function ax = plotCLine(ax,points)
+function ax = plotCLines(ax,points)
     %plot the clentreline as non-pickable linework
     hold on
     plot(ax,[points(:).x],[points(:).y],'+k','MarkerSize',4,...
@@ -702,11 +696,11 @@ function ax = toggle_view(ax,cplines)
         cplines = gd_plines2cplines(cplines);
     end
     if isempty(hline)           %toggle line and points on
-        for j=1:length(cplines)
-            aline = (cplines{1,j});
-            ax = plotPoints(ax,aline,'mypoints');     %call one at a time
-            sline = gd_setcplines(ax,'',aline);       %to order numbering
-            plotLine(ax,sline{1},num2str(j));     
+        for j=1:length(cplines)                         %call one at a time
+            aline = (cplines{1,j});                     %to order numbering
+            ax = gd_plotpoints(ax,aline,'mypoints',1);  %set points
+            ax = gd_plotpoints(ax,aline,'mylines',2);   %set line 
+            ax = gd_plotpoints(ax,aline,num2str(j),3);  %set labels
         end 
     else                        %toggle line and points off
         clearLines(ax,{'mylines','mypoints','mytext'});

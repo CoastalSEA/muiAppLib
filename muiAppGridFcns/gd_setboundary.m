@@ -1,15 +1,17 @@
-function blines = gd_boundary(grid,paneltxt,outype,isdel)
+function blines = gd_setboundary(grid,paneltxt,inlines,isdel)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   gd_boundary.m
+%   gd_setboundary.m
 % PURPOSE
 %   Accept figure to interactively generate a contour boundary
 % USAGE
-%   blines = gd_boundary(grid,paneltxt,outype,isdel);
+%   blines = gd_setboundary(grid,paneltxt,outype,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt- character string used for title of figure
+%   inlines - struct or table of x,y vectors to be edited or the format 
+%             of output if no lines are being input (see Outputs for details)
 %   outype - format of output - see Outputs for details
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
@@ -29,7 +31,7 @@ function blines = gd_boundary(grid,paneltxt,outype,isdel)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 %
-    if nargin<4
+    if nargin<5
         isdel = false; 
     end
     figtitle = 'Define contour boundary';
@@ -42,8 +44,31 @@ function blines = gd_boundary(grid,paneltxt,outype,isdel)
     position = [0.3,0.4,0.35,0.5];
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,0.8,tooltips);
     ax = gd_plotgrid(h_plt,grid);
-    zlevel = setLevel();
+
+    %handle input of existing boundary lines
+    if isempty(inlines) 
+        outype = 2;  blines = [];   zlevel = NaN;
+    elseif isnumeric(inlines) && isscalar(inlines)   
+        %handle call to function with no lines
+        outype = inlines;  blines = [];  zlevel = NaN;   
+    else                            %plot imported lines
+        blines = inlines; 
+        clear inlines
+        [~,outype] = gd_lines2points(blines); 
+        %check that lines are terminated with a NaN
+        if ~isnan(blines.x(end))
+            blines = [blines;[Nan,NaN]];
+        end
+        if length(blines)>5000
+            getdialog(sprintf('Large number of points (N=%d)\nLoading linework my take some time',length(blines)));
+        end
+        ax = plotLines(ax,blines);
+        zlevel = [];
+    end
+
+    %if no boundary imported extract boundary using contour
     if ~isempty(zlevel)
+        zlevel = setLevel();
         blines =  gd_getcontour(grid,zlevel,false);
         ax = plotLines(ax,blines);
     end
@@ -91,7 +116,9 @@ function blines = gd_boundary(grid,paneltxt,outype,isdel)
             end
 
         else
-            ok = 1;  delete(h_but);   %keep figure but delete buttons
+            ok = 1; 
+            delete(h_but);   %keep figure but delete buttons
+            title(ax,'')
         end
         h_but = resetbutton(ax,h_but);
     end
@@ -117,7 +144,7 @@ end
 
 %%
 function ax = plotLines(ax,inlines)
-    %plot any points or lines thar are imported   
+    %plot any points or lines that are imported   
     hlines = findobj(ax,'Tag','clines');    
     delete(hlines)
     hlines = findobj(ax,'Tag','slines');    

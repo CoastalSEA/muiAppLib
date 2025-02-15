@@ -246,13 +246,13 @@
 % of _plines_ in the revised order.
 
 %%
-% *gd_cplines2plines.m*
+% *gd_plines2cplines.m*
 % - convert an array of plines to a cell array of plines
 %%
 %   cplines = gd_plines2cplines(plines);
 %%
 % where _plines_ is a struct array with x and y fields defining one or more
-% plines, and _cplines_ is a cell array of plines'
+% plines, and _cplines_ is a cell array of plines.
 
 %%
 % *gd_plotgrid*
@@ -272,7 +272,7 @@
 % - convert a _lines_ array of structs with x, y (and z) fields to a [Nx2] or [Nx3] 
 % array, or a single stuct with column vectors in the x, y (and z) fields
 %%
-%   lines = gd_point2lines(points,outype);
+%   lines = gd_points2lines(points,outype);
 %%
 % where _outype_ determines the format of the output, _lines_ as follows:
 %%
@@ -315,6 +315,7 @@
 % output (see *gd_pnt2vec*) and _isdel_ - logical flag true to delete figure 
 % on completion (optional - default is false). Output is a _points_ array.
 
+%%
 % *gd_setcplines.m*
 % - %   converts a set of points to a set of _plines_ based on NaN separators,
 % plots the graphical lines, or digistise a set of points and return as a

@@ -1,5 +1,5 @@
 function points = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,outype,isdel)
-%npts,
+%
 %-------function help------------------------------------------------------
 % NAME
 %   gd_selectpoints.m
@@ -7,7 +7,7 @@ function points = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,outype,isd
 %   Accept figure to interactively create a specified number of x,y points
 %   on a grid
 % USAGE
-%   points = gd_selectpoints(grid,paneltxt,promptxt,inlines;npts,outype,isdel);
+%   points = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,outype,isdel);
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   paneltxt- character string used for title of figure
@@ -92,9 +92,10 @@ function points = gd_selectpoints(grid,paneltxt,promptxt,inlines,npts,outype,isd
             points = [];
             ok = 1;  delete(h_but);   %keep figure but delete buttons
 
-        else   %user accepted
-            ok = 1;  delete(h_but);   %keep figure but delete buttons                          
-
+        else   %user accepteds                          
+            ok = 1; 
+            delete(h_but);   %keep figure but delete buttons
+            title(ax,'')
         end   
         h_but = resetbutton(ax,h_but);
         resetpoints(ax);

@@ -21,6 +21,7 @@ classdef GD_Sections < handle
         Boundary            %lines used to clip cross-section lines
         ChannelLine         %lines used to define channel network
         ChannelProps        %properties used to extract channel network
+                            %fields: maxwl,dexp,cint
         SectionLines        %lines that define cross-sections
         XSections           %cross-sections obtained from grid
     end
@@ -125,6 +126,9 @@ classdef GD_Sections < handle
 
             %get file and read the data
             shp = gd_readshapefile(path,fname);
+            if isrow(shp.x)
+                shp = structfun(@transpose,shp,'UniformOutput',false);
+            end
             cobj.Sections.(type) = shp;  %overwrites any existing lines
             casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
             getdialog(sprintf('Data loaded for %s in Case: %s',linetype,casedesc),[],3)
@@ -181,11 +185,20 @@ classdef GD_Sections < handle
             if ~isfield(cobj.Data,'Grid')
                 warndlg('No grid for selected case'); return;
             end
-            grid = getGrid(cobj,1);   %grid for selected year
+            grid = getGrid(cobj,1);             %grid for estuary
+
+            blines = 2;                         %output format when new line
+            if ~isempty(obj.Boundary)           %channel line exists
+                answer = questdlg('A centre-line exists. Extend existing or create new one?',...
+                                  'Channel','Extend','New','Extend');
+                if strcmp(answer,'Extend')
+                    blines = obj.Boundary;      %existing lines
+                end                    
+            end 
 
             %clean-up shoreline
             paneltxt = 'Create and smooth the shoreline boundary';
-            shore_xy = gd_boundary(grid,paneltxt,2,true);
+            shore_xy = gd_setboundary(grid,paneltxt,blines,true);
             if isempty(shore_xy), return; end
 
             %give user opportunity to edit the shoreline interactively
@@ -236,6 +249,8 @@ classdef GD_Sections < handle
                 nlines(:,1) = c_plines.x; nlines(:,2) = c_plines.y;  %matrix of xy points
             end
 
+            nlines = gd_setcentrelines(grid,mobj,props,nlines,true);
+
             ok = 0;
             while ok<1
                 %loop adding lines until user cancels without defining
@@ -247,16 +262,20 @@ classdef GD_Sections < handle
             end
             if isempty(nlines), return; end                    %user cancelled without creating any lines
 
-            c_plines.x = nlines(:,1)'; c_plines.y =  nlines(:,2)'; %x,y struct of vector points (row vectors)
             %give user opportunity to edit the centre-line interactively
-            answer = questdlg('Check/Edit or Save the shoreline?','Centre-line','Edit','Save','Quit','Edit');
+            promptxt = sprintf('Check/Edit or Save the centre-lines?\nTake opportunity to clean channel connections');
+            answer = questdlg(promptxt,'Centre-line','Edit','Save','Quit','Edit');
             if strcmp(answer,'Edit')
-                paneltxt = 'Edit the centre-lines';
+                paneltxt = 'Edit the centre-lines and location of points at nodes';
                 c_plines = gd_editlines(grid,paneltxt,c_plines,true);
                 if isempty(c_plines), return; end
             elseif strcmp(answer,'Quit')
                 return;
             end
+
+            %define connectivity of finished lines
+            c_plines.x = nlines(:,1)'; c_plines.y =  nlines(:,2)'; %x,y struct of vector points (row vectors)
+            %props.topo = gd_linetopology(grid,c_plines);
 
             %save results to grid class instance
             obj.ChannelLine = c_plines;
@@ -304,7 +323,8 @@ classdef GD_Sections < handle
             %extract the section lines that are normal to the 
             %channel centre line and extend to the bounding shoreline
             paneltxt = 'Extract the channel cross-sections';
-            [slines,clines,cumlen] = gd_sectionlines(obj,cobj,paneltxt,false);
+            [slines,clines,cumlen] = gd_setsectionlines(obj,cobj,paneltxt,false);
+            if isempty(slines), return; end
 
             %give user opportunity to edit the centre-line interactively
             grid = getGrid(cobj,1);   %grid for selected year
@@ -483,32 +503,32 @@ classdef GD_Sections < handle
     end
 
 %%
-    methods (Static, Access=private)
-        function hf = cl_checkPlot(grid,cline,nlines)
-            %plot base map of initial grid selection and defined mask
-            % cline and nlines are both [Nx2] arrays
-            points = [cline(1,:);cline(end,:)];
-            hf = figure('Name','Thalwegs','Units','normalized','Tag','PlotFig');  
-            hf.Position = [0,0,1,1];
-            ax = gd_plotgrid(hf,grid);
-            colormap(ax,'gray');
-            lines = {'-','--',':','-.'};
-            
-            hs = findobj(ax.Children,'Type','surface');
-            hs.Annotation.LegendInformation.IconDisplayStyle = 'off';
-            hold on
-            hp = plot(ax,points(:,1),points(:,2),'ok','MarkerSize',8,...
-                                   'MarkerFaceColor','w','Tag','mypoints');
-            hp.Annotation.LegendInformation.IconDisplayStyle = 'off';  
-            plot(ax,cline(:,1),cline(:,2),'r','LineStyle',lines{1},'LineWidth',2,...
-                                           'DisplayName','New line');
-            if ~isempty(nlines)
-                plot(ax,nlines(:,1),nlines(:,2),'g','LineStyle',lines{3},'LineWidth',2,...
-                                           'DisplayName','Accepted lines');
-            end
-            hold off
-            title('Centre-line between defined start and end points')
-            legend
-        end
-    end
+%     methods (Static, Access=private)
+%         function hf = cl_checkPlot(grid,cline,nlines)
+%             %plot base map of initial grid selection and defined mask
+%             % cline and nlines are both [Nx2] arrays
+%             points = [cline(1,:);cline(end,:)];
+%             hf = figure('Name','Thalwegs','Units','normalized','Tag','PlotFig');  
+%             hf.Position = [0,0,1,1];
+%             ax = gd_plotgrid(hf,grid);
+%             colormap(ax,'gray');
+%             lines = {'-','--',':','-.'};
+%             
+%             hs = findobj(ax.Children,'Type','surface');
+%             hs.Annotation.LegendInformation.IconDisplayStyle = 'off';
+%             hold on
+%             hp = plot(ax,points(:,1),points(:,2),'ok','MarkerSize',8,...
+%                                    'MarkerFaceColor','w','Tag','mypoints');
+%             hp.Annotation.LegendInformation.IconDisplayStyle = 'off';  
+%             plot(ax,cline(:,1),cline(:,2),'r','LineStyle',lines{1},'LineWidth',2,...
+%                                            'DisplayName','New line');
+%             if ~isempty(nlines)
+%                 plot(ax,nlines(:,1),nlines(:,2),'g','LineStyle',lines{3},'LineWidth',2,...
+%                                            'DisplayName','Accepted lines');
+%             end
+%             hold off
+%             title('Centre-line between defined start and end points')
+%             legend
+%         end
+%     end
 end

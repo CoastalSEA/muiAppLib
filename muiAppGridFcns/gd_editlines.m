@@ -55,7 +55,7 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
     [h_plt,h_but] = acceptfigure(figtitle,paneltxt,tag,butnames,position,0.8,tooltips);
     ax = gd_plotgrid(h_plt,grid);
 
-    %get user to define the required points
+    %handle input of existing lines
     if isempty(inlines) 
         outype = 2;  points = [];   
     elseif isnumeric(inlines) && isscalar(inlines)   
@@ -70,8 +70,9 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
         if length(points)>5000
             getdialog(sprintf('Large number of points (N=%d)\nLoading linework my take some time',length(points)));
         end
-        ax = plotPoints(ax,points); 
+        ax = gd_plotpoints(ax,points,'mypoints',1); 
     end
+
     ok = 0;
     while ok<1
         waitfor(h_but,'Tag')
@@ -90,7 +91,9 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
             if ~isempty(endpnt)
                 promptxt = sprintf('Left click to create points, right click to finish\nFirst new point should be closest to selected end point');
                 newpnts = gd_setpoints(ax,promptxt,isxyz);  
-                points = addpoints(points,newpnts,endpnt,true);     
+                if ~isempty(newpnts)
+                    points = addpoints(points,newpnts,endpnt,true);     
+                end
             end
 
         elseif strcmp(h_but.Tag,'Edit') 
@@ -135,7 +138,7 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
         
         elseif strcmp(h_but.Tag,'Reorder')
             points = gd_orderlines(ax,points);
-            ax = plotPoints(ax,points);
+            ax = gd_plotpoints(ax,points,'mypoints',1);
 
         elseif strcmp(h_but.Tag,'Delete') 
             promptxt = 'Select point to Delete, right click on any point to quit';
@@ -148,8 +151,9 @@ function lines = gd_editlines(grid,paneltxt,inlines,isdel)
             ax = toggle_view(ax,points);
 
         else   %user accepted
-            ok = 1; delete(h_but);   %keep figure but delete buttons
-
+            ok = 1; 
+            delete(h_but);   %keep figure but delete buttons
+            title(ax,'')
         end   
         h_but = resetbutton(ax,h_but); 
         %reset newpnts in case user cancels during points capture
@@ -189,26 +193,26 @@ function newpnts = resetpoints(ax)
 end
 
 %%
-function ax = plotPoints(ax,points)
-    %plot the imported lines
-    hold on
-    for i=1:length(points)
-        H = plot(ax,points(i).x,points(i).y,'ok','MarkerSize',4,...
-                                   'MarkerFaceColor','w','Tag','mypoints');
-        H.ButtonDownFcn = {@LineSelected, H};
-        H.UserData = int32(0);
-    end
-    hold off
-    %nested function
-        function LineSelected(src, evt, H)
-            if evt.Button==1
-                H(H==src).Color = 'r';
-            elseif evt.Button==3
-                H(H==src).Color = 'k';        
-            end
-            H(H==src).UserData = evt.Button;
-        end
-end
+% function ax = gd_plotpoints(ax,points)
+%     %plot the imported lines
+%     hold on
+%     for i=1:length(points)
+%         H = plot(ax,points(i).x,points(i).y,'ok','MarkerSize',4,...
+%                                    'MarkerFaceColor','w','Tag','mypoints');
+%         H.ButtonDownFcn = {@LineSelected, H};
+%         H.UserData = int32(0);
+%     end
+%     hold off
+%     %nested function
+%         function LineSelected(src, evt, H)
+%             if evt.Button==1
+%                 H(H==src).Color = 'r';
+%             elseif evt.Button==3
+%                 H(H==src).Color = 'k';        
+%             end
+%             H(H==src).UserData = evt.Button;
+%         end
+% end
 
 %%
 function points = addpoints(points,newpnts,endpnt,isadd)

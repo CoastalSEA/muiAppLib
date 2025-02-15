@@ -1,4 +1,4 @@
-function points = gd_setpoints(ax,promptxt,isxyz)
+function [points,Hpnts] = gd_setpoints(ax,promptxt,isxyz)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -15,6 +15,7 @@ function points = gd_setpoints(ax,promptxt,isxyz)
 %   isxyz - logical flag true to input z values - optional, default is false
 % OUTPUTS
 %   points - struct with x, y fields defining added points and z if included 
+%   Hpnts - handle to graphical point objects
 % NOTES
 %   uses gd_setpoint to get each point
 %    NB: returns points type and NOT a line, which has a NaN termination.
@@ -28,12 +29,13 @@ function points = gd_setpoints(ax,promptxt,isxyz)
     count = 1;
     ok = 0;
     while ok<1          
-        point = gd_setpoint(ax,promptxt,isxyz);
+        [point,H] = gd_setpoint(ax,promptxt,isxyz);
         if isempty(point)  %user right clicks or presses return
             if ~exist('points','var'), points = []; end
             ok = 1;       
         else
             points(count) = point; %#ok<AGROW> 
+            Hpnts(count) = H;      %#ok<AGROW> 
             count = count+1;
         end        
     end

@@ -52,10 +52,17 @@ function pline = gd_getpline(ax,promptxt,ispoints)
             return;                       %exit with no point data
         end        
     end
+    
     idx = [h_lines.UserData]>0;
-    pline.x = [h_lines(idx).XData';NaN]; %xy of lines are column vectors
-    pline.y = [h_lines(idx).YData';NaN];
+    if isnan(h_lines(idx).XData(end))
+        pline.x = h_lines(idx).XData'; %xy of lines are column vectors
+        pline.y = h_lines(idx).YData';        
+    else
+        pline.x = [h_lines(idx).XData';NaN]; %xy of lines are column vectors
+        pline.y = [h_lines(idx).YData';NaN];
+    end
+
     if ispoints
-        pline = gd_vec2pnt(pline);
+        pline = gd_lines2points(pline);
     end
 end
