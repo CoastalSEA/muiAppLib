@@ -1,4 +1,4 @@
-function point = gd_getpoint(ax,promptxt)
+function [point,H] = gd_getpoint(ax,promptxt)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -13,6 +13,7 @@ function point = gd_getpoint(ax,promptxt)
 %   promptxt - prompt to be used for point being selected
 % OUTPUTS
 %   point - struct with x and y fields defining selected point
+%   H -  handle to selected point
 % NOTES
 %   point needs to be defined using gd_setpoint so that the callback
 %   provides additional information about the type of point selection
@@ -48,4 +49,5 @@ function point = gd_getpoint(ax,promptxt)
     idx = [h_pnts.UserData]>0;
     point.x = h_pnts(idx).XData;
     point.y = h_pnts(idx).YData;
+    H = h_pnts(idx);                     %return handle to selected point
 end

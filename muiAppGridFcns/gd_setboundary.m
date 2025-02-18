@@ -31,7 +31,7 @@ function blines = gd_setboundary(grid,paneltxt,inlines,isdel)
 % CoastalSEA (c) Jan 2025
 %--------------------------------------------------------------------------
 %
-    if nargin<5
+    if nargin<4
         isdel = false; 
     end
     figtitle = 'Define contour boundary';
@@ -73,6 +73,9 @@ function blines = gd_setboundary(grid,paneltxt,inlines,isdel)
         ax = plotLines(ax,blines);
     end
 
+    %now work in plines rather than lines
+    b_plines = gd_lines2points(blines);
+
     ok = 0;
     while ok<1
         waitfor(h_but,'Tag');
@@ -81,37 +84,38 @@ function blines = gd_setboundary(grid,paneltxt,inlines,isdel)
 
         elseif strcmp(h_but.Tag,'Smooth')
             %smooth the shoreline
-            hlines = findobj(ax,'Tag','slines');    %remove any existing smoothed lines
-            delete(hlines)  
-            %get the user to define the upper limit to use for the hypsomety
-            promptxt = {'Method (0-moving av, 1-smooth)','Window size',...
-                        'Savitzky-Golay degree (<window)','Mininum points in line to smooth'};
-            defaults = {'0','10','4','10'};
-            inp = inputdlg(promptxt,'Boundary',1,defaults);
-            if ~isempty(inp)
-                idm= logical(str2double(inp{1}));
-                win = str2num(inp{2}); %#ok<ST2NM> allow input of vector [1x2]
-                deg = str2double(inp{3});  
-                npnts = str2double(inp{4});
-                if idm==0, method = 'movmean'; else, method = 'sgolay'; end
-                blines = gd_smoothlines(blines,method,win,deg,npnts);   
-                hold on
-                plot(ax,blines.x,blines.y,'-.g','LineWidth',1,'Tag','slines')
-                hold off
-            end
+            b_plines = smoothLines(ax,b_plines);
+%             clearLines(ax,{'slines'})    %remove any existing smoothed lines 
+%             %get the user to define the upper limit to use for the hypsomety
+%             promptxt = {'Method (0-moving av, 1-smooth)','Window size',...
+%                         'Savitzky-Golay degree (<window)','Mininum points in line to smooth'};
+%             defaults = {'0','10','4','10'};
+%             inp = inputdlg(promptxt,'Boundary',1,defaults);
+%             if ~isempty(inp)
+%                 idm= logical(str2double(inp{1}));
+%                 win = str2num(inp{2}); %#ok<ST2NM> allow input of vector [1x2]
+%                 deg = str2double(inp{3});  
+%                 npnts = str2double(inp{4});
+%                 if idm==0, method = 'movmean'; else, method = 'sgolay'; end
+%                 blines = gd_smoothlines(blines,method,win,deg,npnts);   
+%                 hold on
+%                 plot(ax,blines.x,blines.y,'-.g','LineWidth',1,'Tag','slines')
+%                 hold off
+%             end
 
         elseif strcmp(h_but.Tag,'Resample')
             %resample as selected interval
             cint = setInterval();
             if ~isempty(cint)
-                blines = resampleLines(blines,cint);
+                b_plines = resampleLines(b_plines,cint);
                 ax = plotLines(ax,blines);
             end
 
         elseif strcmp(h_but.Tag,'Reset')
             zlevel = setLevel();
             if ~isempty(zlevel)
-                blines =  gd_getcontour(grid,zlevel,false);            
+                blines =  gd_getcontour(grid,zlevel,false); 
+
                 ax = plotLines(ax,blines);
             end
 
@@ -124,8 +128,8 @@ function blines = gd_setboundary(grid,paneltxt,inlines,isdel)
     end
 
     %convert format of output if required
-    blines = gd_lines2points(blines);
-    blines = gd_points2lines(blines,outype);
+%     blines = gd_lines2points(blines);
+    blines = gd_points2lines(b_plines,outype);
     
     %delete figure if isdel has been set by call.
     if isdel
@@ -144,12 +148,8 @@ end
 
 %%
 function ax = plotLines(ax,inlines)
-    %plot any points or lines that are imported   
-    hlines = findobj(ax,'Tag','clines');    
-    delete(hlines)
-    hlines = findobj(ax,'Tag','slines');    
-    delete(hlines)    
-
+    %plot any points or lines that are imported 
+    clearLines(ax,{'clines','slines'});  
     if ~isempty(inlines)
         idl = 1:length(inlines.x);
         hold on
@@ -165,6 +165,36 @@ function zlevel = setLevel()
     inp = inputdlg({promptxt},'Boundary',1,{'NaN'});
     if isempty(inp), zlevel = []; return; end  %user cancelled
     zlevel = str2double(inp{1});
+end
+
+%%
+function c_plines = smoothLines(ax,c_plines)
+     %smooth the centre-line with option to use or revert to original
+    clearLines(ax,{'smoothlines'})   %remove any existing smoothed lines
+    %get the user to define the upper limit to use for the hypsomety
+    promptxt = {'Method (0-moving av, 1-smooth)','Window size',...
+        'Savitzky-Golay degree (<window)','Mininum points in line to smooth'};
+    defaults = {'0','10','4','10'};
+    inp = inputdlg(promptxt,'Boundary',1,defaults);
+    if isempty(inp), return; end          %return line unchanged
+    idm= logical(str2double(inp{1}));
+    win = str2num(inp{2}); %#ok<ST2NM> allow input of vector [1x2]
+    deg = str2double(inp{3});  
+    npnts = str2double(inp{4});
+    if idm==0, method = 'movmean'; else, method = 'sgolay'; end
+    c_lines = gd_points2lines(c_plines,2);
+    c_lines = gd_smoothlines(c_lines,method,win,deg,npnts);   
+    hold on
+    plot(ax,c_lines.x,c_lines.y,'-.g','LineWidth',1,'Tag','smoothlines')
+    hold off
+    answer = questdlg('Accept new line or retain previous version?',...
+                      'Sections','Accept','Reject','Reject');
+
+    if strcmp(answer,'Accept')
+        c_plines = gd_lines2points(c_lines);
+    end
+    clearLines(ax,{'smoothlines','clines'}) %remove any existing centre-lines
+    plotCLines(ax,c_plines);
 end
 
 %%
@@ -196,4 +226,13 @@ function clines = resampleLines(inlines,cint)
     end  
     clines.x = nlines(:,1);    %return struct of column vectors
     clines.y = nlines(:,2);
+end
+
+%%
+function clearLines(ax,types)
+    % delete one or line types based on Tag names
+    for i=1:length(types)
+        h_lines = findobj(ax,'Tag',types{i});
+        delete(h_lines)
+    end
 end

@@ -35,12 +35,12 @@ end
 
 %%
 function ax = setPoints(ax,points,tagname)
-        %plot as a set of points
-        points = fliplr(points);  
+    %plot as a set of points
+    points = fliplr(points);
     hold on
     for i=1:length(points)
         H = plot(ax,points(i).x,points(i).y,'ok','MarkerSize',4,...
-                                   'MarkerFaceColor','w','Tag',tagname);
+            'MarkerFaceColor','w','Tag',tagname);
         H.ButtonDownFcn = {@LineSelected, H};
         H.UserData = int32(0);
     end
@@ -50,11 +50,11 @@ function ax = setPoints(ax,points,tagname)
             if evt.Button==1
                 H(H==src).Color = 'r';
             elseif evt.Button==3
-                H(H==src).Color = 'k';        
+                H(H==src).Color = 'k';
             end
             H(H==src).UserData = evt.Button;
         end
-end
+    end
 
 %%
 function ax = setLines(ax,plines,tagname)

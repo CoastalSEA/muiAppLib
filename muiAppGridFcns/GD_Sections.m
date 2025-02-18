@@ -201,15 +201,15 @@ classdef GD_Sections < handle
             shore_xy = gd_setboundary(grid,paneltxt,blines,true);
             if isempty(shore_xy), return; end
 
-            %give user opportunity to edit the shoreline interactively
-            answer = questdlg('Check/Edit or Save the shoreline?','Centre-line','Edit','Save','Quit','Edit');
-            if strcmp(answer,'Edit')
-                paneltxt = 'Edit the shoreline boundary';
-                shore_xy = gd_editlines(grid,paneltxt,shore_xy,true);
-                if isempty(shore_xy), return; end
-            elseif strcmp(answer,'Quit')
-                return;
-            end
+            % %give user opportunity to edit the shoreline interactively
+            % answer = questdlg('Check/Edit or Save the shoreline?','Centre-line','Edit','Save','Quit','Edit');
+            % if strcmp(answer,'Edit')
+            %     paneltxt = 'Edit the shoreline boundary';
+            %     shore_xy = gd_editlines(grid,paneltxt,shore_xy,true);
+            %     if isempty(shore_xy), return; end
+            % elseif strcmp(answer,'Quit')
+            %     return;
+            % end
 
             %save results to grid class instance
             obj.Boundary = shore_xy;
@@ -227,13 +227,13 @@ classdef GD_Sections < handle
             grid = getGrid(cobj,1);   %grid for selected year
             
             if ~isempty(obj.ChannelLine)           %channel line exists
-                answer = questdlg('A centre-line exists. Extend existing or create new one?',...
-                                  'Channel','Extend','New','Extend');
+                promptxt = sprintf('A centre-line exists.\nUse Existing centre-line or create a New one?');
+                answer = questdlg(promptxt,'Channel','Existing','New','Existing');                                 
             else
                 answer = 'New';
             end   
 
-            if strcmp(answer,'New')
+            if strcmp(answer,'New') || isempty(obj.ChannelProps)
             %get maximum water level to define limits of search
                 promptxt = {'Maximum accessible water level?','Depth exponent','Sampling interval (m)'};
                 defaults = {num2str(max(grid.z,[],'all')),'5','100'};
@@ -242,73 +242,79 @@ classdef GD_Sections < handle
                 props.maxwl = str2double(inp{1});
                 props.dexp = str2double(inp{2});
                 props.cint = str2double(inp{3});
-                nlines = [];
+                plines = [];
             else
                 props = obj.ChannelProps;
-                c_plines = obj.ChannelLine;
-                nlines(:,1) = c_plines.x; nlines(:,2) = c_plines.y;  %matrix of xy points
+                plines = obj.ChannelLine;
+                %nlines(:,1) = c_plines.x; nlines(:,2) = c_plines.y;  %matrix of xy points
             end
 
-            nlines = gd_setcentrelines(grid,mobj,props,nlines,true);
+            [c_plines,props] = gd_setcentrelines(grid,mobj,props,plines,true);
+            if isempty(c_plines), return; end   %user cancelled without creating any lines
+%             ok = 0;
+%             while ok<1
+%                 %loop adding lines until user cancels without defining
+%                 %a new line
+%                 [nline, hf] = setSingleLine(grid,mobj,props,nlines);
+%                 if isempty(nline), ok =1; continue; end
+%                 nlines = setCentreLine(props,nline,nlines);
+%                 delete(hf)
+%             end
+            
 
-            ok = 0;
-            while ok<1
-                %loop adding lines until user cancels without defining
-                %a new line
-                [nline, hf] = setSingleLine(grid,mobj,props,nlines);
-                if isempty(nline), ok =1; continue; end
-                nlines = setCentreLine(props,nline,nlines);
-                delete(hf)
-            end
-            if isempty(nlines), return; end                    %user cancelled without creating any lines
+            % %give user opportunity to edit the centre-line interactively
+            % promptxt = sprintf('Check/Edit or Save the centre-lines?\nTake opportunity to clean channel connections');
+            % answer = questdlg(promptxt,'Centre-line','Edit','Save','Quit','Edit');
+            % if strcmp(answer,'Edit')
+            %     paneltxt = 'Edit the centre-lines and location of points at nodes';
+            %     c_plines = gd_editlines(grid,paneltxt,c_plines,true);
+            %     if isempty(c_plines), return; end
+            % elseif strcmp(answer,'Quit')
+            %     return;
+            % end
 
-            %give user opportunity to edit the centre-line interactively
-            promptxt = sprintf('Check/Edit or Save the centre-lines?\nTake opportunity to clean channel connections');
-            answer = questdlg(promptxt,'Centre-line','Edit','Save','Quit','Edit');
-            if strcmp(answer,'Edit')
-                paneltxt = 'Edit the centre-lines and location of points at nodes';
-                c_plines = gd_editlines(grid,paneltxt,c_plines,true);
-                if isempty(c_plines), return; end
-            elseif strcmp(answer,'Quit')
-                return;
-            end
-
-            %define connectivity of finished lines
-            c_plines.x = nlines(:,1)'; c_plines.y =  nlines(:,2)'; %x,y struct of vector points (row vectors)
-            %props.topo = gd_linetopology(grid,c_plines);
-
-            %save results to grid class instance
+            
+            %save linework so that can reload if mess up defining topology           
             obj.ChannelLine = c_plines;
             obj.ChannelProps = props;
+
+            %define connectivity of finished lines (topology)
+            [cumlen,G,hf,hg] = gd_linetopology(grid,c_plines);
+            props.topo = G;
+            props.ChannelLengths = cumlen;
+            delete([hf,hg])
+            obj.ChannelProps = props;
+
+            %save results to grid class instance
             cobj.Sections = obj;
             getdialog(sprintf('Channel network added to grid for Case: %s',grid.desc),[],3)
             %option to also add to grid cline property
             % cobj.Data.Grid.UserData.cline.x = clines(:,1);
             % cobj.Data.Grid.UserData.cline.y = clines(:,2);
 
-            %nested function-----------------------------------------------
-            function [nline,hf] = setSingleLine(grid,mobj,props,nlines)
-                %
-                nline = gd_centreline(grid,mobj,props,nlines);
-                if isempty(nline), hf = []; return; end
-                nline = cell2mat(struct2cell(nline)');        %struct to [Nx2] array
-                hf = GD_Sections.cl_checkPlot(grid,nline,nlines);
-            end
-
-            %nested function-----------------------------------------------
-            function nlines = setCentreLine(props,nline,nlines)
-                %
-                nline = nline(1:end-1,:);                     %remove trailing NaNs
-                ansr = questdlg('Accept the centreline?','Centre-line','Yes','No','Yes');
-                if strcmp(ansr,'Yes')
-                    %convert format of output if required
-                    clength = sum(vecnorm(diff(nline),2,2));  %nline is a column vector [Nx2]
-                    cpoints = round(clength/props.cint);      %number of points in new line
-                    newcline = curvspace(nline,cpoints);      %curvespace uses [Nx2]
-                    nlines = [nlines;newcline;[NaN,NaN]];     %restore trailing NaNs                    
-                end
-                %plines = struct('x',nlines(:,1),'y',nlines(:,2));
-            end %----------------------------------------------------------
+%             %nested function-----------------------------------------------
+%             function [nline,hf] = setSingleLine(grid,mobj,props,nlines)
+%                 %
+%                 nline = gd_centreline(grid,mobj,props,nlines);
+%                 if isempty(nline), hf = []; return; end
+%                 nline = cell2mat(struct2cell(nline)');        %struct to [Nx2] array
+%                 hf = GD_Sections.cl_checkPlot(grid,nline,nlines);
+%             end
+% 
+%             %nested function-----------------------------------------------
+%             function nlines = setCentreLine(props,nline,nlines)
+%                 %
+%                 nline = nline(1:end-1,:);                     %remove trailing NaNs
+%                 ansr = questdlg('Accept the centreline?','Centre-line','Yes','No','Yes');
+%                 if strcmp(ansr,'Yes')
+%                     %convert format of output if required
+%                     clength = sum(vecnorm(diff(nline),2,2));  %nline is a column vector [Nx2]
+%                     cpoints = round(clength/props.cint);      %number of points in new line
+%                     newcline = curvspace(nline,cpoints);      %curvespace uses [Nx2]
+%                     nlines = [nlines;newcline;[NaN,NaN]];     %restore trailing NaNs                    
+%                 end
+%                 %plines = struct('x',nlines(:,1),'y',nlines(:,2));
+%             end %----------------------------------------------------------
         end
 
 %%
@@ -323,23 +329,23 @@ classdef GD_Sections < handle
             %extract the section lines that are normal to the 
             %channel centre line and extend to the bounding shoreline
             paneltxt = 'Extract the channel cross-sections';
-            [slines,clines,cumlen] = gd_setsectionlines(obj,cobj,paneltxt,false);
+            [slines,clines,props] = gd_setsectionlines(obj,cobj,paneltxt,false);
             if isempty(slines), return; end
 
-            %give user opportunity to edit the centre-line interactively
-            grid = getGrid(cobj,1);   %grid for selected year
-            answer = questdlg('Check/Edit or Save the Cross-sections?','Cross-sections','Edit','Save','Quit','Edit');
-            if strcmp(answer,'Edit')
-                paneltxt = 'Edit or Reorder the cross-sections';                
-                slines = gd_editlines(grid,paneltxt,slines,false);
-                if isempty(slines), return; end
-            elseif strcmp(answer,'Quit')
-                return;
-            end
+            % %give user opportunity to edit the secions interactively
+            % grid = getGrid(cobj,1);   %grid for selected year
+            % answer = questdlg('Check/Edit or Save the Cross-sections?','Cross-sections','Edit','Save','Quit','Edit');
+            % if strcmp(answer,'Edit')
+            %     paneltxt = 'Edit or Reorder the cross-sections';                
+            %     slines = gd_editlines(grid,paneltxt,slines,false);
+            %     if isempty(slines), return; end
+            % elseif strcmp(answer,'Quit')
+            %     return;
+            % end
 
             obj.SectionLines = slines;
             obj.ChannelLine = clines;
-            obj.ChannelProps.ChannelLengths = cumlen;
+            obj.ChannelProps = props;
             cobj.Sections = obj;
             casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
             msgtxt = sprintf('Section lines added to grid for Case: %s',...
@@ -404,9 +410,12 @@ classdef GD_Sections < handle
             %view boundary channel network and cross-sections line work
             %or along-channel sections summary plot
             answer = questdlg('Plan view or Along-channel sections?','sections',...
-                              'Plan','Along-channel','Plan');
+                              'Plan','Along-channel','Network','Plan');
             if strcmp(answer,'Plan')
                 viewPlanSections(obj,cobj);
+            elseif strcmp(answer,'Network')
+                casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+                viewChannelNetwork(obj,casedesc);
             else
                 casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
                 viewAlongChannelSections(obj,casedesc);
@@ -499,6 +508,19 @@ classdef GD_Sections < handle
                 legend
             end
             title(sprintf('Along-channel sections for %s',casedesc))    
+        end
+
+%%
+        function viewChannelNetwork(obj,casedesc)
+            %plot the directed graph of the channel network
+            hf = figure('Name','Network','Units','normalized',...
+                             'Tag','PlotFig','Visible','on');
+            ax = axes(hf);
+            G = obj.ChannelProps.topo;
+            nlabel = strcat(cellstr(G.Nodes.Names),{' ('},...
+                                        cellstr(G.Nodes.Distance),{'m)'});
+            plot(ax,G,'EdgeLabel',G.Edges.Weight,'NodeLabel',nlabel)
+            title(sprintf('Channel network for %s',casedesc))   
         end
     end
 

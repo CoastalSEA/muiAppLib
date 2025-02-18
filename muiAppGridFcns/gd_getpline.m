@@ -1,4 +1,4 @@
-function pline = gd_getpline(ax,promptxt,ispoints)
+function [pline,H] = gd_getpline(ax,promptxt,ispoints)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -16,6 +16,7 @@ function pline = gd_getpline(ax,promptxt,ispoints)
 % OUTPUTS
 %   pline -  or a struct array of points defining selected line or a struct
 %            with x and y fields, depending on value of ispoints
+%   H -  handle to selected line
 % NOTES
 %   pline needs to be defined using gd_setlines so that the callback
 %   provides additional information about the type of point selection
@@ -47,15 +48,15 @@ function pline = gd_getpline(ax,promptxt,ispoints)
         end
         %callback for setpoint sets UserData to event when point selected
         if all([h_lines.UserData]==0)      %no point set
-            but = 999;                    %stay in loop
+            but = 999;                     %stay in loop
         elseif any([h_lines.UserData]==3)  %user right clicked a point
-            return;                       %exit with no point data
+            return;                        %exit with no point data
         end        
     end
     
     idx = [h_lines.UserData]>0;
     if isnan(h_lines(idx).XData(end))
-        pline.x = h_lines(idx).XData'; %xy of lines are column vectors
+        pline.x = h_lines(idx).XData';     %xy of lines are column vectors
         pline.y = h_lines(idx).YData';        
     else
         pline.x = [h_lines(idx).XData';NaN]; %xy of lines are column vectors
@@ -65,4 +66,5 @@ function pline = gd_getpline(ax,promptxt,ispoints)
     if ispoints
         pline = gd_lines2points(pline);
     end
+    H = h_lines(idx);                      %return handle to selected line
 end

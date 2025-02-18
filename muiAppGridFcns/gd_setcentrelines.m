@@ -1,4 +1,4 @@
-function clines = gd_setcentrelines(grid,mobj,props,inlines,isdel)
+function [clines,props] = gd_setcentrelines(grid,mobj,props,inlines,isdel)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -12,13 +12,14 @@ function clines = gd_setcentrelines(grid,mobj,props,inlines,isdel)
 % INPUTS
 %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
 %   mobj - mui model instance
-%   props - struct for maximum water level and depth exponent (maxwl and dexp)
+%   props - struct for maximum water level and depth exponent (maxwl,dexp,cint)
 %   inlines - struct or table of x,y vectors to be edited or the format 
 %             of output if no lines are being input (see Outputs for details)
 %   isdel - logical flag true to delete figure on completion - optional, 
 %           default is false
 % OUTPUTS
 %   clines - struct of x,y vectors defining the centre-lines      
+%   props - as input with any updates
 % NOTES
 %   Finds indices of the grid used to find deepest points in channel and
 %   resolution depends on the xy spacing of the grid used. 
@@ -29,14 +30,17 @@ function clines = gd_setcentrelines(grid,mobj,props,inlines,isdel)
 % CoastalSEA (c) Feb 2025
 %--------------------------------------------------------------------------
 %
-    if nargin<7, isdel = false; end
+    if nargin<5, isdel = false; end
     isxyz = false;
     figtitle = sprintf('Select points');
     tag = 'PlotFig'; %used for collective deletes of a group
-    butnames = {'Set line','Delete line','Add point','Edit point','Insert point','Delete point','View','Use'};
+    butnames = {'Set line','Delete line','Smooth','Resample'...
+        'Add point','Edit point','Insert point','Delete point','View','Use'};
     tooltips = {'Set a new centre-line',...
                 'Clip sections to the boundary line',...
                 'Delete a centre-line',...
+                'Smooth the current contour lines',...
+                'Resample the current contour lines at a specified interval',...
                 'Add a point to an exsiting line (end point only)',...
                 'Edit a point in an existing line',...
                 'Insert one or more point between two existing points of a line',...
@@ -53,11 +57,11 @@ function clines = gd_setcentrelines(grid,mobj,props,inlines,isdel)
     [ax,grid] = initialisegrid(h_plt,grid,props);
     
     if ~isempty(inlines)
-        c_plines = gd_lines2points(inlines); 
+        [c_plines,outype] = gd_lines2points(inlines); 
         clear inlines
         ax = plotCLines(ax,c_plines);
     else
-        c_plines = [];
+        c_plines = []; outype = 2;
     end
    
     ok = 0;
@@ -88,6 +92,40 @@ function clines = gd_setcentrelines(grid,mobj,props,inlines,isdel)
             delpline = gd_getpline(ax,promptxt);
             if ~isempty(delpline)
                 c_plines =  deletelines(c_plines,delpline);  %delete the line   
+            end
+
+        elseif strcmp(h_but.Tag,'Smooth')
+            %smooth the shoreline
+            c_plines = smoothLines(ax,c_plines);
+%             %get the user to define the upper limit to use for the hypsomety
+%             promptxt = {'Method (0-moving av, 1-smooth)','Window size',...
+%                         'Savitzky-Golay degree (<window)','Mininum points in line to smooth'};
+%             defaults = {'0','10','4','10'};
+%             inp = inputdlg(promptxt,'Boundary',1,defaults);
+%             if ~isempty(inp)
+%                 idm= logical(str2double(inp{1}));
+%                 win = str2num(inp{2}); %#ok<ST2NM> allow input of vector [1x2]
+%                 deg = str2double(inp{3});  
+%                 npnts = str2double(inp{4});
+%                 if idm==0, method = 'movmean'; else, method = 'sgolay'; end
+%                 clines = gd_points2lines(c_plines,2); 
+%                 clines = gd_smoothlines(clines,method,win,deg,npnts); 
+%                 hold on
+%                 plot(ax,clines.x,clines.y,'-.g','LineWidth',1,'Tag','slines')
+%                 hold off
+%                 [c_plines,outype] = gd_lines2points(inlines); 
+%                 clear clines
+%             end
+
+        elseif strcmp(h_but.Tag,'Resample')
+            %resample as selected interval
+            props = setInterval(props);
+            if ~isempty(props.cint)
+                clines = gd_points2lines(c_plines,2);
+                clines = resampleLines(clines,props.cint);
+                %ax = plotLines(ax,blines);
+                c_plines = gd_lines2points(clines); 
+                gd_plotpoints(ax,c_plines,'mylines',2); 
             end
 
         elseif strcmp(h_but.Tag,'Add point') 
@@ -154,7 +192,7 @@ function clines = gd_setcentrelines(grid,mobj,props,inlines,isdel)
     end
 
     %convert format of output if required
-    clines = gd_points2lines(points,outype);  
+    clines = gd_points2lines(c_plines,outype);  
     
     %delete figure if isdel has been set by call.
     if isdel
@@ -389,6 +427,67 @@ function points = deletepoint(ax,points,delpoint,newpnt)
         points(idp).x = newpnt.x;
         points(idp).y = newpnt.y;
     end
+end
+
+%%
+function c_plines = smoothLines(ax,c_plines)
+     %smooth the centre-line with option to use or revert to original
+    clearLines(ax,{'smoothlines'})   %remove any existing smoothed lines
+    %get the user to define the upper limit to use for the hypsomety
+    promptxt = {'Method (0-moving av, 1-smooth)','Window size',...
+        'Savitzky-Golay degree (<window)','Mininum points in line to smooth'};
+    defaults = {'0','10','4','10'};
+    inp = inputdlg(promptxt,'Boundary',1,defaults);
+    if isempty(inp), return; end          %return line unchanged
+    idm= logical(str2double(inp{1}));
+    win = str2num(inp{2}); %#ok<ST2NM> allow input of vector [1x2]
+    deg = str2double(inp{3});  
+    npnts = str2double(inp{4});
+    if idm==0, method = 'movmean'; else, method = 'sgolay'; end
+    c_lines = gd_points2lines(c_plines,2);
+    c_lines = gd_smoothlines(c_lines,method,win,deg,npnts);   
+    hold on
+    plot(ax,c_lines.x,c_lines.y,'-.g','LineWidth',1,'Tag','smoothlines')
+    hold off
+    answer = questdlg('Accept new line or retain previous version?',...
+                      'Sections','Accept','Reject','Reject');
+
+    if strcmp(answer,'Accept')
+        c_plines = gd_lines2points(c_lines);
+    end
+    clearLines(ax,{'smoothlines','clines'}) %remove any existing centre-lines
+    plotCLines(ax,c_plines);
+end
+
+%%
+function props = setInterval(props)
+    %prompt user to set point spacing interval for the contour
+    promptxt = sprintf('Sampling interval (m)');
+    inp = inputdlg({promptxt},'Boundary',1,{num2str(props.cint)});
+    if isempty(inp), return; end  %user cancelled
+    props.cint = str2double(inp{1});
+end
+
+%%
+function clines = resampleLines(inlines,cint)
+    %resample the contour lines at intervals of cint
+    idN = [0;find(isnan(inlines.x))];
+    [points,~] = gd_lines2points(inlines);            %convert to points
+    nlines = [];
+    for i=1:length(idN)-1
+        cline = points(idN(i)+1:idN(i+1));            %extract line        
+        cline = gd_points2lines(cline(1:end-1),1);    %convert to matrix omit trailing NaN
+        if size(cline,1)>1                            %trap single point lines
+            clength = sum(vecnorm(diff(cline),2,2));  %cline is a column vector [Nx2]
+            cpoints = round(clength/cint);            %number of points in new line
+            newcline = curvspace(cline,cpoints);
+        else
+            newcline = cline;
+        end
+        nlines = [nlines;newcline;[NaN,NaN]]; %#ok<AGROW>  
+    end  
+    clines.x = nlines(:,1);    %return struct of column vectors
+    clines.y = nlines(:,2);
 end
 
 %% ------------------------------------------------------------------------

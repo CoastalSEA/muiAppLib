@@ -1,4 +1,4 @@
-function [s_lines,c_lines,cumlen] = gd_setsectionlines(obj,cobj,paneltxt,isdel)
+function [s_lines,c_lines,props] = gd_setsectionlines(obj,cobj,paneltxt,isdel)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -17,6 +17,9 @@ function [s_lines,c_lines,cumlen] = gd_setsectionlines(obj,cobj,paneltxt,isdel)
 % OUTPUTS
 %   s_lines - struct of x,y vectors defining the section lines
 %   c_lines = struct of x,y vectors defining the channel centre-lines
+%   props - ChannelProps struct which is a property in GD_sections class
+%           if stat of centre-line is changed the topo and ChannelLength
+%           fields are updated
 % SEE ALSO
 %   called in GD_Sections
 %
@@ -55,19 +58,21 @@ function [s_lines,c_lines,cumlen] = gd_setsectionlines(obj,cobj,paneltxt,isdel)
     [s_plines,c_plines] = setInitialSections(ax,c_plines,2); %plot without labels
     h_but = resetbutton(ax,h_but);
 
+    props = obj.ChannelProps;      %Centre line properties (incl topo)
+
     ok = 0;
     while ok<1
         waitfor(h_but,'Tag')
         if ~ishandle(h_but) %this handles the user deleting figure window
-            s_lines = []; cumlen = []; return;
+            s_lines = []; return;
         elseif strcmp(h_but.Tag,'Set sections')
-            [s_plines,c_plines] = setInitialSections(ax,c_plines,1);   
+            [s_plines,c_plines] = setInitialSections(ax,c_plines,1);
 
         elseif strcmp(h_but.Tag,'Clip sections')
-            s_plines = clipSections(ax,s_plines,b_lines,c_plines);
+            [s_plines,c_plines] = clipSections(ax,s_plines,b_lines,c_plines);
 
         elseif strcmp(h_but.Tag,'Adjust centre-line')
-            %smooth the shoreline or get final centreline points that 
+            %smooth the shoreline or get final centreline points that
             %lie on the sections
             c_plines = adjustCentreLine(ax,c_plines,s_plines);
 
@@ -99,7 +104,7 @@ function [s_lines,c_lines,cumlen] = gd_setsectionlines(obj,cobj,paneltxt,isdel)
             end
 
         elseif strcmp(h_but.Tag,'Clear/View')
-            ax = toggle_view(ax,s_plines);
+            ax = toggle_view(ax,s_plines,c_plines);
 
         elseif strcmp(h_but.Tag,'Reset')
             c_lines = obj.ChannelLine;   %Centre line coordiantes
@@ -109,9 +114,16 @@ function [s_lines,c_lines,cumlen] = gd_setsectionlines(obj,cobj,paneltxt,isdel)
             %to plot labels on section lines and change 2 to 1 above
 
         else   %user accepted    
-            %get cumulative length of centre-line
-            cplines = gd_plines2cplines(c_plines);
-            [~,~,cumlen] = clineProperties(cplines,1);
+            %check if network has changed (start point moved)
+%             if length(c_plines)~=max(props.topo.Edges.Node2)+1 
+            nc = sum(isnan([c_plines(:).x]));
+            if length(c_plines)-nc~=(length(s_plines))/3
+                nc_plines = resetCentreLine(ax,c_plines,s_plines);
+                [cumlen,G,hf,~] = gd_linetopology(ax,nc_plines);
+                props.topo = G;
+                props.ChannelLengths = cumlen;
+                delete(hf)
+            end
             ok = 1; 
             delete(h_but);   %keep figure but delete buttons
             title(ax,'')
@@ -283,6 +295,11 @@ function   [s_plines,c_plines] = setInitialSections(ax,c_plines,islabel)
     % islabel determines whether sections are plotted and numbered
     clearLines(ax,{'mylines','mypoints','mytext'});
     c_cplines = gd_plines2cplines(c_plines);
+    inp = inputdlg({'Length of section lines from centre-line'},'Sections',...
+                    1,{'1000'});
+    if isempty(inp), s_plines = []; return; end
+    maxlen = str2double(inp{1});
+
     %get user to define the mouth by defining a point near to a point on the
     %channel centre-line
     promptxt = 'Left click to set mouth point, right click to quit';
@@ -301,7 +318,7 @@ function   [s_plines,c_plines] = setInitialSections(ax,c_plines,islabel)
     
     %for each point from idL to the end use the centreline coordinates and
     %direction to define a section at right angles to the centreline
-    [clinedir,c_cplines,~] = clineProperties(c_cplines,idL);
+    [clinedir,c_cplines,~] = gd_curvelineprops(c_cplines,idL);
 
     %update plot of centre-line to extend from the selected mouth point
     clearLines(ax,{'clines'})
@@ -309,16 +326,15 @@ function   [s_plines,c_plines] = setInitialSections(ax,c_plines,islabel)
     ax = plotCLines(ax,c_plines);
 
     %generate the section lines for clinedir +pi/2 and -pi/2
-    maxlen = 1000;
     s_plines = setSectionLines(c_cplines,clinedir,maxlen);
 
     if islabel==1                                      %labelled sections
         s_cplines = gd_plines2cplines(s_plines); 
         for j=1:length(s_cplines)                      %call one at a time
-            aline = (s_cplines{1,j});                  %to order numbering
-            ax = gd_plotpoints(ax,aline,'mypoints',1); %set points
+            aline = (s_cplines{1,j});                  %to order numbering            
             ax = gd_plotpoints(ax,aline,'mylines',2);  %set line  
-            gd_plotpoints(ax,aline,num2str(j),3);      %set labels  
+            ax = gd_plotpoints(ax,aline,'mypoints',1); %set points
+            ax = gd_plotpoints(ax,aline,num2str(j),3); %set labels              
         end        
     elseif islabel==2                                  %unlabled sections
         ax = gd_plotpoints(ax,s_plines,'mypoints',1);  %plot as points
@@ -326,48 +342,6 @@ function   [s_plines,c_plines] = setInitialSections(ax,c_plines,islabel)
     else
         %dont plot
     end
-end
-%%
-function [clinedir,ncplines,cumlen] = clineProperties(cplines,idL)
-    %for each point from idL to the end use the centre-line coordinates and
-    %direction to find the lengths anad directions along the centre-line
-    nlines = length(cplines);
-    cumlen = cell(1,nlines); clinedir = cumlen; 
-    nrec = length(cplines{1,1});               %length of first line
-    %nrec = 0;
-    j = 1;                                     %count of lines included
-    for i=1:nlines
-        lp = cplines{1,i};
-        nl = length(lp);
-        if idL>=nrec                           %start point not in line
-            nrec = nrec+length(cplines{1,i+1});
-            continue;
-        elseif ~exist('dx','var')              %start point in line
-            idl = idL-(nrec-nl);               %index of start point in line
-            dx = diff([lp(idl:end-1).x]);      %omit trailing NaN
-            dy = diff([lp(idl:end-1).y]);   
-            ncplines{1,j} = lp(idl:end);       %#ok<AGROW> %crop line to start point
-        else                                   %subsequent lines
-            dx = diff([lp(1:end-1).x]);        %omit trailing NaN
-            dy = diff([lp(1:end-1).y]);  
-            ncplines{1,j} = lp;                %#ok<AGROW> %add subsequent lines
-        end
-        
-        if ~isempty(dx)                        %trap single point at end of line
-            %pad to make same length as lines
-            dx = [dx(1),dx,dx(end)];           %#ok<AGROW> 
-            dy = [dy(1),dy,dy(end)];           %#ok<AGROW> 
-    
-            slen = hypot(dx,dy);               %length between points
-            cumlen{j} = cumsum(slen);          %cumulative length
-            theta = atan2(dy,dx);              %direction between points
-            clinedir{j}(1) = theta(1);
-            for k=2:length(theta)              %mean direction at point
-                clinedir{j}(k) = (theta(k-1)+theta(k))/2;
-            end  
-            j = j+1; 
-        end
-    end  
 end
 
 %%
@@ -403,7 +377,7 @@ function plines = setSectionLines(cplines,clinedir,maxlen)
 end
 
 %%
-function s_plines = clipSections(ax,s_plines,b_lines,c_plines)
+function [s_plines,c_plines] = clipSections(ax,s_plines,b_lines,c_plines)
     %clip the sections to boundary line
 
     s_cplines = gd_plines2cplines(s_plines);        %cell array of lines
@@ -456,10 +430,18 @@ function s_plines = clipSections(ax,s_plines,b_lines,c_plines)
         end
     end
     s_plines = gd_lines2points(slines);
-    clearLines(ax,{'mylines','mypoints','mytext'});
-	ax = plotPoints(ax,s_plines,'mypoints');
-    %ax = gd_plotpoints(ax,s_plines,'mypoints',1);
-    gd_setcplines(ax,'',s_plines); 
+    nc = sum(isnan([c_plines(:).x]));
+    if length(c_plines)-nc~=(length(s_plines))/3
+        c_plines = resetCentreLine(ax,c_plines,s_plines);
+    end
+    clearLines(ax,{'mylines','mypoints','mytext','clines'});
+	%ax = plotPoints(ax,s_plines,'mypoints');
+    %gd_setcplines(ax,'',s_plines); 
+    ax = plotCLines(ax,c_plines);
+    ax = gd_plotpoints(ax,s_plines,'mylines',2);  %set line  
+    ax = gd_plotpoints(ax,s_plines,'mypoints',1); %set points
+    %ax = gd_plotpoints(ax,aline,num2str(j),3); %set labels  
+    
 
     %nested function-------------------------------------------------------
     function point = findNearest(points,cpnt)
@@ -627,27 +609,31 @@ end
 %% ------------------------------------------------------------------------
 % Plotting functions
 %%-------------------------------------------------------------------------
- function ax = plotPoints(ax,points,tagname)
-    %plot the imported lines
-    points = fliplr(points);  
-    hold on
-    for i=1:length(points)
-        H = plot(ax,points(i).x,points(i).y,'ok','MarkerSize',4,...
-                                   'MarkerFaceColor','w','Tag',tagname);
-        H.ButtonDownFcn = {@LineSelected, H};
-        H.UserData = int32(0);
-    end
-    hold off
-    %nested function
-        function LineSelected(src, evt, H)
-            if evt.Button==1
-                H(H==src).Color = 'r';
-            elseif evt.Button==3
-                H(H==src).Color = 'k';        
-            end
-            H(H==src).UserData = evt.Button;
-        end
- end
+
+
+
+
+%  function ax = plotPoints(ax,points,tagname)
+%     %plot the imported lines
+%     points = fliplr(points);  
+%     hold on
+%     for i=1:length(points)
+%         H = plot(ax,points(i).x,points(i).y,'ok','MarkerSize',4,...
+%                                    'MarkerFaceColor','w','Tag',tagname);
+%         H.ButtonDownFcn = {@LineSelected, H};
+%         H.UserData = int32(0);
+%     end
+%     hold off
+%     %nested function
+%         function LineSelected(src, evt, H)
+%             if evt.Button==1
+%                 H(H==src).Color = 'r';
+%             elseif evt.Button==3
+%                 H(H==src).Color = 'k';        
+%             end
+%             H(H==src).UserData = evt.Button;
+%         end
+%  end
 
 %%
 function ax = plotGrid(cobj,src)
@@ -660,7 +646,7 @@ function ax = plotGrid(cobj,src)
         hplt = findobj(ax,'Tag','PlotGrid');
         hplt.Annotation.LegendInformation.IconDisplayStyle = 'off';  
         isgrid = true;
-    elseif isfield(cobj.Data,'GeoImage')pnts
+    elseif isfield(cobj.Data,'GeoImage')
         dst = cobj.Data.GeoImage;
         im = dst.geoimage;                      %image object
         ax = axes(src);
@@ -684,26 +670,32 @@ function ax = plotCLines(ax,points)
                               'Tag','clines');
     plot(ax,[points(:).x],[points(:).y],'ok','MarkerSize',3,...
                               'Tag','clines');
+    plot(ax,[points(:).x],[points(:).y],'.w','MarkerSize',2,...
+                              'Tag','clines');
+    plot(ax,[points(1).x],[points(1).y],'ok','MarkerSize',3,...
+                              'MarkerFaceColor','w','Tag','clines');
     hold off
 end
 
 %%
-function ax = toggle_view(ax,cplines)
+function ax = toggle_view(ax,s_cplines,c_plines)
     %switch a line of the lines and points defined with the start point
     %of each line emphasised with a circle marker.
-    hline = findobj(ax,'Tag','mylines');
-    if ~iscell(cplines)
-        cplines = gd_plines2cplines(cplines);
+    ax = plotCLines(ax,c_plines);                       %centre-line
+
+    if ~iscell(s_cplines)                               %section-lines
+        s_cplines = gd_plines2cplines(s_cplines);
     end
+    hline = findobj(ax,'Tag','mylines');
     if isempty(hline)           %toggle line and points on
-        for j=1:length(cplines)                         %call one at a time
-            aline = (cplines{1,j});                     %to order numbering
-            ax = gd_plotpoints(ax,aline,'mypoints',1);  %set points
+        for j=1:length(s_cplines)                       %call one at a time
+            aline = (s_cplines{1,j});                   %to order numbering            
             ax = gd_plotpoints(ax,aline,'mylines',2);   %set line 
-            ax = gd_plotpoints(ax,aline,num2str(j),3);  %set labels
+            ax = gd_plotpoints(ax,aline,'mypoints',1);  %set points
+            ax = gd_plotpoints(ax,aline,num2str(j),3);  %set labels            
         end 
     else                        %toggle line and points off
-        clearLines(ax,{'mylines','mypoints','mytext'});
+        clearLines(ax,{'mylines','mypoints','mytext','clines'});
     end
 end
 
