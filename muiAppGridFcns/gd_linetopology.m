@@ -27,17 +27,8 @@ function [cumlen,G,hf,hg] = gd_linetopology(grid,plines)
 %--------------------------------------------------------------------------
 %
     hf = figure('Name','Topology','Units','normalized','Tag','PlotFig');  
-    hf.Position = [0,0,1,1];
-    if isgraphics(grid,'axes') %if graphics already exists
-        h_grid = findobj(grid.Children,'Tag','PlotGrid');
-        clear grid
-        ax = axes(hf);
-        copyobj(h_grid,ax);
-        axis equal tight
-    else                       %if called with a grid then plot the grid
-        ax = gd_plotgrid(hf,grid);        
-    end
-    colormap(ax,'gray');
+    hf.Position = [0,0.03,1,0.93];
+    ax = plotBackGround(hf,grid);
 
     if isstruct(plines) && size(plines,2)==1
         plines = gd_lines2points(plines);   %ensure input is pline type
@@ -51,14 +42,14 @@ function [cumlen,G,hf,hg] = gd_linetopology(grid,plines)
         topo = [1,length(plines)-1]; %single line topology: start-end points
         G = setChannelGraph(topo,1);
         return; 
-    end      
+    end   
+
     %plot the centre-lines as pickable points and lines
-    ax = plotCLine(ax,plines);
     for j=1:nlines                                  %call one at a time
         apline = (cplines{1,j});                    %to order numbering  
         ax = gd_plotpoints(ax,apline,'mylines',2);  %set line  
-        ax = gd_plotpoints(ax,apline,'mypoints',1); %set points
-        gd_plotpoints(ax,apline,num2str(j),3);      %set labels  
+        % ax = gd_plotpoints(ax,apline,'mypoints',1); %set points
+        ax = gd_plotpoints(ax,apline,num2str(j),3);      %set labels  
     end    
 
     %%get user to define links and set up graph matrix
@@ -129,48 +120,57 @@ end
 
 %%
 function [idp,idl] = getNode(ax,plines,idN)
-    %define start and end of section line and plot it   
+    %define start and end of section line and plot it
+    % idp - [1x2] indices of line end point and join point
+    % idl - index of line being joined
     orange = [0.8500 0.3250 0.0980];
     prompt1 = 'Select a branch line';
     ok = 0;    
     while ok<1        
-        pline = gd_getpline(ax,prompt1);
+        pline = gd_getpline(ax,prompt1,'mylines');
         if ~isempty(pline), ok = 1; end
     end
-    points(1,1) = pline(1);
+    epoint = pline(1);
     %assign first index point
-    idp(1) = find([plines(:).x]==points(1).x & [plines(:).y]==points(1).y); 
+    idp(1) = find([plines(:).x]==epoint.x & [plines(:).y]==epoint.y); 
     %find the line number
     nline = find(idp(1)>idN,1,'last');
-    resetpoints(ax); %clear any points selected whilst selecting line
+    [ax,Hpts] = gd_plotpoints(ax,plines,'mypoints',1); %set points
+
 
     prompt2 = sprintf('Select point on a line that branch %d connects to',nline);
     ok = 0;
     while ok<1
-        [points(1,2),H] = gd_getpoint(ax,prompt2);
-        if ~isempty(points(1,2))
-            H.MarkerSize = 10;    %highlight selected point
+        jpoint = gd_getpoint(ax,prompt2,'mypoints');
+        if ~isempty(jpoint)
+            %highlight branch line label
+            h_txt = findobj(ax,'Type','Text','Tag','mytext');
+            pnts = reshape([h_txt(:).Position],3,[]);
+            idx = pnts(1,:)==epoint.x & pnts(2,:)==epoint.y;
+            h_txt(idx).Color = orange;
+            delete(Hpts)
+            %plot join point and add label
+            hold on
+            H = plot(ax,jpoint.x,jpoint.y,'ok','MarkerSize',8,...
+                                    'MarkerFaceColor','w','Tag','mytext');
+            % H.MarkerSize = 10;    %highlight selected point
             answer = questdlg('Accept point','Topo','Yes','No','Yes');
             if strcmp(answer,'Yes')
-                text(ax,points(1,2).x,points(1,2).y,num2str(nline),...
-                     'Color',orange,'FontSize',6,'Tag','mytext');
+                text(ax,jpoint.x,jpoint.y,num2str(nline),'Clipping', 'on',...
+                         'HorizontalAlignment','center','Color',orange,...
+                                             'FontSize',6,'Tag','mytext');
                 ok = 1; 
             else
-                resetpoints(ax);  %point not accepted so reset for selection
-                H.MarkerSize = 4; 
+                [ax,Hpts] = gd_plotpoints(ax,plines,'mypoints',1); %set points
+                delete(H)
             end
+            hold off
         end
     end
     %assign send index point
-    idp(2) = find([plines(:).x]==points(2).x & [plines(:).y]==points(2).y); 
+    idp(2) = find([plines(:).x]==jpoint.x & [plines(:).y]==jpoint.y); 
     %indices of lines being joined
     idl =  [find(idp(2)>idN,1,'last'),nline];
-
-    %highlight branch line label
-    h_txt = findobj(ax,'Tag','mytext');
-    pnts = reshape([h_txt(:).Position],3,[]);
-    idx = pnts(1,:)==pline(1).x & pnts(2,:)==pline(1).y;
-    h_txt(idx).Color = orange;
 end
 
 %%
@@ -244,9 +244,34 @@ end
 % Plotting functions
 %%-------------------------------------------------------------------------
 function ax = plotCLine(ax,plines)
-    %plot the clentreline as non-pickable linework
+    %plot the centreline as non-pickable linework
     hold on
     plot(ax,[plines(:).x],[plines(:).y],'-r','LineWidth',2,...
                                    'PickableParts','none','Tag','clines');
     hold off
+end
+
+%%
+function ax = plotBackGround(hf,grid)
+    %determin if input is a grid or an image and plot as background
+    if isgraphics(grid,'axes') %if graphics already exists
+        h_grid = findobj(grid.Children,'Tag','PlotGrid');
+        clear grid
+        ax = axes(hf);
+        copyobj(h_grid,ax);
+    elseif isstruct(grid)                       %if called with a grid then plot the grid
+        ax = gd_plotgrid(hf,grid);
+        hplt = findobj(ax,'Tag','PlotGrid');
+        hplt.Annotation.LegendInformation.IconDisplayStyle = 'off';      
+    elseif isa(grid,'dstable')
+        ax = axes(hf);
+        %image is passed to class as the 'grid' input variable
+        img = grid.geoimage;     %image object
+        h_im = imagesc(ax,'XData',img.XData,'YData',img.YData,'CData',img.CData);
+        set(h_im, 'AlphaData', 1-isnan(img.CData)); %set Nan values to be transparent
+    else
+        warndlg('Unknown grid/image type'); return;
+    end
+    axis equal tight
+    colormap(ax,'gray');
 end

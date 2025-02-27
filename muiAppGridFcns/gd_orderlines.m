@@ -48,17 +48,14 @@ end
 %%
 function [ax,cplines] = plotLines(ax,plines)
     %plot the input lines as numbered lines
+    clearGraphics(obj,{'mylines','mytext'})
     ax = clearLines(ax);
-    cplines = gd_setcplines(ax,'',plines);
+    gd_plotpoints(obj.Axes,plines,'mylines',2); 
+    gd_plotpoints(obj.Axes,plines,'mypoints',1); 
+    cplines = gd_plines2cplines(plines);
     hold on
-    for i=1:length(cplines)
-        aline = cplines{1,i};   
-        nlinetxt = num2str(i);
-        plot(ax,aline(1).x,aline(1).y,'ok','MarkerSize',7,'PickableParts','none',...
-                'MarkerFaceColor','w','Tag','mylinepoints');
-        text(ax,aline(1).x,aline(1).y,sprintf('%s',nlinetxt),...
-                'HorizontalAlignment','center','PickableParts','none',...
-                'FontSize',6,'Tag','mytext');
+    for i=1:length(cplines) 
+        gd_plotpoints(obj.Axes,cplines{i},num2str(i),3); %set labels
     end
     hold off
 end

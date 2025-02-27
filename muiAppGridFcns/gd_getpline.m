@@ -1,4 +1,4 @@
-function [pline,H] = gd_getpline(ax,promptxt,ispoints)
+function [pline,H] = gd_getpline(ax,promptxt,tagname,ispoints)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -7,10 +7,11 @@ function [pline,H] = gd_getpline(ax,promptxt,ispoints)
 %   interactively select a line on a plot and return the line point
 %   coordinates.
 % USAGE
-%   pline = getline(ax,promptxt,ispoints);
+%   pline = gd_getpline(ax,promptxt,tagname,ispoints);
 % INPUTS
 %   ax - figure axes to use to interactively select point
 %   promptxt - prompt to be used for point being defined
+%   tagname - character vector of text to be used as tag for plotted points
 %   ispoints - true to return as an array of point structs, otherwise
 %              returns an xy struct of points (optional - default is true)
 % OUTPUTS
@@ -28,11 +29,11 @@ function [pline,H] = gd_getpline(ax,promptxt,ispoints)
 % CoastalSEA (c) Feb 2025
 %--------------------------------------------------------------------------
 % 
-    if nargin<3
+    if nargin<4
         ispoints = true;
     end
     title(ax,promptxt)
-    pline = [];
+    pline = []; H = [];
     but = 999;
     while but~=0
         try
@@ -41,16 +42,16 @@ function [pline,H] = gd_getpline(ax,promptxt,ispoints)
             return;
         end
 
-        h_lines = findobj(ax,'Tag','mylines');
+        h_lines = findobj(ax,'Tag',tagname);
         if isempty(h_lines)
-            warndlg('No lines to defined')
+            warndlg('No lines defined')
             return
         end
-        %callback for setpoint sets UserData to event when point selected
-        if all([h_lines.UserData]==0)      %no point set
-            but = 999;                     %stay in loop
-        elseif any([h_lines.UserData]==3)  %user right clicked a point
-            return;                        %exit with no point data
+        %callback for setpoint sets UserData to event when line selected
+        if all([h_lines.UserData]==0)      %no line set
+            return; %but = 999;                     %stay in loop
+        elseif any([h_lines.UserData]==3)  %user right clicked a line
+            return;                        %exit with no line data
         end        
     end
     

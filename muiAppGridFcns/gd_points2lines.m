@@ -34,7 +34,7 @@ function lines = gd_points2lines(points,outype)
     elseif ~isstruct(points)
         %not points array struct as input - return unchanged
         lines = points; return;         
-    elseif (isstruct(points) && length(points)==1)
+    elseif isstruct(points) && isscalar(points) && isscalar(points.x)
         %if struct of single point return unchanged, otherwise
         if outype==1      %convert to array
             lines = cell2mat(struct2cell(points)');    %struct to [Nx2] array

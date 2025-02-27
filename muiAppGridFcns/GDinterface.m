@@ -565,9 +565,8 @@ function [grid,orient] = orientGrid(obj,grid0)
             promptxt = 'Flip or rotate grid?';
             tag = 'PlotFig'; %used for collective deletes of a group
             butnames = {'Accept','Flip LR','Flip UD','+90','-90','invX','invY','Reset'};
-            % position = [0.3,0.4,0.35,0.5];
-            position = [0,0,1,1];
-            [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position);
+            position = [0,0.03,1,0.93];
+            [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position,0.8);
             %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
             gd_plotgrid(h_plt,grid0);
             axis equal tight %assume geographical projection or grid of similar dimensions
@@ -755,7 +754,8 @@ function [grid,orient] = orientGrid(obj,grid0)
                 warndlg('No grid for selected Case'); return; 
             end
             grid = getGrid(obj,irec);   %grid for selected year
-            gd_plotsections(grid);      %function plots selected sections  
+            pmtxt = sprintf('Define sections and plot\nSelect menu option');
+            PL_PlotSections.Figure(grid,pmtxt,true);      %function plots selected sections  
         end
 %%
         function points = getGridLine(muicat,gridclasses,issave)
@@ -841,14 +841,23 @@ function [grid,orient] = orientGrid(obj,grid0)
 
             %to use this method the calling class must include a get.formatypes method
             %(see EDBimport for eg)
-            datasetname = 'GeoImage';
-            obj.DataFormats{2} = obj.formatypes{datasetname,1}{1};
-            [dst,ok] = callFileFormatFcn(obj,'setData',obj,im,grid.desc);
-            if ok<1 || isempty(dst), return; end
-            
-            obj.Data.(datasetname) = dst.(datasetname);
-            updateCase(muicat,obj,classrec,false);
-            getdialog(sprintf('GeoImage added to Case: %s',grid.desc),[],1)   
+            answer = questdlg('Save to Case or File?','GridImage',...
+                                                    'Case','File','Case');
+            if strcmp(answer,'Case')
+                datasetname = 'GeoImage';
+                obj.DataFormats{2} = obj.formatypes{datasetname,1}{1};
+                [dst,ok] = callFileFormatFcn(obj,'setData',obj,im,grid.desc);
+                if ok<1 || isempty(dst), return; end          
+                obj.Data.(datasetname) = dst.(datasetname);
+                updateCase(muicat,obj,classrec,false);
+                getdialog(sprintf('GeoImage added to Case: %s',grid.desc),[],1)   
+            else
+                desc = matlab.lang.makeValidName(grid.desc);
+                filename = sprintf('GeoImage_%s.mat',desc);
+                inp = inputdlg('Filename:','GeoImage',1,{filename});
+                if isempty(inp); return; end
+                save(inp{1},'im',"-mat");
+            end
         end
 %%
         function gridMenuOptions(mobj,src,gridclasses)
@@ -953,7 +962,7 @@ function [grid,orient] = orientGrid(obj,grid0)
             tag = 'PlotFig'; %used for collective deletes of a group
             butnames = {'Accept','Edit','invX','invY','Quit'};
             position = [0.2,0.4,0.4,0.4];
-            [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position);
+            [h_plt,h_but] = acceptfigure(figtitle,promptxt,tag,butnames,position,0.8);
             %plotGrid(obj,h_plt,grid0.x,grid0.y,grid0.z');
             gd_plotgrid(h_plt,grid0);
             ok = 0;

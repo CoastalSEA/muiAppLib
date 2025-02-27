@@ -1,4 +1,4 @@
-function [points,Hpnts] = gd_setpoints(ax,promptxt,isxyz)
+function [points,Hpnts] = gd_setpoints(ax,promptxt,tagname,isxyz)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -8,10 +8,11 @@ function [points,Hpnts] = gd_setpoints(ax,promptxt,isxyz)
 %   coordinates. Includes an option to enter an additional value at the
 %   selected points (e.g. elevation).
 % USAGE
-%   points = gd_setpoints(ax,promptxt,isxyz);
+%   points = gd_setpoints(ax,promptxt,tagname,isxyz);
 % INPUTS
 %   ax - figure axes to use to interactively select point
 %   promptxt - prompt to be used for point being defined
+%   tagname - character vector of text to be used as tag for plotted points
 %   isxyz - logical flag true to input z values - optional, default is false
 % OUTPUTS
 %   points - struct with x, y fields defining added points and z if included 
@@ -29,9 +30,9 @@ function [points,Hpnts] = gd_setpoints(ax,promptxt,isxyz)
     count = 1;
     ok = 0;
     while ok<1          
-        [point,H] = gd_setpoint(ax,promptxt,isxyz);
+        [point,H] = gd_setpoint(ax,promptxt,tagname,isxyz);
         if isempty(point)  %user right clicks or presses return
-            if ~exist('points','var'), points = []; end
+            if ~exist('points','var'), points = []; Hpnts = []; end    %no points defined
             ok = 1;       
         else
             points(count) = point; %#ok<AGROW> 

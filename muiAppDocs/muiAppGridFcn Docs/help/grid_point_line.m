@@ -269,8 +269,9 @@
 
 %%
 % *gd_points2lines.m*
-% - convert a _lines_ array of structs with x, y (and z) fields to a [Nx2] or [Nx3] 
-% array, or a single stuct with column vectors in the x, y (and z) fields
+% - convert a _points_ or plines array of structs with x, y (and z) fields 
+% to a [Nx2] or [Nx3] array, or a single stuct, or matrix with column vectors
+%  in the x, y (and z) fields
 %%
 %   lines = gd_points2lines(points,outype);
 %%
@@ -335,7 +336,7 @@
 % coordinates. Includes an option to enter an additional value at the
 % selected point (e.g. elevation).
 %%
-%   point = gd_setpoint(ax,promptxt,isxyz)
+%   point = gd_setpoint(ax,promptxt,isxyz);
 %%
 % where _ax_ is a figure axes used to interactively select points, _promptxt_
 % is a prompt to be used for point being defined, and _isxyz_

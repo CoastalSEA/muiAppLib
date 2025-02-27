@@ -1,4 +1,4 @@
-function [point,H] = gd_getpoint(ax,promptxt)
+function [point,H] = gd_getpoint(ax,promptxt,tagname)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -7,10 +7,11 @@ function [point,H] = gd_getpoint(ax,promptxt)
 %   interactively select a point on a plot and return the point
 %   coordinates.
 % USAGE
-%   point = gd_getpoint(ax,promptxt);
+%   point = gd_getpoint(ax,promptxt,tagname);
 % INPUTS
 %   ax - figure axes to use to interactively select point
 %   promptxt - prompt to be used for point being selected
+%   tagname - character vector of text used as tag for plotted points
 % OUTPUTS
 %   point - struct with x and y fields defining selected point
 %   H -  handle to selected point
@@ -26,7 +27,7 @@ function [point,H] = gd_getpoint(ax,promptxt)
 %--------------------------------------------------------------------------
 % 
     title(ax,promptxt)
-    point = [];
+    point = []; H = [];
     but = 999;
     while but~=0
         try
@@ -34,14 +35,14 @@ function [point,H] = gd_getpoint(ax,promptxt)
         catch
             return;
         end
-        h_pnts = findobj(ax,'Tag','mypoints');
+        h_pnts = findobj(ax,'Tag',tagname);
         if isempty(h_pnts)
-            warndlg('No points to defined')
+            %warndlg('No points defined')
             return
         end
         %callback for setpoint sets UserData to event when point selected
         if all([h_pnts.UserData]==0)      %no point set
-            but = 999;                    %stay in loop
+            return; %but = 999;                    %stay in loop
         elseif any([h_pnts.UserData]==3)  %user right clicked a point
             return;                       %exit with no point data
         end        

@@ -21,7 +21,7 @@ function cplines = gd_plines2cplines(plines)
 %--------------------------------------------------------------------------
 % 
     idN = [0,find(isnan([plines(:).x]))];  
-    if length(idN)==1, cplines = {plines}; return; end  %no NaNs in plines
+    if isscalar(idN), cplines = {plines}; return; end  %no NaNs in plines
     for i=1:length(idN)-1
         idL =idN(i)+1:idN(i+1);    
         %cell so that number of points can vary

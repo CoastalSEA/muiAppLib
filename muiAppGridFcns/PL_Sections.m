@@ -1,15 +1,18 @@
-classdef GD_Sections < handle   
+classdef PL_Sections < handle   
 %
 %-------class help---------------------------------------------------------
 % NAME
-%   GD_Sections.m
+%   PL_Sections.m
 % PURPOSE
 %   Class to extract sections from a grid
 % USAGE
-%   obj = GD_Sections.sectionsMenu(mobj,src,gridclasses);
+%   obj = PL_Sections.sectionsMenu(mobj,src,gridclasses);
 %         %mobj is a handle to Main UI
 %         %src is handle to calling menu option
 %         %gridclasses is cell array of classes to use in case selection
+% NOTES
+%   calls classes that inherit PLinterface to manipulate different types of
+%   linework used to generate, plot and analyse cross-sections
 % SEE ALSO
 %   inherits handle
 %
@@ -27,7 +30,7 @@ classdef GD_Sections < handle
     end
        
     methods (Access=protected)
-        function obj = GD_Sections()          
+        function obj = PL_Sections()          
             %constructor code:            
         end 
     end
@@ -50,44 +53,56 @@ classdef GD_Sections < handle
             % Additional submenus may been be added for additional options:
             % menu.Setup(9).List = {'Generate','Load','Edit'};
             % menu.Setup(9).Callback = repmat({@obj.sectionMenuOptions},[1,3]);
-            % where Load reads a shapefile, Generate uses the GD_Sections
+            % where Load reads a shapefile, Generate uses the PL_Sections
             % methods and Edit calls gd_editlines (see EstauryDB for eg)
             %
             muicat = mobj.Cases;   %handle to muiCatalogue
-            switch src.Text 
+            switch src.Text
                 case 'Boundary'
-                    promptxt = 'Select a Case to use to define boundary:'; 
+                    promptxt = 'Select a Case to use to define boundary:';
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj), return; end
-                    obj = GD_Sections.getSections(cobj);
-                    setBoundary(obj,cobj,muicat); 
-                case 'Channel network'
-                    promptxt = 'Select a Case to use to define channel network:'; 
+                    obj = PL_Sections.getSections(cobj);
+                    setBoundary(obj,cobj,muicat);
+                case 'Channel Network'
+                    promptxt = 'Select a Case to use to define channel network:';
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj), return; end
-                    obj = GD_Sections.getSections(cobj);
-                    setChannelNetwork(obj,cobj,mobj); 
-                case 'Section lines'
-                    promptxt = 'Select a Case to use to define section lines:'; 
+                    obj = PL_Sections.getSections(cobj);
+                    setChannelNetwork(obj,cobj,mobj);
+                case 'Channel Links'
+                    promptxt = 'Select a Case to use to set channel connectivity:';
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj), return; end
-                    obj = GD_Sections.getSections(cobj);
+                    obj = PL_Sections.getSections(cobj);
+                    setChannelTopology(obj,cobj,muicat);                    
+                case 'Section Lines'
+                    promptxt = 'Select a Case to use to define section lines:';
+                    [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
+                    if isempty(cobj), return; end
+                    obj = PL_Sections.getSections(cobj);
                     setSectionLines(obj,cobj,muicat);
                 case 'Sections'
-                    promptxt = 'Select a Case to use to extract sections:'; 
+                    promptxt = 'Select a Case to use to extract sections:';
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj), return; end
-                    obj = GD_Sections.getSections(cobj);
+                    obj = PL_Sections.getSections(cobj);
                     setSections(obj,cobj,muicat);
-                 case 'View Sections'
-                    promptxt = 'Select a Case to use to extract sections:'; 
+                case 'View Sections'
+                    promptxt = 'Select a Case to use to extract sections:';
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj.Sections)
                         warndlg('No Section data available to view');
                         return;
-                    end  
+                    end
                     obj = cobj.Sections;
                     viewSections(obj,cobj,muicat);
+                case 'Waterbody'
+                    promptxt = 'Select a Case to use to define waterbody';
+                    [cobj,caserec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+                    if isempty(cobj), return; end
+                    obj = PL_Sections.getSections(cobj);
+                    setWaterbody(obj,cobj,muicat,classRec(muicat,caserec));                   
             end
         end
 
@@ -96,10 +111,10 @@ classdef GD_Sections < handle
             %retrieve existing class object or create a new instance
             if nargin<1, cobj = []; end
 
-            if isa(cobj.Sections,'GD_Sections')
+            if isa(cobj.Sections,'PL_Sections')
                 obj = cobj.Sections;
             else                
-                obj = GD_Sections;
+                obj = PL_Sections;
             end
         end
 
@@ -154,7 +169,7 @@ classdef GD_Sections < handle
             promptxt = sprintf('Select a Case to edit %s:',linetype);
             [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
 
-            if ~isa(cobj.Sections,'GD_Sections')  && strcmp(src.Text,'Edit')
+            if ~isa(cobj.Sections,'PL_Sections') && strcmp(src.Text,'Edit')
                 warndlg(sprintf('No %s data available to edit',linetype));
                 return;
             elseif strcmp(src.Text,'Digitise')
@@ -163,11 +178,11 @@ classdef GD_Sections < handle
                 clines = cobj.Sections.(type);
             end
 
-            %eidt the selected line and save to case
-            
-            paneltxt = sprintf('Edit the %s',linetype);
+            %edit the selected line and save to case            
+            promptxt = sprintf('%s the %s\nSelect menu option',src.Text,linetype);
             grid = getGrid(cobj,1);   %grid for selected year
-            clines = gd_editlines(grid,paneltxt,clines,true);
+
+            clines = PL_Editor.Figure(grid,promptxt,clines,true);
             if isempty(clines), return; end
             answer = questdlg(sprintf('Save the edited %s',linetype),linetype,'Yes','No','Yes');
             if strcmp(answer,'Yes')
@@ -189,27 +204,18 @@ classdef GD_Sections < handle
 
             blines = 2;                         %output format when new line
             if ~isempty(obj.Boundary)           %channel line exists
-                answer = questdlg('A centre-line exists. Extend existing or create new one?',...
-                                  'Channel','Extend','New','Extend');
-                if strcmp(answer,'Extend')
+                answer = questdlg('A centre-line exists. Modify existing or create new one?',...
+                                  'Channel','Modify','New','Modify');
+                if strcmp(answer,'Modify')
                     blines = obj.Boundary;      %existing lines
                 end                    
             end 
 
             %clean-up shoreline
-            paneltxt = 'Create and smooth the shoreline boundary';
-            shore_xy = gd_setboundary(grid,paneltxt,blines,true);
+            promptxt = sprintf('Create and smooth the shoreline boundary\nSelect menu option');
+            %shore_xy = gd_setboundary(grid,paneltxt,blines,true);
+            shore_xy = PL_Boundary.Figure(grid,promptxt,blines,true);
             if isempty(shore_xy), return; end
-
-            % %give user opportunity to edit the shoreline interactively
-            % answer = questdlg('Check/Edit or Save the shoreline?','Centre-line','Edit','Save','Quit','Edit');
-            % if strcmp(answer,'Edit')
-            %     paneltxt = 'Edit the shoreline boundary';
-            %     shore_xy = gd_editlines(grid,paneltxt,shore_xy,true);
-            %     if isempty(shore_xy), return; end
-            % elseif strcmp(answer,'Quit')
-            %     return;
-            % end
 
             %save results to grid class instance
             obj.Boundary = shore_xy;
@@ -217,7 +223,7 @@ classdef GD_Sections < handle
             getdialog(sprintf('Boundary added to grid for Case: %s',grid.desc),[],3)
         end
 %%
-        function setChannelNetwork(obj,cobj,mobj)
+        function setChannelNetwork(obj,cobj,~)
             %load a grid and extract the centre lines of the channels in
             %the network, or digitise them manually, and combine into a
             %vector of points
@@ -227,7 +233,7 @@ classdef GD_Sections < handle
             grid = getGrid(cobj,1);   %grid for selected year
             
             if ~isempty(obj.ChannelLine)           %channel line exists
-                promptxt = sprintf('A centre-line exists.\nUse Existing centre-line or create a New one?');
+                promptxt = sprintf('A centre-line exists.\nEdit Existing centre-line or create a New one?');
                 answer = questdlg(promptxt,'Channel','Existing','New','Existing');                                 
             else
                 answer = 'New';
@@ -249,72 +255,28 @@ classdef GD_Sections < handle
                 %nlines(:,1) = c_plines.x; nlines(:,2) = c_plines.y;  %matrix of xy points
             end
 
-            [c_plines,props] = gd_setcentrelines(grid,mobj,props,plines,true);
-            if isempty(c_plines), return; end   %user cancelled without creating any lines
-%             ok = 0;
-%             while ok<1
-%                 %loop adding lines until user cancels without defining
-%                 %a new line
-%                 [nline, hf] = setSingleLine(grid,mobj,props,nlines);
-%                 if isempty(nline), ok =1; continue; end
-%                 nlines = setCentreLine(props,nline,nlines);
-%                 delete(hf)
-%             end
-            
-
-            % %give user opportunity to edit the centre-line interactively
-            % promptxt = sprintf('Check/Edit or Save the centre-lines?\nTake opportunity to clean channel connections');
-            % answer = questdlg(promptxt,'Centre-line','Edit','Save','Quit','Edit');
-            % if strcmp(answer,'Edit')
-            %     paneltxt = 'Edit the centre-lines and location of points at nodes';
-            %     c_plines = gd_editlines(grid,paneltxt,c_plines,true);
-            %     if isempty(c_plines), return; end
-            % elseif strcmp(answer,'Quit')
-            %     return;
-            % end
-
+            promptxt = sprintf('Create a channel network of centre-lines\nSelect menu option');
+            [clines,props] = PL_CentreLine.Figure(grid,promptxt,plines,props,true);
+            if isempty(clines), return; end   %user cancelled without creating any lines
             
             %save linework so that can reload if mess up defining topology           
-            obj.ChannelLine = c_plines;
+            obj.ChannelLine = clines;
             obj.ChannelProps = props;
 
-            %define connectivity of finished lines (topology)
-            [cumlen,G,hf,hg] = gd_linetopology(grid,c_plines);
-            props.topo = G;
-            props.ChannelLengths = cumlen;
-            delete([hf,hg])
-            obj.ChannelProps = props;
+            % %define connectivity of finished lines (topology)
+            % [cumlen,G,hf,hg] = gd_linetopology(grid,clines);
+            % props.topo = G;
+            % props.ChannelLengths = cumlen;
+            % delete([hf,hg])
+            % obj.ChannelProps = props;
 
             %save results to grid class instance
             cobj.Sections = obj;
             getdialog(sprintf('Channel network added to grid for Case: %s',grid.desc),[],3)
+
             %option to also add to grid cline property
             % cobj.Data.Grid.UserData.cline.x = clines(:,1);
             % cobj.Data.Grid.UserData.cline.y = clines(:,2);
-
-%             %nested function-----------------------------------------------
-%             function [nline,hf] = setSingleLine(grid,mobj,props,nlines)
-%                 %
-%                 nline = gd_centreline(grid,mobj,props,nlines);
-%                 if isempty(nline), hf = []; return; end
-%                 nline = cell2mat(struct2cell(nline)');        %struct to [Nx2] array
-%                 hf = GD_Sections.cl_checkPlot(grid,nline,nlines);
-%             end
-% 
-%             %nested function-----------------------------------------------
-%             function nlines = setCentreLine(props,nline,nlines)
-%                 %
-%                 nline = nline(1:end-1,:);                     %remove trailing NaNs
-%                 ansr = questdlg('Accept the centreline?','Centre-line','Yes','No','Yes');
-%                 if strcmp(ansr,'Yes')
-%                     %convert format of output if required
-%                     clength = sum(vecnorm(diff(nline),2,2));  %nline is a column vector [Nx2]
-%                     cpoints = round(clength/props.cint);      %number of points in new line
-%                     newcline = curvspace(nline,cpoints);      %curvespace uses [Nx2]
-%                     nlines = [nlines;newcline;[NaN,NaN]];     %restore trailing NaNs                    
-%                 end
-%                 %plines = struct('x',nlines(:,1),'y',nlines(:,2));
-%             end %----------------------------------------------------------
         end
 
 %%
@@ -326,26 +288,23 @@ classdef GD_Sections < handle
                 warndlg('Boundary and Channel network need to be defined to extract Section Lines')
                 return
             end
+
+            %use either a grid or a grid image
+            if isfield(cobj.Data,'Grid')
+                grid = getGrid(cobj,1);   %grid for selected year
+            elseif isfield(cobj.Data,'GeoImage')
+                grid = cobj.Data.GeoImage;
+            else
+                warndlg('No grid or image data for selected case');
+            end
+
             %extract the section lines that are normal to the 
             %channel centre line and extend to the bounding shoreline
-            paneltxt = 'Extract the channel cross-sections';
-            [slines,clines,props] = gd_setsectionlines(obj,cobj,paneltxt,false);
+            promptxt = sprintf('Extract the channel cross-sections\nSelect menu option');            
+            slines = PL_SectionLines.Figure(grid,promptxt,obj,true);
             if isempty(slines), return; end
 
-            % %give user opportunity to edit the secions interactively
-            % grid = getGrid(cobj,1);   %grid for selected year
-            % answer = questdlg('Check/Edit or Save the Cross-sections?','Cross-sections','Edit','Save','Quit','Edit');
-            % if strcmp(answer,'Edit')
-            %     paneltxt = 'Edit or Reorder the cross-sections';                
-            %     slines = gd_editlines(grid,paneltxt,slines,false);
-            %     if isempty(slines), return; end
-            % elseif strcmp(answer,'Quit')
-            %     return;
-            % end
-
             obj.SectionLines = slines;
-            obj.ChannelLine = clines;
-            obj.ChannelProps = props;
             cobj.Sections = obj;
             casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
             msgtxt = sprintf('Section lines added to grid for Case: %s',...
@@ -354,58 +313,198 @@ classdef GD_Sections < handle
         end
 
 %%
-        function setSections(obj,cobj,muicat)
+        function setSections(obj,cobj,~)
             %using the SectionLines data extract the widths as a function 
-            %of elevation and distance along the centre-line from the mouth
+            %of elevation for all sections along the channels
             if isempty(obj.SectionLines) || ~isfield(cobj.Data,'Grid')
                 getdialog('No data',[],1); return; 
             end
             grid = getGrid(cobj,1);
-            
-            promptxt = {'Maximum accessible water level (mAD)',...
-                        'Sampling interval (m)','Interpolation method'};
-            defaults = {'10','10','makima'};
-            inp = inputdlg(promptxt,'Water level',1,defaults);
-            if isempty(inp), return; end %user cancelled
-            zmax = str2double(inp{1});
-            sint = str2double(inp{2});
-            method = inp{3};
-
+            %convert the SectionLines to cplines
             cplines = gd_plines2cplines(gd_lines2points(obj.SectionLines));
-            %plot the elevations for the defined section
-            nlines = length(cplines);            
-            for i=1:nlines
-                points = cplines{1,i};
-                xlen = diff([points(1:end-1).x]);
-                ylen = diff([points(1:end-1).y]);
-                slen = hypot(xlen,ylen);            %length of section        
-                spnts = 0:sint:slen;                %points along section
-                xq = points(1).x+spnts/slen*xlen;
-                yq = points(1).y+spnts/slen*ylen;  
-        
-                %check for NaNs in grid
-                grid.z(isnan(grid.z)) = zmax;      %clean grid for interpolation
-                grid.z(grid.z>zmax) = zmax;
-                [X,Y] = meshgrid(grid.x,grid.y);
-                zline = interp2(X,Y,grid.z',xq,yq,method);
-                if zline(1)<zmax          %adjust start point if below zmax
-                    zline = [zmax,zline]; %#ok<AGROW> 
-                    spnts = [0,spnts+sint];
-                end
-                if zline(end)<zmax        %adjust end point if below zmax
-                    zline = [zline,zmax]; %#ok<AGROW> 
-                    spnts = [0,spnts+sint];
-                end
-                
-                zplines(1,i) = struct('x',[spnts,NaN],'y',[zline,NaN]); %#ok<AGROW> 
-            end            
-            obj.XSections = gd_points2lines(zplines,2);
-            cobj.Sections = obj;
-            casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
-            viewAlongChannelSections(obj,casedesc);
+            %use grid to interpolate sections and plot them
+            xlines= gd_plotsections(grid,cplines);
+            if ~isempty(xlines)
+                obj.XSections = xlines;
+                % %clean grid for interpolation - check for NaNs and high points
+                % grid.z(isnan(grid.z)) = zmax; 
+                % grid.z(grid.z>zmax) = zmax;
+                % [X,Y] = meshgrid(grid.x,grid.y);
+                % %extract the elevations for the defined section
+                % nlines = length(cplines);            
+                % for i=1:nlines
+                %     points = cplines{1,i};
+                %     xlen = diff([points(1:end-1).x]);
+                %     ylen = diff([points(1:end-1).y]);
+                %     slen = hypot(xlen,ylen);            %length of section        
+                %     spnts = 0:sint:slen;                %points along section
+                %     xq = points(1).x+spnts/slen*xlen;
+                %     yq = points(1).y+spnts/slen*ylen;  
+                % 
+                %     zline = interp2(X,Y,grid.z',xq,yq,method);
+                %     if zline(1)<zmax          %adjust start point if below zmax
+                %         zline = [zmax,zline]; %#ok<AGROW> 
+                %         spnts = [0,spnts+sint];
+                %     end
+                %     if zline(end)<zmax        %adjust end point if below zmax
+                %         zline = [zline,zmax]; %#ok<AGROW> 
+                %         spnts = [0,spnts+sint];
+                %     end
+                % 
+                %     zplines(1,i) = struct('x',[spnts,NaN],'y',[zline,NaN]); %#ok<AGROW> 
+                % end            
+                % obj.XSections = gd_points2lines(zplines,2);
+                cobj.Sections = obj;
+            end
+            %casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+            %viewAlongChannelSections(obj,casedesc);
         end
 
 %%
+        function setChannelTopology(obj,cobj,muicat)
+            %define the toplogy for a channel network            
+            if isempty(obj.ChannelLine)
+                warndlg('Channel network need to be defined to extract Section Lines')
+                return
+            end
+            %use either a grid or a grid image
+            if isfield(cobj.Data,'Grid')
+                grid = getGrid(cobj,1);   %grid for selected year
+            elseif isfield(cobj.Data,'GeoImage')
+                grid = cobj.Data.GeoImage;
+            else
+                warndlg('No grid or image data for selected case');
+            end
+            
+            if ~isempty(obj.SectionLines)
+                %use section lines to update centre-line positions
+                % s_plines = gd_points2lines(obj.SectionLines);
+                % c_plines = gd_points2lines(obj.ChannelLine);
+                plines = resetCentreLine(obj);
+                if isempty(plines), return; end
+                obj.ChannelLine = gd_points2lines(plines,2);
+            end
+
+            %generate the toplogy based on updated
+            [cumlen,G,hf,~] = gd_linetopology(grid,obj.ChannelLine);
+            obj.ChannelProps.topo = G;
+            obj.ChannelProps.ChannelLengths = cumlen;
+            delete(hf)            %delete the figure but not network graph
+            casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+            msgtxt = sprintf('Section lines added to grid for Case: %s',...
+                                                                casedesc);
+            getdialog(msgtxt,[],3)
+        end
+
+
+%%
+        function nc_plines = resetCentreLine(obj)
+            %update the centre-line so that the points lie on the sections and
+            %return updated points and distances from mouth    
+            s_plines = gd_lines2points(obj.SectionLines);
+            c_plines = gd_lines2points(obj.ChannelLine);
+            c_cplines = gd_plines2cplines(c_plines);     %centre-line lines
+            nlines = size(c_cplines,2);
+            s_cplines = gd_plines2cplines(s_plines);     %cross-section lines
+            nsections = size(s_cplines,2);    
+
+            % figure;  %checkplot of sections and centrelines
+            % clines = gd_points2lines(c_plines,1);   
+            % hold on, plot(clines(:,1),clines(:,2)); hold off
+        
+            for j=1:nlines
+                plines = [];
+                cline = gd_points2lines(c_cplines{1,j},1);
+                for i=1:nsections
+                    pline = s_cplines{1,i};              %for each cross-section
+                    sline = gd_points2lines(pline,1);
+                    % hold on, plot(sline(:,1),sline(:,2)); hold off
+        
+                    P = InterX(sline',cline'); %intersections for 1 line
+                    %line intersection misses points at the start and end of each
+                    %centre-line line. Check if the point is a least on the section.
+                    if isempty(P)
+                        %see if section is on the first point of the centre-line
+                        ison = ispointonline(sline(1:end-1,:)',cline(1,:)',1,1e2);
+                        if ison
+                            cp = gd_lines2points(cline(1,:));
+                            plines = [plines,cp];             %#ok<AGROW> 
+                        else  
+                            
+                            ison = ispointonline(sline(1:end-1,:)',cline(end-1,:)',1,1e2);
+                            if ison
+                                cp = gd_lines2points(cline(end-1,:));
+                                plines = [plines,cp];         %#ok<AGROW>
+                            end
+                        end
+                    else
+                        cp = struct('x',P(1,1),'y',P(2,1));
+                        plines = [plines,cp];                 %#ok<AGROW> 
+                        
+                    end
+                    if ~isempty(cp)
+                    % hold on, plot(cp.x,cp.y,'ok')
+                    end
+                end
+                cplines{1,j} = plines;                        %#ok<AGROW> 
+            end
+            %reinstate NaN line terminators
+            nanpnts.x = NaN; nanpnts.y = NaN;                 %line termination
+            nc_plines = [];
+            for j=1:nlines
+                nc_plines = [nc_plines,cplines{1,j},nanpnts]; %#ok<AGROW> 
+            end
+
+            %check plot
+            hf = figure('Name','Topology','Units','normalized','Tag','PlotFig');  
+            hf.Position = [0.05,0.05,0.9,0.9];
+            ax = axes(hf);
+            gd_plotpoints(ax,s_plines,'mylines',2);    %plot section lines
+            hold on
+            gd_plotpoints(ax,nc_plines,'mypoints',1);   %plot new centre-line as points
+            hold off
+            axis equal 
+
+            answer = questdlg('Is there one point for every section?',...
+                                              'Topology','Yes','No','Yes');
+            if strcmp(answer,'No')
+                warndlg('Try regenerating/editing centre-line and/or sections')
+                nc_plines = [];   %return centre-line unchanged                
+            end
+            delete(hf)
+        end
+
+
+%%
+function setWaterbody(~,cobj,muicat,classrec)
+            %use PL_Boundary to create a polygon boundary
+            if ~isfield(cobj.Data,'Grid')
+                warndlg('No grid for selected case'); return;
+            end
+            grid = getGrid(cobj,1);             %grid for estuary
+
+            wlines = 2;                         %output format when new line
+            if ~isempty(cobj.WaterBody)         %waterbody line exists
+                answer = questdlg('A waterbody polygon exists. Edit existing or create a new one?',...
+                                  'Channel','Edit','New','Edit');
+                if strcmp(answer,'Extend')
+                    wlines = cobj.WaterBody;      %existing lines
+                end                    
+            end 
+
+            %clean-up shoreline
+            promptxt = sprintf('Create and smooth the shoreline boundary\nSelect menu option');
+            %shore_xy = gd_setboundary(grid,paneltxt,blines,true);
+            wline = PL_Boundary.Figure(grid,promptxt,wlines,true);
+            if isempty(wline), return; end
+
+            cobj.WaterBody = wline;
+            updateCase(muicat,cobj,classrec);
+        end
+%%
+%--------------------------------------------------------------------------
+% Plot functions
+%--------------------------------------------------------------------------
         function viewSections(obj,cobj,muicat)
             %view boundary channel network and cross-sections line work
             %or along-channel sections summary plot
@@ -445,17 +544,19 @@ classdef GD_Sections < handle
             %
             if isgrid || isimage 
                 axis equal tight
+                colormap(ax,'gray');
                 cb = colorbar;
-                cb.Label.String = 'Elevation (mAD)';    
+                cb.Label.String = 'Elevation (mAD)';                 
             end
 
             type = {'Boundary','ChannelLine','SectionLines'};
             for i=1:3
                 switch type{i}
                     case 'Boundary'
-                        sc = 'k'; ss = '-'; sw = 0.5;
+                        green = mcolor('green');
+                        sc = green; ss = '-'; sw = 0.6;
                     case 'ChannelLine'
-                        sc = 'g'; ss = '-.'; sw = 1.5;
+                        sc = 'b'; ss = ':'; sw = 1.5;
                     case  'SectionLines'
                         sc = 'r'; ss = '-'; sw = 1;
                 end
@@ -483,32 +584,32 @@ classdef GD_Sections < handle
         end
 
 %%
-        function viewAlongChannelSections(obj,casedesc)
-            %plot along-channel sections
-            hf = figure('Name','Sections','Units','normalized',...
-                             'Tag','PlotFig','Visible','on');
-            ax = axes(hf);
-            glines = {'-','--',':','-.'};
-            hold on
-            plines = obj.XSections;
-            cplines = gd_plines2cplines(gd_lines2points(plines));
-            nlines = length(cplines);
-            for i=1:nlines
-                aline = cplines{1,i};
-                spnts = [aline(:).x];
-                zpnts =[ aline(:).y];
-                nline = length(findobj(ax,'Tag','asection'));
-                lname = sprintf('Section %d',nline+1);        
-                plot(ax,spnts,zpnts,'LineStyle',glines{rem(nline,4)+1},...
-                      'LineWidth',1,'Tag','asection','DisplayName',lname,...
-                      'ButtonDownFcn',@godisplay)
-            end
-            hold off
-            if nlines<20
-                legend
-            end
-            title(sprintf('Along-channel sections for %s',casedesc))    
-        end
+        % function viewAlongChannelSections(obj,casedesc)
+        %     %plot along-channel sections
+        %     hf = figure('Name','Sections','Units','normalized',...
+        %                      'Tag','PlotFig','Visible','on');
+        %     ax = axes(hf);
+        %     glines = {'-','--',':','-.'};
+        %     hold on
+        %     plines = obj.XSections;
+        %     cplines = gd_plines2cplines(gd_lines2points(plines));
+        %     nlines = length(cplines);
+        %     for i=1:nlines
+        %         aline = cplines{1,i};
+        %         spnts = [aline(:).x];
+        %         zpnts =[ aline(:).y];
+        %         nline = length(findobj(ax,'Tag','asection'));
+        %         lname = sprintf('Section %d',nline+1);        
+        %         plot(ax,spnts,zpnts,'LineStyle',glines{rem(nline,4)+1},...
+        %               'LineWidth',1,'Tag','asection','DisplayName',lname,...
+        %               'ButtonDownFcn',@godisplay)
+        %     end
+        %     hold off
+        %     if nlines<20
+        %         legend
+        %     end
+        %     title(sprintf('Along-channel sections for %s',casedesc))    
+        % end
 
 %%
         function viewChannelNetwork(obj,casedesc)
@@ -523,34 +624,4 @@ classdef GD_Sections < handle
             title(sprintf('Channel network for %s',casedesc))   
         end
     end
-
-%%
-%     methods (Static, Access=private)
-%         function hf = cl_checkPlot(grid,cline,nlines)
-%             %plot base map of initial grid selection and defined mask
-%             % cline and nlines are both [Nx2] arrays
-%             points = [cline(1,:);cline(end,:)];
-%             hf = figure('Name','Thalwegs','Units','normalized','Tag','PlotFig');  
-%             hf.Position = [0,0,1,1];
-%             ax = gd_plotgrid(hf,grid);
-%             colormap(ax,'gray');
-%             lines = {'-','--',':','-.'};
-%             
-%             hs = findobj(ax.Children,'Type','surface');
-%             hs.Annotation.LegendInformation.IconDisplayStyle = 'off';
-%             hold on
-%             hp = plot(ax,points(:,1),points(:,2),'ok','MarkerSize',8,...
-%                                    'MarkerFaceColor','w','Tag','mypoints');
-%             hp.Annotation.LegendInformation.IconDisplayStyle = 'off';  
-%             plot(ax,cline(:,1),cline(:,2),'r','LineStyle',lines{1},'LineWidth',2,...
-%                                            'DisplayName','New line');
-%             if ~isempty(nlines)
-%                 plot(ax,nlines(:,1),nlines(:,2),'g','LineStyle',lines{3},'LineWidth',2,...
-%                                            'DisplayName','Accepted lines');
-%             end
-%             hold off
-%             title('Centre-line between defined start and end points')
-%             legend
-%         end
-%     end
 end

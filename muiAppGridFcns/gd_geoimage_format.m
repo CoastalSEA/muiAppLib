@@ -4,7 +4,7 @@ function output = gd_geoimage_format(funcall,varargin)
 % NAME
 %   gd_geoimage_format.m
 % PURPOSE
-%   Functions to define metadata, read and load data from file for estuary
+%   Functions to define metadata, read and load data from file for
 %   image data
 % USAGE
 %   output = gd_geoimage_format(funcall,varargin)
@@ -14,7 +14,9 @@ function output = gd_geoimage_format(funcall,varargin)
 % OUTPUT
 %   output - function specific output
 % NOTES
-%   This file loads a geoimage created from a grid
+%   This file loads a geoimage created from a grid which is saved in a
+%   dstable as a struct because imshow uses XLim and Ylin rather than x,y
+%   vectors
 %
 % Author: Ian Townend
 % CoastalSEA (c) Feb 2025
@@ -38,16 +40,18 @@ function output = gd_geoimage_format(funcall,varargin)
             output = getPlot(varargin{:});
     end
 end
+
 %%
 %--------------------------------------------------------------------------
 % getFormat
 %--------------------------------------------------------------------------
 function obj = getFormat(obj,formatfile)
     %return the file import format settings
-    obj.DataFormats = {'muiUserData',formatfile,'geoimage'};
+    obj.DataFormats = {'muiUserData',formatfile,'data'};
     obj.idFormat = 1;
     obj.FileSpec = {'on','*.mat;'};
 end
+
 %%
 %--------------------------------------------------------------------------
 % getData
@@ -56,12 +60,13 @@ function newdst = getData(obj,filename,metatxt) %#ok<INUSD>
     %read and load a data set from a file
     dsp = setDSproperties;                 %set metadata
     [~,location,~] = fileparts(filename);   
-    imdata = {load(filename)};
+    imdata = {load(filename)};    
     %load the results into a dstable - Image is the dataset name for this format
-    dst = dstable(imdata,'RowNames',{location},'DSproperties',dsp);  
+    dst = dstable(imdata{1}.im,'RowNames',{location},'DSproperties',dsp);  
     dst.Description = location;
     dst.Source = filename;
     dst.MetaData = metatxt;
+
     dst.UserData = [];         %unused
     newdst.GeoImage = dst;        %GeoImage is the dataset name for this format
 end
@@ -72,6 +77,7 @@ end
 %--------------------------------------------------------------------------
 function newdst = setData(obj,imobj,metatxt) %#ok<INUSD>
     %read and load a data set from a file
+    %imobj = struct('XData',[],'YData',[],'CData',[],'CMap',[],'CLim',[]);
     dsp = setDSproperties;                 %set metadata
     %load the results into a dstable - Image is the dataset name for this format
     dst = dstable(imobj,'RowNames',{metatxt},'DSproperties',dsp);  
@@ -127,12 +133,12 @@ function ok = getPlot(obj,src,dsetname)
     dst = obj.Data.(dsetname);
     if isempty(dst), return; end
     %test for array of allowed data types for a color image
-    im = dst.geoimage;     %image object
-    him = imshow(im.CData, 'XData',im.XData,'YData',im.YData);
+    img = dst.geoimage;     %image object
+    him = imshow(img.CData, 'XData',img.XData,'YData',img.YData,'Parent',ax);
     set(gca, 'YDir', 'normal'); % Correct the Y direction
-    set(him, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent
-    colormap(im.CMap);
-    clim(im.CLim);
+    set(him, 'AlphaData', 1-isnan(img.CData)); %set Nan values to be transparent
+    colormap(img.CMap);
+    clim(img.CLim);
     shading interp
     axis equal tight
     cb = colorbar;
@@ -140,7 +146,11 @@ function ok = getPlot(obj,src,dsetname)
     xlabel('Eastings (m)'); 
     ylabel('Northings (m)');    
     title(sprintf('%s(%s)',dst.Description,dsetname));
-    ax.Color = [0.96,0.96,0.96];  %needs to be set after plot
+
+    % Draw a rectangle around the image
+    hold on; % Keep the image displayed while adding the rectangle
+    addBox(img)
+    hold off;
 end
 
 %%
@@ -153,4 +163,16 @@ function output = dataQC(obj)                    %#ok<INUSD>
     % dst = obj.Data.(datasetname);      %selected dstable
     warndlg('No quality control defined for this format');
     output = [];    %if no QC implemented in dataQC
+end
+
+%%
+function addBox(img)
+    %add enclosing box to image
+    mnmxX = minmax(img.XData);
+    mnmxY = minmax(img.YData);
+    rectangle('position',[img.XData(1),img.YData(1),diff(mnmxX),diff(mnmxY)],...
+                                             'EdgeColor', 'k','linewidth',0.5);
+    % Expand the axis limits to show full frame
+    xlim(xlim()+[-.001,.001]*diff(mnmxX)) % add 1% to the x axis limits
+    ylim(ylim()+[-.001,.001]*diff(mnmxY)) % add 1% to the y axis limits
 end

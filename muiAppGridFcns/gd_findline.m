@@ -13,7 +13,7 @@ function lineIndex = gd_findline(plines, queryPoint)
 %            separated by a NaN x,y point.
 %   queryPoint - is an x,y struct of the point to be tested
 % OUTPUTS
-%  lineIndex - index of line on which point lies  
+%   lineIndex - index of line on which point lies  
 % SEE ALSO
 %   called in gd_digitisepoints and gd_editlines
 %

@@ -50,6 +50,7 @@ function clines = gd_getcontour(grid,zlevel,isplt)
     end
 
 end
+
 %%
 function ax = getPlot(grid,lines)
     hf = figure('Name','Search','Tag','PlotFig','Visible','on');
@@ -58,6 +59,7 @@ function ax = getPlot(grid,lines)
     plot(ax,lines.x,lines.y,'r','LineWidth', 2);
     hold off
 end
+
 %%
 function lines = cleanContours(C,level)
     %extract line segments separate with NaN values. return as points struct
