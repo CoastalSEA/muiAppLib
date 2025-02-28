@@ -126,13 +126,7 @@ classdef PL_SectionLines < PLinterface
             clearGraphics(obj,{'mylines','mypoints','mytext'});
             if isempty(obj.xLength)
                 setSectionLength(obj);
-            end
-
-            %set the length of the section lines
-            inp = inputdlg({'Length of section lines from centre-line'},'Sections',...
-                            1,{'1000'});
-            if isempty(inp), return; end
-            obj.xLength = str2double(inp{1});  
+            end 
 
             %get user to define the mouth by defining a point near to a point on the
             %channel centre-line

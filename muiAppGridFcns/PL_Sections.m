@@ -129,7 +129,7 @@ classdef PL_Sections < handle
                     type = 'Boundary';
                 case 'Channel network'
                     type = 'ChannelLine';
-                case 'Section lines'
+                case 'Section Lines'
                     type = 'SectionLines';
             end
             promptxt = sprintf('Select a Case to load %s from shapefile:',linetype);           
@@ -160,7 +160,7 @@ classdef PL_Sections < handle
                     type = 'Boundary';
                 case 'Channel network'
                     type = 'ChannelLine';
-                case 'Section lines'
+                case 'Section Lines'
                     type = 'SectionLines';
                 otherwise
                     return
