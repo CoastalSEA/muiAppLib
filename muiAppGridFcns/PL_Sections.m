@@ -182,7 +182,7 @@ classdef PL_Sections < handle
             promptxt = sprintf('%s the %s\nSelect menu option',src.Text,linetype);
             grid = getGrid(cobj,1);   %grid for selected year
 
-            clines = PL_Editor.Figure(grid,promptxt,clines,true);
+            clines = PL_Editor.Figure(grid,promptxt,clines,false,true);
             if isempty(clines), return; end
             answer = questdlg(sprintf('Save the edited %s',linetype),linetype,'Yes','No','Yes');
             if strcmp(answer,'Yes')
@@ -324,41 +324,13 @@ classdef PL_Sections < handle
             %convert the SectionLines to cplines
             cplines = gd_plines2cplines(gd_lines2points(obj.SectionLines));
             %use grid to interpolate sections and plot them
+            hwb = progressbar([],'Computing centre-line');
             xlines= gd_plotsections(grid,cplines);
+            progressbar(hwb);
             if ~isempty(xlines)
                 obj.XSections = xlines;
-                % %clean grid for interpolation - check for NaNs and high points
-                % grid.z(isnan(grid.z)) = zmax; 
-                % grid.z(grid.z>zmax) = zmax;
-                % [X,Y] = meshgrid(grid.x,grid.y);
-                % %extract the elevations for the defined section
-                % nlines = length(cplines);            
-                % for i=1:nlines
-                %     points = cplines{1,i};
-                %     xlen = diff([points(1:end-1).x]);
-                %     ylen = diff([points(1:end-1).y]);
-                %     slen = hypot(xlen,ylen);            %length of section        
-                %     spnts = 0:sint:slen;                %points along section
-                %     xq = points(1).x+spnts/slen*xlen;
-                %     yq = points(1).y+spnts/slen*ylen;  
-                % 
-                %     zline = interp2(X,Y,grid.z',xq,yq,method);
-                %     if zline(1)<zmax          %adjust start point if below zmax
-                %         zline = [zmax,zline]; %#ok<AGROW> 
-                %         spnts = [0,spnts+sint];
-                %     end
-                %     if zline(end)<zmax        %adjust end point if below zmax
-                %         zline = [zline,zmax]; %#ok<AGROW> 
-                %         spnts = [0,spnts+sint];
-                %     end
-                % 
-                %     zplines(1,i) = struct('x',[spnts,NaN],'y',[zline,NaN]); %#ok<AGROW> 
-                % end            
-                % obj.XSections = gd_points2lines(zplines,2);
                 cobj.Sections = obj;
             end
-            %casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
-            %viewAlongChannelSections(obj,casedesc);
         end
 
 %%
@@ -583,34 +555,6 @@ function setWaterbody(~,cobj,muicat,classrec)
             legend
             hf.Visible = 'on';
         end
-
-%%
-        % function viewAlongChannelSections(obj,casedesc)
-        %     %plot along-channel sections
-        %     hf = figure('Name','Sections','Units','normalized',...
-        %                      'Tag','PlotFig','Visible','on');
-        %     ax = axes(hf);
-        %     glines = {'-','--',':','-.'};
-        %     hold on
-        %     plines = obj.XSections;
-        %     cplines = gd_plines2cplines(gd_lines2points(plines));
-        %     nlines = length(cplines);
-        %     for i=1:nlines
-        %         aline = cplines{1,i};
-        %         spnts = [aline(:).x];
-        %         zpnts =[ aline(:).y];
-        %         nline = length(findobj(ax,'Tag','asection'));
-        %         lname = sprintf('Section %d',nline+1);        
-        %         plot(ax,spnts,zpnts,'LineStyle',glines{rem(nline,4)+1},...
-        %               'LineWidth',1,'Tag','asection','DisplayName',lname,...
-        %               'ButtonDownFcn',@godisplay)
-        %     end
-        %     hold off
-        %     if nlines<20
-        %         legend
-        %     end
-        %     title(sprintf('Along-channel sections for %s',casedesc))    
-        % end
 
 %%
         function viewChannelNetwork(obj,casedesc)
