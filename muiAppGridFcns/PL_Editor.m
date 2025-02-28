@@ -123,4 +123,16 @@ classdef PL_Editor < PLinterface
             %see PLinterface for sample setSubMenus functions
         end
     end
+%--------------------------------------------------------------------------
+% Static utility functions
+%--------------------------------------------------------------------------
+    methods (Static, Access=protected)
+        %Static methods in PLinterface
+        % checkDirection
+        % lineLength
+        % isPointNearLine
+        % findNearestPoint
+        % setLevel
+        % setInterval
+    end
 end

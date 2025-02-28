@@ -146,6 +146,7 @@ classdef PL_Boundary < PLinterface
     methods (Static, Access=protected)
         %Static methods in PLinterface
         % checkDirection
+        % lineLength
         % isPointNearLine
         % setLevel
         % setInterval

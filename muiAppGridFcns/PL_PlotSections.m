@@ -22,6 +22,7 @@ classdef PL_PlotSections < PLinterface
         Grid           %imported grid for use in callback functions
         Plots          %handles to section plots
         nsections = 0  %number of sections drawn
+        PlotInput      %input values used for plotting sections
     end
        
     methods
@@ -135,7 +136,7 @@ classdef PL_PlotSections < PLinterface
             promptxt = sprintf('Delete line\nSelect line to Delete, right click on any line to quit\nRedraw to update centre-line');
             [deline,H] = gd_getpline(obj.Axes,promptxt,'mylines');         %get line to delete
             while ~isempty(deline)                
-                [obj.pLines,~] = deleteAline(obj,deline);                  %delete the line
+                [obj.pLines,~] = deleteAline(obj,'pLines',deline);                  %delete the line
                 delete(H)
                 obj.nsections = obj.nsections-1;
                 labelLines(obj,obj.pLines);                                %update line numbers
@@ -159,8 +160,19 @@ classdef PL_PlotSections < PLinterface
             %plot the current set of sections
             idx = length(obj.Plots)+1;
             if isempty(obj.pLines), return; end
+
+            if isempty(obj.PlotInput)
+                promptxt = {'Maximum elevation (mAD)','sampling interval (m)','Interpolatoin method'};
+                defaults = {'5','10','makima'};
+                input = inputdlg(promptxt,'Plot sections',1,defaults);
+                if isempty(input), input = defaults; end    
+                inp.zmax = str2double(input{1});
+                inp.sint = str2double(input{2});
+                inp.method = input{3};
+                obj.PlotInput = inp;
+            end
             cplines = gd_plines2cplines(obj.pLines);
-            [~,hf] = gd_plotsections(obj.Grid,cplines);
+            [~,hf] = gd_plotsections(obj.Grid,cplines,obj.PlotInput);
             hf.CloseRequestFcn = @obj.closePlot;
             obj.Plots(idx) = hf.Number;
         end
@@ -241,6 +253,7 @@ classdef PL_PlotSections < PLinterface
     methods (Static, Access=protected)
         %Static methods in PLinterface
         % checkDirection
+        % lineLength
         % isPointNearLine
         % setLevel
         % setInterval

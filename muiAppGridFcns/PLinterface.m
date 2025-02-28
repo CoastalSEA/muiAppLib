@@ -142,7 +142,7 @@ classdef (Abstract = true) PLinterface < handle
             while ~isempty(editpnt)
                 newpnt = gd_setpoint(obj.Axes,promptxt,'mypoints',obj.isXYZ);   
                 if ~isempty(newpnt)
-                    obj.Points = editApoint(obj,editpnt,newpnt,'mypoints');
+                    obj.Points = editApoint(obj,'Points',editpnt,newpnt,'mypoints');
                 end
                 resetPoints(obj);
                 editpnt = gd_getpoint(obj.Axes,promptxt,'mypoints'); 
@@ -157,7 +157,7 @@ classdef (Abstract = true) PLinterface < handle
             promptxt = sprintf('Delete point\nSelect point to Delete, right click to quit');
             delpnt = gd_getpoint(obj.Axes,promptxt,'mypoints');            %get point to delete
             while ~isempty(delpnt)
-                obj.Points = deleteApoint(obj,delpnt);                     %delete the point 
+                obj.Points = deleteApoint(obj,'Points',delpnt);            %delete the point 
                 resetPoints(obj);
                 delpnt = gd_getpoint(obj.Axes,promptxt,'mypoints');        %get point to delete
             end
@@ -199,8 +199,8 @@ classdef (Abstract = true) PLinterface < handle
                 while ~isempty(editpnt)
                     newpnt = gd_setpoint(obj.Axes,promptxt2,'edpnt',obj.isXYZ); %define new point
                     if ~isempty(newpnt)
-                        obj.pLines = editAline(obj,editpnt,newpnt,Hl);     %replace old with new
-                        labelLines(obj,obj.pLines);                        %update line numbers
+                        obj.pLines = editAline(obj,'pLines',editpnt,newpnt,Hl); %replace old with new
+                        % labelLines(obj,obj.pLines);                      %update line numbers
                     end
                     delete(H)
                     resetPoints(obj);
@@ -226,7 +226,7 @@ classdef (Abstract = true) PLinterface < handle
                 if ~isempty(endpnt)
                     newpnts = gd_setpoints(obj.Axes,promptxt2,'endpoints',obj.isXYZ);  
                     if ~isempty(newpnts)
-                        obj.pLines = extendAline(obj,newpnts,endpnt);     
+                        obj.pLines = extendAline(obj,'pLines',newpnts,endpnt);     
                     end
                 end  
                 clearGraphics(obj,{'mylines','endpoints'})
@@ -254,12 +254,12 @@ classdef (Abstract = true) PLinterface < handle
                 if ~isempty(inspnts)
                     newpnts = gd_setpoints(obj.Axes,promptxt2,'insertpnts',obj.isXYZ); %points to insert
                     if ~isempty(newpnts)
-                        obj.pLines = insertPoints(obj,inspnts,newpnts);    %add points
+                        obj.pLines = insertPoints(obj,'pLines',inspnts,newpnts); %add points
                     end
                 end        
                 clearGraphics(obj,{'mylines','insertpnts'})
                 obj.Axes = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);
-                insline = gd_getpline(obj.Axes,promptxt1,'mylines');      %get line to use
+                insline = gd_getpline(obj.Axes,promptxt1,'mylines');       %get line to use
             end
             clearGraphics(obj,{'insertpnts'})
             resetMenu(obj,false)
@@ -276,7 +276,7 @@ classdef (Abstract = true) PLinterface < handle
             [obj.Axes,Hp] = gd_plotpoints(obj.Axes,obj.pLines,'joinpnts',4); 
             joinpnts = getPoints(obj,prompts,'joinpnts',Hp);
             while ~isempty(joinpnts)                
-                obj.pLines = joinLines(obj,joinpnts);   
+                obj.pLines = joinLines(obj,'pLines',joinpnts);   
                 clearGraphics(obj,{'mylines','joinpnts'}) 
                 obj.Axes = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);
                 [obj.Axes,Hp] = gd_plotpoints(obj.Axes,obj.pLines,'joinpnts',4); 
@@ -293,18 +293,18 @@ classdef (Abstract = true) PLinterface < handle
             promptxt1 = sprintf('Split line\nSelect line to split, right click to quit');
             promptxt2 = sprintf('Split point\nLeft click to select point, right click to quit');
 
-            spline = gd_getpline(obj.Axes,promptxt1,'mylines');       %get line to split
+            spline = gd_getpline(obj.Axes,promptxt1,'mylines');            %get line to split
             while ~isempty(spline)
                 obj.Axes = gd_plotpoints(obj.Axes,spline,'splitpnt',1);    %plot points for line to be split
                 splitpnt = gd_getpoint(obj.Axes,promptxt2,'splitpnt'); %get split point
                 if ~isempty(splitpnt)                   
-                    obj.pLines = splitLine(obj,splitpnt);               %split the line
+                    obj.pLines = splitLine(obj,'pLines',splitpnt);         %split the line
                     clearGraphics(obj,{'mylines','splitpnt'}) 
                     obj.Axes = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);
                 end
                 clearGraphics(obj,{'splitpnt'})                            %clear any split graphics
                 resetLines(obj);                                           %reset line state
-                spline = gd_getpline(obj.Axes,promptxt1,'mylines');   %get line to split
+                spline = gd_getpline(obj.Axes,promptxt1,'mylines');        %get line to split
             end
             resetMenu(obj,false)
         end
@@ -316,10 +316,10 @@ classdef (Abstract = true) PLinterface < handle
             promptxt = sprintf('Delete line\nSelect line to Delete, right click on any line to quit');
             [deline,H] = gd_getpline(obj.Axes,promptxt,'mylines');         %get line to delete
             while ~isempty(deline)                
-                obj.pLines = deleteAline(obj,deline);                      %delete the line
+                obj.pLines = deleteAline(obj,'pLines',deline);             %delete the line
                 delete(H)
                 resetLines(obj);
-                [deline,H] = gd_getpline(obj.Axes,promptxt,'mylines');         %get line to delete
+                [deline,H] = gd_getpline(obj.Axes,promptxt,'mylines');     %get line to delete
             end
             resetMenu(obj,false)
         end
@@ -337,7 +337,7 @@ classdef (Abstract = true) PLinterface < handle
         function Smooth(obj,~,~)
             %smooth the lines using moving average of sgolay methods
             inp = PLinterface.setSmoothingInputs();
-            obj.pLines = smoothLines(obj,inp);
+            obj.pLines = smoothLines(obj,'pLines',inp);
             clearGraphics(obj,{'mylines'});
             obj.Axes = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);     %2= plot as lines            
         end
@@ -393,6 +393,22 @@ classdef (Abstract = true) PLinterface < handle
             obj.pLines = obj.outLines;
             clearGraphics(obj,{'mypoints','mylines'});
             toggleView(obj,[],[]);
+        end
+
+%%
+        function Distance(obj,~,~)
+            %show distance between two points
+            prompt1 = sprintf('Distance\nSelect first point');   
+            prompt2 = sprintf('Distance\nSelect second point');
+            prompts = {prompt1,prompt2};         
+            [distpnts,H] = setPoints(obj,prompts,'distpnts');
+            while ~isempty(distpnts)
+                distance = obj.lineLength(distpnts(1),distpnts(2));
+                getdialog(sprintf('Distance = %.2f',distance));
+                delete(H)
+                [distpnts,H] = setPoints(obj,prompts,'distpnts');
+            end
+            clearGraphics(obj,{'distpnts'});
         end
 
 %%
@@ -452,115 +468,6 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function outype = setInLines(obj,inlines)
-            %plot imported points and lines as active graphics
-            [points,out_type] = gd_lines2points(inlines); 
-   
-            if any(isnan([points(:).x]))
-                obj.pLines = points;   
-                obj.outLines = points;                   
-                obj.Axes = gd_plotpoints(obj.Axes,points,'mylines',2);     %2= plot as lines
-                outype.lines = out_type;
-            else
-                if length(points)>5000
-                    getdialog(sprintf('Large number of points (N=%d)\nLoading linework my take some time',length(points)));
-                end
-                obj.Points = points;   
-                obj.outPoints = points;                    
-                obj.Axes = gd_plotpoints(obj.Axes,points,'mypoints',1);    %1= plot as points
-                outype.points = out_type;
-            end
-        end
-
-        %%
-        function outype = getInLines(obj,inlines)
-            %use input values to determine what to do
-            if isempty(inlines) 
-                outype = struct('points',2,'lines',2);  
-            elseif isnumeric(inlines) && isscalar(inlines)   
-                %handle call to function with no lines
-                outype = struct('points',inlines,'lines',inlines);   
-            else                            %plot imported points and lines
-                if isfield(inlines,'x')     %single input type
-                    outype = setInLines(obj,inlines);
-                else                        %lines and points stucts
-                    fnames = fieldnames(inlines);
-                    for i=1:length(fnames)
-                        inpoints = inlines.(fnames{i});
-                        outype = setInLines(obj,inpoints);
-                    end
-                end
-            end
-        end
-%--------------------------------------------------------------------------
-% Utility functions to implement various actions
-%--------------------------------------------------------------------------
-        function points = editApoint(obj,edpoint,newpnt,tagname)
-            %delete point defined by delpnt if newpnt is empty, otherwise edit
-            %point to new value as defined in newpnt
-            points = obj.Points;
-            idp = [points(:).x]==edpoint.x & [points(:).y]==edpoint.y; 
-            points(idp).x = newpnt.x;
-            points(idp).y = newpnt.y;
-
-            h_pnts = findobj(obj.Axes,'Tag',tagname);
-            idx = [h_pnts(:).XData]==edpoint.x & [h_pnts(:).YData]==edpoint.y; 
-            h_pnts(idx).XData = newpnt.x;
-            h_pnts(idx).YData = newpnt.y;                 
-        end
-
-%%
-        function points = deleteApoint(obj,delpoint)
-            %delete point defined by delpnt if newpnt is empty, otherwise edit
-            %point to new value as defined in newpnt
-            points = obj.Points;
-            idp = [points(:).x]==delpoint.x & [points(:).y]==delpoint.y;
-            answer = questdlg('Confirm deletion','Delete point','Yes','No','Yes');
-            if strcmp(answer,'Yes')
-                points(idp) = [];
-
-                h_pnts = findobj(obj.Axes,'Tag','mypoints');
-                idx = [h_pnts(:).XData]==delpoint.x & [h_pnts(:).YData]==delpoint.y;
-                delete([h_pnts(idx)]);  %remove any existing points
-            end
-        end
-
-%%
-        function plines = editAline(obj,edpoint,newpnt,hline)
-            %delete point defined by edpoint and edit point to new value 
-            %as defined in newpnt
-            plines = obj.pLines;
-            idp = [plines(:).x]==edpoint.x & [plines(:).y]==edpoint.y; 
-            plines(idp).x = newpnt.x;
-            plines(idp).y = newpnt.y;
-
-            %hline = findobj(obj.Axes,'Tag',tagname);
-            idx = [hline.XData]==edpoint.x & [hline.YData]==edpoint.y; 
-            hline.XData(idx) = newpnt.x;
-            hline.YData(idx) = newpnt.y;                 
-        end
-
-        %%
-        function points = extendAline(obj,newpnts,endpnt)
-            %find end to add points to and extend existing line
-            points = obj.pLines;
-            idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y); 
-            if isempty(idp), return; end
-
-            %check direction of new points relative to existing line
-            isstart = idp==1 || isnan(points(idp-1).x);
-            newpnts = obj.checkDirection(endpnt,newpnts,isstart);
-            %insert the new points (cases ensure NaNs are maintained)
-            if idp==1
-                points = [newpnts,points];         %in front of all lines        
-            elseif isnan(points(idp-1).x)
-                points = [points(1:idp-1),newpnts,points(idp:end)];
-            else
-                points = [points(1:idp),newpnts,points(idp+1:end)];
-            end
-        end
-
-%%
         function [points,H] = setPoints(obj,promptxt,tagname)
             %define a set number of points and return in pnt struct:
             % promptxt is a cell array with prompts for each call and
@@ -602,10 +509,120 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function points = insertPoints(obj,inspnts,newpnts)
+        function outype = setInLines(obj,inlines)
+            %plot imported points and lines as active graphics
+            [points,out_type] = gd_lines2points(inlines); 
+   
+            if any(isnan([points(:).x]))
+                obj.pLines = points;   
+                obj.outLines = points;                   
+                obj.Axes = gd_plotpoints(obj.Axes,points,'mylines',2);     %2= plot as lines
+                outype.lines = out_type;
+            else
+                if length(points)>5000
+                    getdialog(sprintf('Large number of points (N=%d)\nLoading linework my take some time',length(points)));
+                end
+                obj.Points = points;   
+                obj.outPoints = points;                    
+                obj.Axes = gd_plotpoints(obj.Axes,points,'mypoints',1);    %1= plot as points
+                outype.points = out_type;
+            end
+        end
+
+        %%
+        function outype = getInLines(obj,inlines)
+            %use input values to determine what to do
+            if isempty(inlines) 
+                outype = struct('points',2,'lines',2);  
+            elseif isnumeric(inlines) && isscalar(inlines)   
+                %handle call to function with no lines
+                outype = struct('points',inlines,'lines',inlines);   
+            else                            %plot imported points and lines
+                if isfield(inlines,'x')     %single input type
+                    outype = setInLines(obj,inlines);
+                else                        %lines and points stucts
+                    fnames = fieldnames(inlines);
+                    for i=1:length(fnames)
+                        inpoints = inlines.(fnames{i});
+                        outype = setInLines(obj,inpoints);
+                    end
+                end
+            end
+        end
+%%
+%--------------------------------------------------------------------------
+% Utility functions to implement various actions
+%--------------------------------------------------------------------------
+        function points = editApoint(obj,type,edpoint,newpnt,tagname)
+            %delete point defined by delpnt if newpnt is empty, otherwise edit
+            %point to new value as defined in newpnt
+            points = obj.(type);
+            idp = [points(:).x]==edpoint.x & [points(:).y]==edpoint.y; 
+            points(idp).x = newpnt.x;
+            points(idp).y = newpnt.y;
+
+            h_pnts = findobj(obj.Axes,'Tag',tagname);
+            idx = [h_pnts(:).XData]==edpoint.x & [h_pnts(:).YData]==edpoint.y; 
+            h_pnts(idx).XData = newpnt.x;
+            h_pnts(idx).YData = newpnt.y;                 
+        end
+
+%%
+        function points = deleteApoint(obj,type,delpoint)
+            %delete point defined by delpnt if newpnt is empty, otherwise edit
+            %point to new value as defined in newpnt
+            points = obj.(type);
+            idp = [points(:).x]==delpoint.x & [points(:).y]==delpoint.y;
+            answer = questdlg('Confirm deletion','Delete point','Yes','No','Yes');
+            if strcmp(answer,'Yes')
+                points(idp) = [];
+
+                h_pnts = findobj(obj.Axes,'Tag','mypoints');
+                idx = [h_pnts(:).XData]==delpoint.x & [h_pnts(:).YData]==delpoint.y;
+                delete([h_pnts(idx)]);  %remove any existing points
+            end
+        end
+
+%%
+        function plines = editAline(obj,type,edpoint,newpnt,hline)
+            %delete point defined by edpoint and edit point to new value 
+            %as defined in newpnt
+            plines = obj.(type);
+            idp = [plines(:).x]==edpoint.x & [plines(:).y]==edpoint.y; 
+            plines(idp).x = newpnt.x;
+            plines(idp).y = newpnt.y;
+
+            %hline = findobj(obj.Axes,'Tag',tagname);
+            idx = [hline.XData]==edpoint.x & [hline.YData]==edpoint.y; 
+            hline.XData(idx) = newpnt.x;
+            hline.YData(idx) = newpnt.y;                 
+        end
+
+        %%
+        function points = extendAline(obj,type,newpnts,endpnt)
+            %find end to add points to and extend existing line
+            points = obj.(type);
+            idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y); 
+            if isempty(idp), return; end
+
+            %check direction of new points relative to existing line
+            isstart = idp==1 || isnan(points(idp-1).x);
+            newpnts = obj.checkDirection(endpnt,newpnts,isstart);
+            %insert the new points (cases ensure NaNs are maintained)
+            if idp==1
+                points = [newpnts,points];         %in front of all lines        
+            elseif isnan(points(idp-1).x)
+                points = [points(1:idp-1),newpnts,points(idp:end)];
+            else
+                points = [points(1:idp),newpnts,points(idp+1:end)];
+            end
+        end
+
+%%
+        function [points,idpos] = insertPoints(obj,type,inspnts,newpnts)
             %insert additional points, 'newpnts', between the selected points,
             %'pnt', in the digitised points vector,'points'.
-            points = obj.pLines;
+            points = obj.(type);
             idpos1 = find([points(:).x]==inspnts(1).x & [points(:).y]==inspnts(1).y); 
             idpos2 = find([points(:).x]==inspnts(2).x & [points(:).y]==inspnts(2).y); 
             %polygons can have the same point twice
@@ -629,9 +646,9 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function points = joinLines(obj,joinpnts)
+        function points = joinLines(obj,type,joinpnts)
             %join two lines based on selected end points
-            points = obj.pLines;
+            points = obj.(type);
             msg = {'Cannot join line to itself','Creating a polygon'};
             idi = find([points(:).x]==joinpnts(1).x & [points(:).y]==joinpnts(1).y); 
             idj = find([points(:).x]==joinpnts(2).x & [points(:).y]==joinpnts(2).y); 
@@ -665,18 +682,18 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function points = splitLine(obj,initpnt)
+        function points = splitLine(obj,type,initpnt)
             %split a line at the defined point
-            points = obj.pLines;
+            points = obj.(type);
             idi = find([points(:).x]==initpnt.x & [points(:).y]==initpnt.y); 
             if isempty(idi), return; end
             points = [points(1:idi),obj.NaNpnts,points(idi+1:end)];
         end
 
 %%
-        function [plines,idl] = deleteAline(obj,deline)
+        function [plines,idl] = deleteAline(obj,type,deline)
             %delete a line from a set of lines
-            plines = obj.pLines;
+            plines = obj.(type);
             idl= gd_findline(plines, deline(1));
             if idl<1, return; end           %line not found
             answer = questdlg('Confirm deletion','Delete point','Yes','No','Yes');
@@ -694,7 +711,29 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function plines = resampleLines(obj,cint)
+        function plines = smoothLines(obj,type,inp)
+            %smooth the centre-line with option to use or revert to original
+            clearGraphics(obj,{'smoothlines'});  %remove any existing smoothed lines
+            plines = obj.(type);
+            if inp.idm==0, method = 'movmean'; else, method = 'sgolay'; end
+            blines = gd_points2lines(plines,2);
+            blines = gd_smoothlines(blines,method,inp.win,inp.deg,inp.npnts);   
+            hold on
+            plot(obj.Axes,blines.x,blines.y,'-.g','LineWidth',1,'Tag','smoothlines')
+            hold off
+
+            %option to use or revert to original
+            answer = questdlg('Accept new line or retain previous version?',...
+                              'Sections','Accept','Reject','Reject');
+            if strcmp(answer,'Accept')
+                plines = gd_lines2points(blines); 
+            else
+                clearGraphics(obj,{'smoothlines'});  %remove smoothed lines
+            end
+        end
+
+%%
+function plines = resampleLines(obj,cint)
             %resample the contour lines at intervals of cint
             %idN = [0;find(isnan(obj.pLines(:).x))];
             cplines = gd_plines2cplines(obj.pLines);
@@ -716,29 +755,6 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function plines = smoothLines(obj,inp)
-            %smooth the centre-line with option to use or revert to original
-            clearGraphics(obj,{'smoothlines'});  %remove any existing smoothed lines
-            plines = obj.pLines;
-    
-            if inp.idm==0, method = 'movmean'; else, method = 'sgolay'; end
-            blines = gd_points2lines(plines,2);
-            blines = gd_smoothlines(blines,method,inp.win,inp.deg,inp.npnts);   
-            hold on
-            plot(obj.Axes,blines.x,blines.y,'-.g','LineWidth',1,'Tag','smoothlines')
-            hold off
-
-            %option to use or revert to original
-            answer = questdlg('Accept new line or retain previous version?',...
-                              'Sections','Accept','Reject','Reject');
-            if strcmp(answer,'Accept')
-                plines = gd_lines2points(blines); 
-            else
-                clearGraphics(obj,{'smoothlines'});  %remove smoothed lines
-            end
-        end
-
-%%
         function labelLines(obj,cplines)
             %add labels to lines in plines
             clearGraphics(obj,{'mytext'});
@@ -755,8 +771,9 @@ classdef (Abstract = true) PLinterface < handle
             varnames = {'Parent','Callback','Label'};
             
             %default Figure menu variables
-            stext = ["Redraw";"Undo";"Save";"Save & Exit";"Quit"];
-            scall = {@obj.Redraw; @obj.Undo; @obj.Save; @obj.SaveExit; @obj.Quit}; 
+            stext = ["Redraw";"Undo";"Distance";"Save";"Save & Exit";"Quit"];
+            scall = {@obj.Redraw; @obj.Undo; @obj.Distance; @obj.Save; ...
+                                                 @obj.SaveExit; @obj.Quit}; 
             nrec = length(stext);
             spart = repmat("Figure",nrec,1);
             calltable = table(spart,scall,stext,'VariableNames',varnames);
@@ -856,7 +873,7 @@ classdef (Abstract = true) PLinterface < handle
             % idp is the index of the point to be joined to
             xlen = [endpnt.x-newpnts(1).x,endpnt.x-newpnts(end).x];
             ylen = [endpnt.y-newpnts(1).y,endpnt.y-newpnts(end).y];
-            [~,ide] = min(hypot(xlen,ylen)); %index of nearest point to idp
+            [~,ide] = min(hypot(xlen,ylen)); %index of nearest point
 
             if (ide>1 && ~isstart) || (ide==1 && isstart)
                 %flip lines if first new point is further away and is not
@@ -867,13 +884,31 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function [isNear,idL] = isPointNearLine(Points,Point,tol)
-            % Calculate the distance from the point to the line
-            distances = sqrt(([Points(:).x] - Point.x).^2 + ...
-                                       ([Points(:).y] - Point.y).^2);
-            [~,idL] = min(distances,[],'omitnan');
+        function distance = lineLength(pnt1,pnt2)
+            %find length of line between 2 points
+            xlen = pnt1.x-pnt2.x;
+            ylen = pnt1.y-pnt2.y;
+            distance = hypot(xlen,ylen);
+        end
+
+%%
+        function [isNear,idP,distances] = isPointNearLine(Points,Point,tol)
+            % Calculate the distance from the point to points on line
+            % also returns sorted indices and distances to all Points
+            xlen = [Points(:).x]-Point.x;
+            ylen = [Points(:).y]-Point.y;
+            [distances,idP] = sort(hypot(xlen,ylen)); %indices of nearest points   
             isNear = any(distances < tol); % Threshold for proximity
         end
+
+
+%%
+        % function [dist,idP] = findNearestPoint(Points,Point)
+        %     %find the nearest point to Point in a set of Points
+        %     xlen = [Points(:).x]-Point.x;
+        %     ylen = [Points(:).y]-Point.y;
+        %     [dist,idP] = sort(hypot(xlen,ylen)); %indices of nearest points           
+        % end
 
 %%
         function zlevel = setLevel()

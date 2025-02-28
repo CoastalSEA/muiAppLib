@@ -301,10 +301,11 @@ classdef PL_Sections < handle
             %extract the section lines that are normal to the 
             %channel centre line and extend to the bounding shoreline
             promptxt = sprintf('Extract the channel cross-sections\nSelect menu option');            
-            slines = PL_SectionLines.Figure(grid,promptxt,obj,true);
+            [slines,clines] = PL_SectionLines.Figure(grid,promptxt,obj,true);
             if isempty(slines), return; end
 
             obj.SectionLines = slines;
+            obj.ChannelLine = clines;
             cobj.Sections = obj;
             casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
             msgtxt = sprintf('Section lines added to grid for Case: %s',...
@@ -400,7 +401,7 @@ classdef PL_Sections < handle
 %%
         function nc_plines = resetCentreLine(obj)
             %update the centre-line so that the points lie on the sections and
-            %return updated points and distances from mouth    
+            %return updated points  
             s_plines = gd_lines2points(obj.SectionLines);
             c_plines = gd_lines2points(obj.ChannelLine);
             c_cplines = gd_plines2cplines(c_plines);     %centre-line lines
@@ -623,5 +624,16 @@ function setWaterbody(~,cobj,muicat,classrec)
             plot(ax,G,'EdgeLabel',G.Edges.Weight,'NodeLabel',nlabel)
             title(sprintf('Channel network for %s',casedesc))   
         end
+    end
+%--------------------------------------------------------------------------
+% Static utility functions
+%--------------------------------------------------------------------------
+    methods (Static, Access=protected)
+        %Static methods in PLinterface
+        % checkDirection
+        % lineLength
+        % isPointNearLine
+        % setLevel
+        % setInterval
     end
 end

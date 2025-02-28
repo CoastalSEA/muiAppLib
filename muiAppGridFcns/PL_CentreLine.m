@@ -244,6 +244,7 @@ classdef PL_CentreLine < PLinterface
     methods (Static, Access=protected)
         %Static methods in PLinterface
         % checkDirection
+        % lineLength
         % isPointNearLine
         % setLevel
         % setInterval

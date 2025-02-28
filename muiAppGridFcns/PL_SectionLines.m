@@ -23,7 +23,8 @@ classdef PL_SectionLines < PLinterface
         Set            %instance of PL_Sections class, or struct with 
                        %same field names
         cLines         %updated plines version of Set.ChannelLine (modified
-                       %when sections are set but not saved)            
+                       %when sections are set but not saved)
+       xLength         %half length of cross-sections
     end
        
     methods
@@ -35,7 +36,7 @@ classdef PL_SectionLines < PLinterface
     end
 %% 
     methods (Static)  
-        function lines = Figure(grid,promptxt,setlines,isdel)
+        function [slines,clines] = Figure(grid,promptxt,setlines,isdel)
             %
             %-------function help------------------------------------------
             % PURPOSE
@@ -103,9 +104,10 @@ classdef PL_SectionLines < PLinterface
             obj = waitForFigure(obj);
 
             if isempty(obj.outLines)
-                lines = [];  
+                slines = []; clines = [];
             else                
-                lines = gd_points2lines(obj.outLines,outype.lines);
+                slines = gd_points2lines(obj.outLines,outype.lines);
+                clines = gd_points2lines(obj.cLines,outype.lines);
             end
 
             %delete figure if isdel has been set by call.
@@ -122,12 +124,15 @@ classdef PL_SectionLines < PLinterface
         function setSections(obj,~,~)
             %use centreline to generate a set of sections            
             clearGraphics(obj,{'mylines','mypoints','mytext'});
+            if isempty(obj.xLength)
+                setSectionLength(obj);
+            end
 
             %set the length of the section lines
             inp = inputdlg({'Length of section lines from centre-line'},'Sections',...
                             1,{'1000'});
             if isempty(inp), return; end
-            maxlen = str2double(inp{1});  
+            obj.xLength = str2double(inp{1});  
 
             %get user to define the mouth by defining a point near to a point on the
             %channel centre-line
@@ -148,10 +153,10 @@ classdef PL_SectionLines < PLinterface
             %for each point from idL to the end use the centreline coordinates and
             %direction to define a section at right angles to the centreline
             c_cplines = gd_plines2cplines(obj.cLines);
-            [clinedir,c_cplines,~] = gd_curvelineprops(c_cplines,idL);
+            [clinedir,c_cplines,~] = gd_curvelineprops(c_cplines,idL(1));
         
             %generate the section lines for clinedir +pi/2 and -pi/2
-            obj.pLines = setSectionLines(obj,c_cplines,clinedir,maxlen);
+            obj.pLines = setSectionLines(obj,c_cplines,clinedir,obj.xLength);
             obj.cLines = gd_cplines2plines(c_cplines);
             plotSections(obj);
         end
@@ -193,32 +198,31 @@ classdef PL_SectionLines < PLinterface
             resetMenu(obj);
             % prompt1 = sprintf('Add line\nSelect first point of section');   
             % prompt2 = sprintf('Add line\nSelect second point of section');
-            prompts = {prompt1,prompt2};
-            % promptcl= sprintf('Add line\nLeft click to select centre-line, right click to quit');
-            % promptcp = sprintf('Add line\nLeft click to select centre-line point, right click to quit');
+            % prompts = {prompt1,prompt2};
+            promptcl= sprintf('Add line\nLeft click to select centre-line, right click on a line to quit');
+            promptcp = sprintf('Add line\nLeft click to select centre-line point, right click to quit');
 
-            % clearGraphics(obj,{'mylines','mypoints','mytext','clines'});
-            % obj.Axes = gd_plotpoints(obj.Axes,obj.cLines,'clines',2);      %set centre-lines
-            % cpline = gd_getpline(obj.Axes,promptcl,'clines');              %get line to add to
-            % while~isempty(cpline)
-            [newpnts,Hp] = setPoints(obj,prompts,'spoints');
-            while ~isempty(newpnts)     
-                NewLine =  [newpnts,obj.NaNpnts];
-                obj.pLines = [obj.pLines,NewLine];
-                delete(Hp)
-                % [NewPnt,Hc] = gd_setpoint(obj.Axes,promptcp,'clpoint',obj.isXYZ);  
-                % insertLine(obj,NewLine,NewPnt,cpline);                 %insert new in correct position
-                % delete([Hp,Hc]);                                       %delete digitising points              
-                gd_plotpoints(obj.Axes,NewLine,'mylines',2,obj.isXYZ); %plot as line
-                [newpnts,Hp] = setPoints(obj,prompts,'spoints');
+            clearGraphics(obj,{'mylines','mypoints','mytext','clines'});
+            obj.Axes = gd_plotpoints(obj.Axes,obj.cLines,'clines',2);      %set centre-lines
+            cpline = gd_getpline(obj.Axes,promptcl,'clines');              %get line to add to
+            while~isempty(cpline)
+                %gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);            %show sections
+                gd_plotpoints(obj.Axes,cpline,'clines',5);                 %show centre-line points
+                [NewPnt,Hc] = gd_setpoint(obj.Axes,promptcp,'clpoint',obj.isXYZ); 
+                while ~isempty(NewPnt)  
+                    cpline = insertSection(obj,NewPnt,cpline);             %insert new section
+                    delete(Hc);                                            %delete digitising points   
+                    gd_plotpoints(obj.Axes,NewPnt,'clines',5);             %set centre-line point
+                    [NewPnt,Hc] = gd_setpoint(obj.Axes,promptcp,'clpoint',obj.isXYZ);
+                end
+                clearGraphics(obj,{'mylines','clines'});
+                gd_plotpoints(obj.Axes,obj.cLines,'clines',2);             %set centre-lines
+                cpline = gd_getpline(obj.Axes,promptcl,'clines');          %get line to add to
             end
-            %     resetLines(obj);
-            %     cpline = gd_getpline(obj.Axes,promptcl,'clines');          %get line to add to
-            % end
 
-            clearGraphics(obj,{'mylines'});
-            obj.Axes = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);  %set line  
-            %obj.Axes = gd_plotpoints(obj.Axes,obj.cLines,'clines',5); %set centre-lines
+            clearGraphics(obj,{'mylines','clines'});
+            obj.Axes = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);%set line  
+            obj.Axes = gd_plotpoints(obj.Axes,obj.cLines,'clines',5); %set centre-lines
             resetMenu(obj,false)  
         end
 
@@ -229,10 +233,12 @@ classdef PL_SectionLines < PLinterface
             promptxt = sprintf('Delete line\nSelect line to Delete, right click on any line to quit\nRedraw to update centre-line');
             [deline,H] = gd_getpline(obj.Axes,promptxt,'mylines');         %get line to delete
             while ~isempty(deline)                
-                [obj.pLines,idl] = deleteAline(obj,deline);                %delete the line
+                [obj.pLines,idl] = deleteAline(obj,'pLines',deline);       %delete the line
                 delete(H)
                 obj.cLines(idl) = [];                                      %delete centre-line point
-                resetLines(obj);
+                clearGraphics(obj,{'mylines','clines'});
+                ax = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);       %set line 
+                gd_plotpoints(ax,obj.cLines,'clines',5);                   %set centreline
                 deline = gd_getpline(obj.Axes,promptxt,'mylines');         %get line to delete
             end
             resetLines(obj)
@@ -242,7 +248,7 @@ classdef PL_SectionLines < PLinterface
 %%
         function Reset(obj,~,~)
             %Reset to the input centre-line and boundary
-            clearGraphics(obj,{'mylines','clines'});
+            clearGraphics(obj,{'mylines','mypoints','mytext','clines'});
             obj.cLines = gd_lines2points(obj.Set.ChannelLine);%Centre line coordinates
             gd_plotpoints(obj.Axes,obj.cLines,'clines',5);    %5= plot as centre-lines         
         end
@@ -262,6 +268,20 @@ classdef PL_SectionLines < PLinterface
                 gd_plotpoints(ax,obj.cLines,'clines',5);       %set centreline
             end
         end  
+
+%%
+        function Label(obj,~,~)
+            %toggline text section markers on and off
+            hpnts = findobj(obj.Axes,'Tag','mytext');
+            if isempty(hpnts)           %toggle points on
+                cplines = gd_plines2cplines(obj.pLines);
+                for i=1:length(cplines)
+                    gd_plotpoints(obj.Axes,cplines{i},num2str(i),3);  %set points
+                end
+            else
+                clearGraphics(obj,{'mytext'});
+            end   
+        end
 %%
 %--------------------------------------------------------------------------
 %  Utility functions to implement various actions
@@ -368,6 +388,45 @@ classdef PL_SectionLines < PLinterface
         end
 
 %%
+        function cline = insertSection(obj,newpnt,cline)
+            %insert centre-line point on obj.cLines and cline
+            tol = obj.lineLength(cline(1),cline(2));
+            [ison,idP] = obj.isPointNearLine(cline,newpnt,tol);
+            if ison
+                %insert the new centre-line point
+                [obj.cLines,~] = insertPoints(obj,'cLines',cline(idP([1,2])),newpnt);
+            else
+                %point not found in line so assume it is extending line
+                
+                if idP(1)==1 || idP(1)==length(cline)-1  %starat or end of line
+                    obj.cLines = extendAline(obj,'cLines',newpnt,cline(idP(1)));
+                else
+                    getdialog(sprintf('Centre-line point not found\nSection not added to dataset'))
+                    return;
+                end                
+            end
+            idL = gd_findline(obj.cLines,cline(1));
+            cplines = gd_plines2cplines(obj.cLines);
+            cline = cplines{1,idL};
+            %for each point use the centreline coordinates and
+            %direction to define a section at right angles to the centreline
+            if isempty(obj.xLength), setSectionLength(obj); end
+            %set the length of the section lines 
+            c_cplines = gd_plines2cplines(obj.cLines);
+            [clinedir,c_cplines,~] = gd_curvelineprops(c_cplines,1);
+            obj.pLines = setSectionLines(obj,c_cplines,clinedir,obj.xLength);
+        end
+
+%%
+        function setSectionLength(obj)
+            %set the length of the section lines
+            inp = inputdlg({'Length of section lines from centre-line'},'Sections',...
+                            1,{'1000'});
+            if isempty(inp), inp{1} = '1000';  end
+            obj.xLength = str2double(inp{1}); 
+        end
+
+%%
         function plotSections(obj)
             %plot the derived sections as editable lines
             ax = obj.Axes;
@@ -413,9 +472,9 @@ classdef PL_SectionLines < PLinterface
             %user defined menus to be appended to the Figure menu 
             varnames = {'Parent','Callback','Label'};
             %Boundary menu variables
-            stext = ["Set";"Clip";"Add";"Edit";"Delete";"Reset"];
+            stext = ["Set";"Clip";"Add";"Edit";"Delete";"Reset";"Label"];
             scall = {@obj.setSections; @obj.clipLines; @obj.addLine; ...
-                     @obj.editLine; @obj.deleteLine; @obj.Reset}; 
+                     @obj.editLine; @obj.deleteLine; @obj.Reset; @obj.Label}; 
             nrec = length(stext);
             spart = repmat("Sections",nrec,1);
             calltable = table(spart,scall,stext,'VariableNames',varnames);
@@ -427,6 +486,7 @@ classdef PL_SectionLines < PLinterface
     methods (Static, Access=protected)
         %Static methods in PLinterface
         % checkDirection
+        % lineLength
         % isPointNearLine
         % setLevel
         % setInterval

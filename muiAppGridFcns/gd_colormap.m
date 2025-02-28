@@ -25,7 +25,7 @@ function varargout = gd_colormap(zlimits,isselect)
      iscaxis = isMATLABReleaseOlderThan("R2022a");
      lims = [];
 
-    if license('test','MAP_Toolbox')
+    if exist('demcmap','file')==2
         cmapsea = [0,0,0.2;  0,0,1;  0,0.45,0.74;  0.30,0.75,0.93; 0.1,1,1];
         cmapland = [0.95,0.95,0.0;  0.1,0.7,0.2; 0,0.4,0.2; 0.8,0.9,0.7;  0.4,0.2,0];
         [cmap,lims] = demcmap(zlimits,128,cmapsea,cmapland); %mapping toolbox
