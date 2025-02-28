@@ -493,6 +493,7 @@ function setWaterbody(~,cobj,muicat,classrec)
                 viewAlongChannelSections(obj,casedesc);
             end
         end
+
 %%
         function viewPlanSections(obj,cobj)
             %plot boundary channel network and cross-sections line work
@@ -554,6 +555,34 @@ function setWaterbody(~,cobj,muicat,classrec)
             title(dst.Description);    
             legend
             hf.Visible = 'on';
+        end
+
+%%
+        function viewAlongChannelSections(obj,casedesc)
+            %plot along-channel sections
+            hf = figure('Name','Sections','Units','normalized',...
+                             'Tag','PlotFig','Visible','on');
+            ax = axes(hf);
+            glines = {'-','--',':','-.'};
+            hold on
+            plines = obj.XSections;
+            cplines = gd_plines2cplines(gd_lines2points(plines));
+            nlines = length(cplines);
+            for i=1:nlines
+                aline = cplines{1,i};
+                spnts = [aline(:).x];
+                zpnts =[ aline(:).y];
+                nline = length(findobj(ax,'Tag','asection'));
+                lname = sprintf('Section %d',nline+1);        
+                plot(ax,spnts,zpnts,'LineStyle',glines{rem(nline,4)+1},...
+                      'LineWidth',1,'Tag','asection','DisplayName',lname,...
+                      'ButtonDownFcn',@godisplay)
+            end
+            hold off
+            if nlines<20
+                legend
+            end
+            title(sprintf('Along-channel sections for %s',casedesc))    
         end
 
 %%
