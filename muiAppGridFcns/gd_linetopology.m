@@ -4,14 +4,14 @@ function [cumlen,G,hf,hg] = gd_linetopology(grid,plines)
 % NAME
 %   gd_linetopology.m
 % PURPOSE
-%   Accept figure to interactively define line connectivity
+%   figure to interactively define line connectivity
 % USAGE
-%   topo = gd_linetopology(plines)
+%   [cumlen,G,hf,hg] = gd_linetopology(grid,plines)
 % INPUTS
 %   plines - array of structs with x, y and z fields defining points in 
 %            lines and separated by NaN points,
 % OUTPUTS
-%   cumlen - 
+%   cumlen - cumulative lengths along lines from first point in line set
 %   G - directed graph of the channl network
 %   hf - handle to figure used to define links;
 %   hg - handle to figure of the resultant network

@@ -7,7 +7,7 @@ function [xlines,hf] = gd_plotsections(grid,cplines,inp)
 %   display grid and allow user to interactively define start and
 %   end points of a section line to be plotted in a figure.   
 % USAGE
-%   gd_plotsections(grid,cplines,inp)
+%   [xlines,hf] = gd_plotsections(grid,cplines,inp)
 % INPUTS
 %   grid - struct of x,y,z values that define grid 
 %   cplines - cell array of section lines

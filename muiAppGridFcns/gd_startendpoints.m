@@ -15,7 +15,8 @@ function points = gd_startendpoints(grid,isdel)
 %  points - struct with x and y fields defining selected start and end points
 % SEE ALSO
 %   REPLACED BY gd_selectpoints.m which is more generic and has improved
-%   interactive editing options.            
+%   interactive editing options. 
+%   REPLACED BY methods in PLinterface see eg PL_Editor
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jun 2022

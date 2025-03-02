@@ -114,11 +114,45 @@
 % <matlab:doc('muidataset') muiDataSet> as well as the <matlab:doc('fgdinterface') FGDinterface> 
 % and <matlab:doc('gdinterface') GDinterface> summarised above.
 
+%% Point and Line classes
+% To manipulate points and lines, a number of classes make use of the 
+% PLinterface abstract class, see <matlab:doc('plinterface') PLinterface>
+% for further details. Some of the original functions have now been
+% replaced with classes to do a similar task and these include:
+
+%%
+% *PL_Editor*
+% - figure to interactively digitise points on a grid and add
+% elevations if required.
+%% 
+%   [lines,points] = PL_Editor.Figure(grid,promptxt,inlines,,isxyz,isdel);
+%% 
+% where _grid_ is a struct of x, y, z (e.g. as used in getGrid in the
+% GDinterface); _promptxt_ character string used for initial prompt in title; _inlines_ 
+% a struct of points and lines or a struct of x,y vectors to be edited, or
+% an output format flag, _isxyz_ is a logical flag true to input z values -
+% optional, default is false; and _isdel_ is a logical flag true to delete
+% figure on completion - optional, default is false. The ouput format
+% depends on the _outype_ flag. If _outype_=0: array of structs with x, y and z 
+% fields defining selected points, _outype_=1: Nx2 or Nx3 array,
+% _outype_=2: struct with x, y (and z) vector fields, and _points_ = [] if 
+% user closes figure, or no points defined.
+
+%%
+% *PL_PlotSections*
+% - display grid and allow user to interactively define start and
+% end points of a section line to be plotted in a figure.
+%%
+%   PL_PlotSections.Figure(grid,promptxt,isdel); 
+%%
+% where _grid_ is a struct of x, y, z, _promptxt_ character string used for 
+% initial prompt in title and _isdel_ is a logical flag true to delete
+% figure on completion - optional, default is false.
 
 %% Grid property functions
-% Functions that derive and manipulte properties of the grid 
-% such as basin/channel dimensions can be found in the _muiAppGridFcns_ 
-% folder. Use the Matlab(TM) _help_ function in the command window to get 
+% Summary of functions that derive and manipulte properties of the grid 
+% such as basin/channel dimensions and available in the _muiAppGridFcns_ 
+% folder. Use the Matlab(TM) help function in the command window to get 
 % further details of each function.
 %%
 % *gd_basin_hypsometry*
@@ -232,23 +266,6 @@
 %   convergencelength = getconvergencelength(xi,yi,x0);
 
 %%
-% *gd_digitisepoints*
-% - accept figure to interactively digitise points on a grid and add
-% elevations if required.
-%% 
-%   points = gd_digitisepoints(grid,figtxt,outype,isxyz,isde);
-%% 
-% where _grid_ is a struct of x, y, z (e.g. as used in getGrid in the
-% GDinterface); _figtxt_ character string used for title of figure; _outype_ 
-% is an output format flag, _isxyz_ is a logical flag true to input z values -
-% optional, default is false; and _isdel_ is a logical flag true to delete
-% figure on completion - optional, default is false. The ouput format
-% depends on the _outype_ flag. If _outype_=0: array of structs with x, y and z 
-% fields defining selected points, _outype_=1: Nx2 or Nx3 array,
-% _outype_=2: struct with x, y (and z) vector fields, and _points_ = [] if 
-% user closes figure, or no points defined.
-
-%%
 % *gd_dimensions*
 % - get the grid dimensions for a grid struct (as used in classes that 
 % inherit GDinterface). Outputs a table of grid dimensions including: 
@@ -259,7 +276,6 @@
 % dimensions.
 %%
 %   gdims = gd_dimensions(grid)
-
 
 %%
 % *gd_getpoint.m*
@@ -287,13 +303,6 @@
 % - create pcolor plot of gridded surface.
 %%
 %   ax = gd_plotgrid(hfig,grid);  %hfig is figure handle and ax is axes handle
-
-%%
-% *gd_plotsections*
-% - display grid and allow user to interactively define start and
-% end points of a section line to be plotted in a figure.
-%%
-%   gd_plotsections(grid);  %where grid is a struct of x, y, z
 
 
 %%

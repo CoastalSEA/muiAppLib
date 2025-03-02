@@ -1,10 +1,30 @@
 function [clinedir,ncplines,cumlen] = gd_curvelineprops(cplines,idL)
-    %for each point from idL to the end use the centre-line coordinates and
-    %direction to find the lengths and directions along the centre-line
-    
-    % cumlen is local reach specific cumulative lengths from start point
+%
+%-------function help------------------------------------------------------
+% NAME
+%   gd_curvelineprops.m
+% PURPOSE
+%   for each point from idL to the end use the centre-line coordinates and 
+%   direction to find the lengths and directions along the centre-line
+% USAGE
+%   [clinedir,ncplines,cumlen] = gd_curvelineprops(cplines,idL)
+% INPUTS
+%   cplines - cell array of lines with x,y struct defining line points
+%   idL - x,y start point on one of the lines in cplines
+% OUTPUTS
+%   clinedir - mean direction of line at each point in x,y space
+%   ncplines - updated cplines starting from point idL
+%   cumlen - cumulative length from the defined start point
+% SEE ALSO
+%   used in PL_SectionLines
+%
+% Author: Ian Townend
+% CoastalSEA (c) Feb 2025
+%--------------------------------------------------------------------------
+%    
     if nargin<3,  end
     nlines = length(cplines);
+    %cumlen is local reach specific cumulative lengths from start point
     cumlen = cell(1,nlines); clinedir = cumlen; 
     nrec = length(cplines{1,1});               %length of first line
     %nrec = 0;

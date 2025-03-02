@@ -20,7 +20,7 @@ function cline= gd_centreline(grid,mobj,props,clines)
 %   Finds indices of the grid used to find deepest points in channel and
 %   resolution depends on the xy spacing of the grid used.
 % SEE ALSO
-%   called in GD_sections; uses gd_selectpoints and a_star
+%   called in GD_sections; uses a_star
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jan 2025

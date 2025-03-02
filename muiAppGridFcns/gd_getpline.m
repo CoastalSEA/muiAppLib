@@ -7,7 +7,7 @@ function [pline,H] = gd_getpline(ax,promptxt,tagname,ispoints)
 %   interactively select a line on a plot and return the line point
 %   coordinates.
 % USAGE
-%   pline = gd_getpline(ax,promptxt,tagname,ispoints);
+%   [pline,H] = gd_getpline(ax,promptxt,tagname,ispoints);
 % INPUTS
 %   ax - figure axes to use to interactively select point
 %   promptxt - prompt to be used for point being defined

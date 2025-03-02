@@ -57,6 +57,12 @@ classdef PL_Sections < handle
             % methods and Edit calls gd_editlines (see EstauryDB for eg)
             %
             muicat = mobj.Cases;   %handle to muiCatalogue
+
+            if  any(strcmp({'Layout','Sections','Network'},src.Text))
+                srcText = src.Text;
+                src = src.Parent;
+            end
+
             switch src.Text
                 case 'Boundary'
                     promptxt = 'Select a Case to use to define boundary:';
@@ -96,7 +102,7 @@ classdef PL_Sections < handle
                         return;
                     end
                     obj = cobj.Sections;
-                    viewSections(obj,cobj,muicat);
+                    viewSections(obj,cobj,muicat,srcText);
                 case 'Waterbody'
                     promptxt = 'Select a Case to use to define waterbody';
                     [cobj,caserec] = selectCaseObj(muicat,[],gridclasses,promptxt);
@@ -478,19 +484,18 @@ function setWaterbody(~,cobj,muicat,classrec)
 %--------------------------------------------------------------------------
 % Plot functions
 %--------------------------------------------------------------------------
-        function viewSections(obj,cobj,muicat)
+        function viewSections(obj,cobj,muicat,srcText)
             %view boundary channel network and cross-sections line work
             %or along-channel sections summary plot
-            answer = questdlg('Plan view or Along-channel sections?','sections',...
-                              'Plan','Along-channel','Network','Plan');
-            if strcmp(answer,'Plan')
-                viewPlanSections(obj,cobj);
-            elseif strcmp(answer,'Network')
-                casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
-                viewChannelNetwork(obj,casedesc);
-            else
-                casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
-                viewAlongChannelSections(obj,casedesc);
+            switch srcText
+                case 'Layout'
+                    viewPlanSections(obj,cobj);
+                case 'Sections'
+                    casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+                    viewAlongChannelSections(obj,casedesc);
+                case 'Network'
+                    casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+                    viewChannelNetwork(obj,casedesc);
             end
         end
 

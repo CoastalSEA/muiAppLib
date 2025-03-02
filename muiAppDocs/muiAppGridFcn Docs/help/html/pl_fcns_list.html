@@ -1,0 +1,217 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      -->
+<title>Point and Line Classes and Functions</title>
+<meta name="generator" content="MATLAB 24.2">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2025-03-01">
+<meta name="DC.source" content="pl_fcns_list.m">
+<style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style>
+</head>
+<body>
+<div class="content">
+<h1>Point and Line Classes and Functions</h1>
+<!--introduction-->
+<p>Functions used to manipulate points and lines can be found in the <i>muiAppGridFcns</i> folder and include the following:</p>
+<!--/introduction-->
+<h2>Contents</h2>
+<div>
+<ul>
+<li>
+<a href="#1">Classes</a>
+</li>
+<li>
+<a href="#2">Functions</a>
+</li>
+</ul>
+</div>
+<h2 id="1">Classes</h2>
+<div>
+<ul>
+<li>
+<b>PL_Sections</b>: provides methods to manipulate points, lines and sections using datasets in classes that inherit <a href="matlab:doc('gdinterface')">GDinterface</a>.</li>
+<li>
+<b>PL_Boundary</b>: Class to extract contours and generate model boundaries</li>
+<li>
+<b>PL_CentreLine</b>: Class to extract valley/channel centre-line <b>PL_PlotSections</b>: display grid and allow user to interactively define start and end points of a section line to be plotted in a figure.</li>
+<li>
+<b>PL_SectionLines</b>: Class to create a set of cross-sections lines based on the points in a centre-line and any enclosing boundary.</li>
+</ul>
+</div>
+<h2 id="2">Functions</h2>
+<div>
+<ul>
+<li>
+<b>gd_boundary.m</b> - UI to interactively generate a contour line (e.g. to define a boundary).</li>
+<li>
+<b>gd_centreline</b> - create a centreline of a channel to trace the shortest path between start and end points whilst finding the deepest points (i.e. a thalweg).</li>
+<li>
+<b>gd_cplines2plines.m</b> - convert cell array of plines to an array of points that define plines.</li>
+<li>
+<b>gd_curvelineprops</b> - for each point from idL to the end use the centre-line coordinates and direction to find the lengths and directions along the centre-line.</li>
+<li>
+<b>gd_findline.m</b> - find which <i>pline</i> a given <i>point</i> lies on when there are multiple lines separated by NaN values in a <i>plines</i> struct array.</li>
+<li>
+<b>gd_getcontour.m</b> - extract a contour at a defined level.</li>
+<li>
+<b>gd_getpline.m</b> - interactively select a line on a plot and return the line point coordinates.</li>
+<li>
+<b>gd_getpoint.m</b> - interactively select a single point in a UI figure and return the point coordinates.</li>
+<li>
+<b>gd_lines2points.m</b> - convert <i>lines</i> as x,y vectors in various formats (see <b>gd_points2lines</b>) to a <i>points</i> array of structs for each <i>point</i> with x, y (and z) fields.</li>
+<li>
+<b>gd_linetopology</b> - interactively define line connectivity.</li>
+<li>
+<b>gd_orderplines.m</b> - amend the order of the <i>plines</i> in an array of <i>plines</i>.</li>
+<li>
+<b>gd_plines2cplines.m</b> - convert an array of <i>plines</i> to a cell array of <i>plines</i>.</li>
+<li>
+<b>gd_plotgrid</b> - create pcolor plot of gridded surface (from Grid Tools).</li>
+<li>
+<b>gd_plotsections</b> - display grid and allow user to interactively define start and end points of a section line to be plotted in a figure (from Grid Tools).</li>
+<li>
+<b>gd_points2lines.m</b> - convert a <i>points</i> or plines array of structs with x, y (and z) fields to a [Nx2] or [Nx3] array, or a single stuct, or matrix with column vectors in the x, y (and z) fields.</li>
+<li>
+<b>gd_sectionlines.m</b> - extract the section lines that are normal to the channel centre line and extend to the bounding shoreline.</li>
+<li>
+<b>gd_selectpoints.m</b> - UI to interactively create a specified number of x,y point on a grid.</li>
+<li>
+<b>gd_setpoint.m</b> - interactively create a single point in a UI figure and return the point coordinates. Includes an option to enter an additional value at the selected point (e.g. elevation).</li>
+<li>
+<b>gd_setpoints.m</b> - interactively create a set of points in a UI figure and return the point coordinates. Includes an option to enter an additional value at the selected points (e.g. elevation).</li>
+<li>
+<b>gd_smoothlines.m</b> - smooth one or more line segments using either moving average, or the Savitzky-Golay method.</li>
+</ul>
+</div>
+<p class="footer">
+<br>
+<a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2024b</a>
+<br>
+</p>
+</div>
+<!--
+##### SOURCE BEGIN #####
+%% Point and Line Classes and Functions
+% Functions used to manipulate points and lines can be found in the
+% _muiAppGridFcns_ folder and include the following:
+
+%% Classes
+% * *PL_Sections*: provides methods to manipulate points, lines and sections 
+% using datasets in classes that inherit <matlab:doc('gdinterface') GDinterface>.
+% * *PL_Boundary*: Class to extract contours and generate model boundaries
+% * *PL_CentreLine*: Class to extract valley/channel centre-line
+% *PL_PlotSections*: display grid and allow user to interactively define start and
+% end points of a section line to be plotted in a figure.
+% * *PL_SectionLines*: Class to create a set of cross-sections lines based on 
+% the points in a centre-line and any enclosing boundary.
+
+%% Functions
+% * *gd_boundary.m* - UI to interactively generate a contour line (e.g. to define a boundary).
+% * *gd_centreline* - create a centreline of a channel to trace the
+% shortest path between start and end points whilst finding the deepest
+% points (i.e. a thalweg).
+% * *gd_cplines2plines.m*
+% - convert cell array of plines to an array of points that define plines.
+% * *gd_curvelineprops* - for each point from idL to the end use the centre-line coordinates and 
+% direction to find the lengths and directions along the centre-line.
+% * *gd_findline.m* - find which _pline_ a given _point_ lies on when there are multiple lines
+% separated by NaN values in a _plines_ struct array.
+% * *gd_getcontour.m* - extract a contour at a defined level.
+% * *gd_getpline.m* - interactively select a line on a plot and return the line point coordinates.
+% * *gd_getpoint.m* - interactively select a single point in a UI figure and return the point
+% coordinates.
+% * *gd_lines2points.m* - convert _lines_  as x,y vectors in various formats (see *gd_points2lines*) to a 
+% _points_ array of structs for each _point_ with x, y (and z) fields.
+% * *gd_linetopology* - interactively define line connectivity.
+% * *gd_orderplines.m* - amend the order of the _plines_ in an array of _plines_.
+% * *gd_plines2cplines.m*
+% - convert an array of _plines_ to a cell array of _plines_.
+% * *gd_plotgrid* - create pcolor plot of gridded surface (from Grid Tools).
+% * *gd_plotsections* - display grid and allow user to interactively define start and
+% end points of a section line to be plotted in a figure (from Grid Tools).
+% * *gd_points2lines.m* - convert a _points_ or plines array of structs with x, y (and z) fields 
+% to a [Nx2] or [Nx3] array, or a single stuct, or matrix with column vectors
+%  in the x, y (and z) fields.
+% * *gd_sectionlines.m* - extract the section lines that are normal to the channel centre line
+% and extend to the bounding shoreline.
+% * *gd_selectpoints.m* - UI to interactively create a specified number of x,y point on a grid.
+% * *gd_setpoint.m* - interactively create a single point in a UI figure and return the point
+% coordinates. Includes an option to enter an additional value at the
+% selected point (e.g. elevation).
+% * *gd_setpoints.m*
+% - interactively create a set of points in a UI figure and return the point
+% coordinates. Includes an option to enter an additional value at the
+% selected points (e.g. elevation).
+% * *gd_smoothlines.m* - smooth one or more line segments using either moving average, or the
+% Savitzky-Golay method.
+
+##### SOURCE END #####
+-->
+</body>
+</html>

@@ -11,7 +11,7 @@ classdef (Abstract = true) PLinterface < handle
 %   defined in the setFigure function, or overload this
 %   function if a more customised set of actions is required
 %   Any class using the interface must define the Abstract properties for
-%   Points and pLines.
+%   outPoints, outLines and isXYZ.
 % NOTES
 %   inherits handle
 %   the conventions used for points and lines are explained in the
@@ -40,20 +40,20 @@ classdef (Abstract = true) PLinterface < handle
 %--------------------------------------------------------------------------
 %    
     properties (Hidden,Transient)
-        Figure
-        Axes
-        Points = []   
-        pLines = []
+        Figure         %handle to class figure
+        Axes           %handle to class axes
+        Points = []    %holds the current set of points
+        pLines = []    %holds the current set of lines
     end
 
     properties (Dependent)
-       NaNpnts
+       NaNpnts         %x,y(z) NaN points used to terminate lines
     end
     
     properties (Abstract)
-        outPoints
-        outLines
-        isXYZ
+        outPoints      %saved points for output
+        outLines       %saved lines for output
+        isXYZ          %logical flag, true if points are lines are to include z values
     end
 
     methods (Abstract)
@@ -870,7 +870,6 @@ function plines = resampleLines(obj,cint)
     methods (Static)
         function newpnts = checkDirection(endpnt,newpnts,isstart)  
             %check direction of new points relative to existing line
-            % idp is the index of the point to be joined to
             xlen = [endpnt.x-newpnts(1).x,endpnt.x-newpnts(end).x];
             ylen = [endpnt.y-newpnts(1).y,endpnt.y-newpnts(end).y];
             [~,ide] = min(hypot(xlen,ylen)); %index of nearest point
@@ -901,15 +900,6 @@ function plines = resampleLines(obj,cint)
             isNear = any(distances < tol); % Threshold for proximity
         end
 
-
-%%
-        % function [dist,idP] = findNearestPoint(Points,Point)
-        %     %find the nearest point to Point in a set of Points
-        %     xlen = [Points(:).x]-Point.x;
-        %     ylen = [Points(:).y]-Point.y;
-        %     [dist,idP] = sort(hypot(xlen,ylen)); %indices of nearest points           
-        % end
-
 %%
         function zlevel = setLevel()
             %prompt user to set the level for the contour to be extracted
@@ -921,7 +911,8 @@ function plines = resampleLines(obj,cint)
 
 %%
         function cint = setInterval()
-            %prompt user to set point spacing interval for the contour
+            %prompt user to set point spacing interval for ampling along a
+            %line.
             promptxt = sprintf('Sampling interval (m)');
             inp = inputdlg({promptxt},'Boundary',1,{'100'});
             if isempty(inp), cint = []; return; end  %user cancelled

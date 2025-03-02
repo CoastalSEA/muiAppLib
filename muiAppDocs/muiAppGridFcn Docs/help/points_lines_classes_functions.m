@@ -1,4 +1,4 @@
-%% Points, Lines, Sections and Segments
+%% Points and Lines
 % A short summary of the conventions used and the functions available, to
 % manipulate points, lines, sections and segments in Grid Tools.
 
@@ -11,7 +11,7 @@
 % make use of the following conventions:
 %%
 % * *Points*: a single pair of x,y coordinates or a set of points. Use
-% _gd_pnt2vec_ and gd_vec2pnt to convert between points and other formats.
+% _gd_points2lines_ and gd_lines2points to convert between points and other formats.
 %%
 % <html>
 % <ul><ul>
@@ -52,18 +52,6 @@
 % </html>
 
 %%
-% * *Sections*: a special case of a _pline_ with only 2 _points_ (start and
-% end) and a NaN _point_.
-%%
-% <html>
-% <ul><ul>
-% <li><i>pslice</i> - a <i>pline</i> defined by two end <i>points</i>.</li>
-% <li><i>pslices</i> - multiple <i>pslice</i> segments concatenated as a row struct array, 
-% with individual <i>pslice</i> segments defined by NaN terminators.</li>
-% </ul></ul>
-% </html>
-
-%%
 % Hence a _line_ and _lines_ are always a set of column vectors in a struct,
 % table or matrix. Whereas the other formats are all different arrays of a _point_ set.
 
@@ -86,15 +74,15 @@
 % </td></tr></table>
 % </html>
 
-%% Classes
+%% Point and Line classes
 % The Apps that inherit <matlab:doc('gdinterface') GDinterface> can make use of 
-% *GD_Sections* to manipulate points and lines, and extract boundaries and
+% *PL_Sections* to manipulate points and lines, and extract boundaries and
 % cente-lines from an imported digital terrain model. This extends the
 % capability of the functions provided as part of the standard
 % <matlab:doc('grid_menu_help') Grid tools Menu>. 
 
 %%
-% *GD_Sections*: provides methods to manipulate points, lines and sections 
+% *PL_Sections*: provides methods to manipulate points, lines and sections 
 % using datasets in classes that inherit <matlab:doc('gdinterface') GDinterface>.
 
 %%
@@ -133,8 +121,69 @@
 % * sectionMenuOptions - default set of menu options for use in Model UIs
 % such as EstuaryDB. Can be used to call any of the methods listed above
 
+%%
+% To manipulate points and lines, a number of classes make use of the 
+% PLinterface abstract class, see <matlab:doc('plinterface') PLinterface>
+% for further details. The most generic is *PL_Editor* and the input and
+% outputs defined for this class are also used in the other _PL_ classes
+% that provide bespoke functionality.
+%%
+% *PL_Editor*:
+% figure to interactively digitise points on a grid and add
+% elevations if required.
+%% 
+%   [lines,points] = PL_Editor.Figure(grid,promptxt,inlines,,isxyz,isdel);
+%% 
+% where _grid_ is a struct of x, y, z (e.g. as used in getGrid in the
+% GDinterface); _promptxt_ character string used for initial prompt in title; _inlines_ 
+% a struct of points and lines or a struct of x,y vectors to be edited, or
+% an output format flag, _isxyz_ is a logical flag true to input z values -
+% optional, default is false; and _isdel_ is a logical flag true to delete
+% figure on completion - optional, default is false. The ouput format
+% depends on the _outype_ flag. If _outype_=0: array of structs with x, y and z 
+% fields defining selected points, _outype_=1: Nx2 or Nx3 array,
+% _outype_=2: struct with x, y (and z) vector fields, and _points_ = [] if 
+% user closes figure, or no points defined.
 
-%% Functions
+%%
+% *PL_Boundary*: Class to extract contours and generate model boundaries
+%%
+%   lines = PL_Boundary.Figure(grid,promptxt,inlines,isdel);
+%%
+% where the inputs are as for *PL_Editor*, with the addition of _linlines_ for any
+% existing boundary lines.
+
+%%
+% *PL_CentreLine*: Class to extract valley/channel centre-line
+%%
+%   [lines,props] = PL_CentreLine.Figure(grid,promptxt,inlines,props,isdel);
+%%
+% where the inputs are as for *PL_Editor*, with the addition of _linlines_ for any
+% existing centre-line and _props_ struct for maximum water level, depth exponent
+% and the sampling interval along the centre-lines (maxwl,dexp,cint). The
+% variable _props_ is included in the output to capture any interactive updates.
+
+%%
+% *PL_PlotSections*:
+% display grid and allow user to interactively define start and
+% end points of a section line to be plotted in a figure.
+%%
+%   PL_PlotSections.Figure(grid,promptxt,isdel); 
+%%
+% where the inputs are as for *PL_Editor*.
+
+%%
+% *PL_SectionLines*: Class to create a set of cross-sections lines based on 
+% the points in a centre-line and any enclosing boundary.
+%%
+%   [slines,clines] = PL_SectionLines.Figure(grid,promptxt,setlines,isdel);
+%%
+% where the inputs are as for *PL_Editor*, with the addition of _setlines_,
+% a struct with fields Boundary, ChannelLine, ChannelProps and SectionLines, 
+% or an instance of the *PL_Sections* class. The output includes _slines_
+% for the sections defined and _clines_ for the updated centre-line.
+
+%% Point and Line Functions
 % Functions that derive and manipulte sections from a Grid 
 % such as contour boundaries, channel centre-lines can be found in the _muiAppGridFcns_ 
 % folder. Use the Matlab(TM) _help_ function in the command window to get 
@@ -147,7 +196,7 @@
 %   blines = gd_boundary(grid,paneltxt,outype,isdel);
 %%
 % where _grid_ is a struct of x, y, z, _paneltext_ is a character string
-% used for title, _outype_ is the format of output (see *gd_pnt2vec*), _inlines_
+% used for title, _outype_ is the format of output (see *gd_ppoints2lines*), _inlines_
 % is struct or table of x,y vectors to be edited, or the format 
 % of output if no lines are being input, and _isdel_ is a logical flag true to delete figure 
 % on completion (optional - default is false). The output, _blines_, 
@@ -176,32 +225,17 @@
 % with x and y fields defining a set of points.
 
 %%
-% *gd_digitisepoints.m*
-% - UI to interactively digitise x,y,z points on a grid and edit
-% z elevations, if required
+% *gd_curvelineprops*
+% - for each point from idL to the end use the centre-line coordinates and 
+% direction to find the lengths and directions along the centre-line.
 %%
-%   lines = gd_digitisepoints(grid,paneltxt,outype,isxyz,isdel)
+%   [clinedir,ncplines,cumlen] = gd_curvelineprops(cplines,idL)
 %%
-% where _grid_ is a struct of x, y, z, _paneltext_ is a character string
-% used for title, _outype_ is the format of output (see *gd_pnt2vec*), _isxyz_
-% is a logical flag true to input z values (optional, default is false)
-% and _isdel_ - logical flag true to delete figure 
-% on completion (optional - default is false). Output is a _lines_, or 
-% _plines_ array, depending on _outype_.
-
-%%
-% *gd_editlines.m*
-% - UI to interactively digitise x,y,z points on a grid and edit
-% z elevations, if required
-%%
-%   lines = gd_editlines(grid,paneltxt,inlines,isdel);
-%%
-% where _grid_ is a struct of x, y, z, _paneltext_ is a character string
-% used for title, _outype_ is the format of output (see *gd_pnt2vec*), _inlines_
-% is struct or table of x,y vectors to be edited, or the format 
-% of output if no lines are being input, and _isdel_ is a logical flag true to delete figure 
-% on completion (optional - default is false). Output is a _lines_, or 
-% _plines_ array, depending on _outype_.
+% where _cplines_ is a cell array of plines and _idL_ is the index of the
+% start point on any of the lines in _cplines_. The output includes 
+% _clinedir_, the mean direction of line at each point in x,y space, 
+% _ncplines_ an updated version of _cplines_ starting from point _idL_ and
+% _cumlen_, the cumulative length from the defined start point.
 
 %%
 % *gd_findline.m*
@@ -226,14 +260,47 @@
 % false). The output, _clines_, is a set of _lines_ of the extracted contour.
 
 %%
+% *gd_getpline.m*
+% - interactively select a line on a plot and return the line point coordinates.
+%%
+%   [pline,H] = gd_getpline(ax,promptxt,tagname,ispoints);
+%%
+% where _ax_ is the figure axes used to interactively select point, 
+% _promptxt_ is the prompt to be used for point being defined, _tagname_ is
+% a character vector of text to be used as tag for plotted points, _ispoints_ 
+% is true to return as an array of point structs, otherwise returns an xy 
+% struct of points (optional - default is true). Returns _pline_ as a 
+% struct array of points defining selected line or a struct with x and y 
+% fields, depending on value of _ispoints_ and _H_ is a handle to selected line
+
+%%
 % *gd_getpoint.m*
 % - interactively select a single point in a UI figure and return the point
 % coordinates.
 %%
-%   point = gd_getpoint(ax,promptxt)
+%   point = gd_getpoint(ax,promptxt);
 %%
 % where _ax_ is a figure axes used to interactively select point, and _promptxt_
 % is a prompt to be used for point being selected. The output is a _point_ struct.
+
+%%
+% *gd_lines2points.m*
+% - convert _lines_  as x,y vectors in various formats (see *gd_points2lines*) to a 
+% _points_ array of structs for each _point_ with x, y (and z) fields.
+%%
+%   [points,outype] = gd_lines2points(lines);
+
+%% 
+% *gd_linetopology*
+% - interactively define line connectivity.
+%%
+%   [cumlen,G,hf,hg] = gd_linetopology(grid,plines);
+%%
+% where  _grid_ is a struct of x, y, z, _plines_ is a struct of x,y vectors 
+% defining one or more lines. The outputs include _cumlen_, the cumulative 
+% lengths along lines from first point in line set, _G_ a directed graph of 
+% the channl network, _hf_ a handle to figure used to define links and _hg_ 
+% a handle to figure of the resultant network.
 
 %%
 % *gd_orderplines.m*
@@ -247,7 +314,7 @@
 
 %%
 % *gd_plines2cplines.m*
-% - convert an array of plines to a cell array of plines
+% - convert an array of _plines_ to a cell array of _plines_.
 %%
 %   cplines = gd_plines2cplines(plines);
 %%
@@ -265,13 +332,19 @@
 % - display grid and allow user to interactively define start and
 % end points of a section line to be plotted in a figure (from Grid Tools).
 %%
-%   gd_plotsections(grid);  %where grid is a struct of x, y, z
+%   [xlines,hf] = gd_plotsections(grid,cplines,inp)
+%%
+% where _grid_ is a struct of x,y,z values that define grid, _cplines_ is a
+% cell array of section lines and _inp_ is a struct with fields for zmax, 
+% sint and method, optional if empty user is prompted to enter the values 
+% in an input dialog. the output includes _xlines_ for the interpolated 
+% distances and elevations along section lines and _hf_, the handle to plot of sections
 
 %%
 % *gd_points2lines.m*
 % - convert a _points_ or plines array of structs with x, y (and z) fields 
 % to a [Nx2] or [Nx3] array, or a single stuct, or matrix with column vectors
-%  in the x, y (and z) fields
+%  in the x, y (and z) fields.
 %%
 %   lines = gd_points2lines(points,outype);
 %%
@@ -288,7 +361,7 @@
 
 %%
 % *gd_sectionlines.m*
-% -extract the section lines that are normal to the channel centre line
+% - extract the section lines that are normal to the channel centre line
 % and extend to the bounding shoreline.
 %%
 %   [s_lines,c_lines] = gd_sectionlines(obj,cobj,paneltxt,isdel);
@@ -296,7 +369,7 @@
 % where _obj_ is an instance of GD_Sections with a Boundary and ChannelLine 
 % defined and _cobj_ is an instance of EDBimport class with grid or geoimage
 % _paneltext_ is a character string used for title, _outype_ is the format
-% of output (see *gd_pnt2vec*), and _isdel_ is a logical flag true to delete figure 
+% of output (see *gd_points2lines*), and _isdel_ is a logical flag true to delete figure 
 % on completion (optional - default is false). The output, _s_lines_ and 
 % _c_lines_, sets of _lines_ of the extracted sections and centreline (can
 % be smoothed as part of workflow).
@@ -313,22 +386,8 @@
 %  for each point, othewise the cell array should have a length of npts),
 % _inlines_ - struct, table or matrix of x,y column vectors to show on base
 % plot, _npts_ is the number of points to be selected, _outype_ - format of 
-% output (see *gd_pnt2vec*) and _isdel_ - logical flag true to delete figure 
+% output (see *gd_points2lines*) and _isdel_ - logical flag true to delete figure 
 % on completion (optional - default is false). Output is a _points_ array.
-
-%%
-% *gd_setcplines.m*
-% - %   converts a set of points to a set of _plines_ based on NaN separators,
-% plots the graphical lines, or digistise a set of points and return as a
-% _pline_.
-%%
-%   cplines = gd_setcplines(ax,promptxt,linepoints);
-%%
-% where _ax_ is a figure axes used to interactivly select points, _promptxt_
-% is a prompt to be used for point being defined, and _linepoints_ is a
-% set of _points_ to be set as lines x,y struct with each line
-% define by a NaN separator (optional - user prompted to define points if not set)
-% cplines - a cell array of _plines_, or anew digitised _pline_.
 
 %%
 % *gd_setpoint.m*
@@ -356,7 +415,6 @@
 % is a logical flag true to input z values (optional, default is false).
 % The output is a _points_ array.
 
-
 %%
 % *gd_smoothlines.m*
 % - smooth one or more line segments using either moving average, or the
@@ -369,13 +427,6 @@
 % or 'sgolay' for Savitzky-Golay smoothing, _window_ is the size of window 
 % to use (1 or 2 elements), _degree_ is the  Savitzky-Golay degree
 % (<window) and _npnts_ is the minimum number of points required to apply smoothing
-
-%%
-% *gd_lines2points.m*
-% convert _lines_  as x,y vectors in various formats (see *gd_pnt2vec*) to a 
-% _points_ array of structs for each _point_ with x, y (and z) fields.
-%%
-%   [points,outype] = gd_lines2points(lines);
 
 
 
