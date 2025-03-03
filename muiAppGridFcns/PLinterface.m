@@ -678,7 +678,7 @@ classdef (Abstract = true) PLinterface < handle
             obj.pLines(idLj) = [];
         
             %to join the two lines, treat newpnts as a new points to be added
-            points = extendAline(obj,newpnts,joinpnts(1));
+            points = extendAline(obj,type,newpnts,joinpnts(1));
         end
 
 %%

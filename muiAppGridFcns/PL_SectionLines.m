@@ -122,11 +122,10 @@ classdef PL_SectionLines < PLinterface
 %--------------------------------------------------------------------------
     methods (Access=protected)
         function setSections(obj,~,~)
-            %use centreline to generate a set of sections            
+            %use centreline to generate a set of sections    
+            resetMenu(obj);
             clearGraphics(obj,{'mylines','mypoints','mytext'});
-            if isempty(obj.xLength)
-                setSectionLength(obj);
-            end 
+            setSectionLength(obj);
 
             %get user to define the mouth by defining a point near to a point on the
             %channel centre-line
@@ -153,11 +152,13 @@ classdef PL_SectionLines < PLinterface
             obj.pLines = setSectionLines(obj,c_cplines,clinedir,obj.xLength);
             obj.cLines = gd_cplines2plines(c_cplines);
             plotSections(obj);
+            resetMenu(obj,false)  
         end
 
 %%
         function clipLines(obj,~,~)
             %clip the extent of the sections lines to a defined boundary
+            resetMenu(obj);
             c_lines = obj.cLines;
             c_lines(isnan([c_lines(:).x])) = [];   %remove Nans so only points
             ncentres = length(c_lines);            %number of centreline points 
@@ -184,6 +185,7 @@ classdef PL_SectionLines < PLinterface
             clearGraphics(obj,{'mylines','mypoints','mytext','clines'});
             ax = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);  %set line  
             obj.Axes = gd_plotpoints(ax,obj.cLines,'clines',5); %set centre-lines
+            resetMenu(obj,false)  
         end
 
 %%
@@ -244,7 +246,7 @@ classdef PL_SectionLines < PLinterface
             %Reset to the input centre-line and boundary
             clearGraphics(obj,{'mylines','mypoints','mytext','clines'});
             obj.cLines = gd_lines2points(obj.Set.ChannelLine);%Centre line coordinates
-            gd_plotpoints(obj.Axes,obj.cLines,'clines',5);    %5= plot as centre-lines         
+            gd_plotpoints(obj.Axes,obj.cLines,'clines',5);    %5= plot as centre-lines            
         end
 
 

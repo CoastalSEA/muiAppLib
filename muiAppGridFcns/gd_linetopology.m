@@ -40,7 +40,7 @@ function [cumlen,G,hf,hg] = gd_linetopology(grid,plines)
     %no need to do anything further if only a single centre-line  
     if nlines==1  
         topo = [1,length(plines)-1]; %single line topology: start-end points
-        G = setChannelGraph(topo,1);
+        [cumlen,G,hg] = setChannelGraph(topo,[1,1],[1,1],cplines);
         return; 
     end   
 
@@ -48,8 +48,7 @@ function [cumlen,G,hf,hg] = gd_linetopology(grid,plines)
     for j=1:nlines                                  %call one at a time
         apline = (cplines{1,j});                    %to order numbering  
         ax = gd_plotpoints(ax,apline,'mylines',2);  %set line  
-        % ax = gd_plotpoints(ax,apline,'mypoints',1); %set points
-        ax = gd_plotpoints(ax,apline,num2str(j),3);      %set labels  
+        ax = gd_plotpoints(ax,apline,num2str(j),3); %set labels  
     end    
 
     %%get user to define links and set up graph matrix
@@ -94,6 +93,7 @@ function [cumlen,G,hg] = setChannelGraph(topo,edges,lineids,cplines)
     lineids = lineids(idd,:);
     names = string(unique(topo));
     G = subgraph(digraph(topo(:,1),topo(:,2)),unique(topo));
+    if isrow(names), names = names'; end
     G.Nodes.Names = names;
     G.Edges.Weight = edges(idd)';
     %rebuild digraph with addition of line no. data

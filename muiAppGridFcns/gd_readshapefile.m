@@ -38,14 +38,19 @@ function shp = gd_readshapefile(path,filename)
     if istoolbox
         Shp = shaperead([path,shapename]);   %requires Mapping toolbox
         for i=1:length(Shp)
-            shp.x = [shp.x,Shp(i).X,NaN];    %lines separated by NaNs
-            shp.y = [shp.y,Shp(i).Y,NaN];    %
+            shp.x = [shp.x,Shp(i).X];    %lines separated by NaNs
+            shp.y = [shp.y,Shp(i).Y];    %
         end     
     elseif isfile(which('m_shaperead.m'))    %isfile only works for specified or current path        
         Shp = m_shaperead([path,shapename]); %use M-Map function instead
         for i=1:length(Shp.ncst)    
-            shp.x = [shp.x;Shp.ncst{i,1}(:,1);NaN];    %the added NaN fixes a problem when
-            shp.y = [shp.y;Shp.ncst{i,1}(:,2);NaN];    %using the polygon in insidepoly
+            if isnan(Shp.ncst{i,1}(end,1))
+                shp.x = [shp.x;Shp.ncst{i,1}(:,1)]; 
+                shp.y = [shp.y;Shp.ncst{i,1}(:,2)];                
+            else
+                shp.x = [shp.x;Shp.ncst{i,1}(:,1);NaN];    %the added NaN fixes a problem when
+                shp.y = [shp.y;Shp.ncst{i,1}(:,2);NaN];    %using the polygon in insidepoly
+            end
         end
     else
         shp = [];

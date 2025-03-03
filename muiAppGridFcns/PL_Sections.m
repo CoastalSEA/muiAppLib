@@ -78,16 +78,16 @@ classdef PL_Sections < handle
                     setChannelNetwork(obj,cobj,mobj);
                 case 'Channel Links'
                     promptxt = 'Select a Case to use to set channel connectivity:';
-                    [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
+                    [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj), return; end
                     obj = PL_Sections.getSections(cobj);
-                    setChannelTopology(obj,cobj,muicat);                    
+                    setChannelTopology(obj,cobj,catrec);                    
                 case 'Section Lines'
                     promptxt = 'Select a Case to use to define section lines:';
-                    [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
+                    [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj), return; end
                     obj = PL_Sections.getSections(cobj);
-                    setSectionLines(obj,cobj,muicat);
+                    setSectionLines(obj,cobj,catrec);
                 case 'Sections'
                     promptxt = 'Select a Case to use to extract sections:';
                     [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
@@ -96,13 +96,13 @@ classdef PL_Sections < handle
                     setSections(obj,cobj,muicat);
                 case 'View Sections'
                     promptxt = 'Select a Case to use to extract sections:';
-                    [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
-                    if isempty(cobj.Sections)
+                    [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+                    if isempty(cobj.Sections) || ~isa(cobj.Sections,'PL_Sections')
                         warndlg('No Section data available to view');
                         return;
                     end
                     obj = cobj.Sections;
-                    viewSections(obj,cobj,muicat,srcText);
+                    viewSections(obj,cobj,catrec,srcText);
                 case 'Waterbody'
                     promptxt = 'Select a Case to use to define waterbody';
                     [cobj,caserec] = selectCaseObj(muicat,[],gridclasses,promptxt);
@@ -133,25 +133,29 @@ classdef PL_Sections < handle
             switch linetype
                 case 'Boundary'
                     type = 'Boundary';
-                case 'Channel network'
+                case 'Channel Network'
                     type = 'ChannelLine';
                 case 'Section Lines'
                     type = 'SectionLines';
             end
             promptxt = sprintf('Select a Case to load %s from shapefile:',linetype);           
-            [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
 
             [fname,path,nfiles] = getfiles('MultiSelect','off',...
                 'FileType',{'*.shp;'},'PromptText','Select shape file):');
             if nfiles~=1, return; end
+            
+            %initialise PL_Sections instance if not already available
+            obj = PL_Sections.getSections(cobj);
 
             %get file and read the data
             shp = gd_readshapefile(path,fname);
             if isrow(shp.x)
                 shp = structfun(@transpose,shp,'UniformOutput',false);
             end
-            cobj.Sections.(type) = shp;  %overwrites any existing lines
-            casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+            obj.(type) = shp;  %overwrites any existing lines
+            cobj.Sections = obj;
+            casedesc = catrec.CaseDescription;
             getdialog(sprintf('Data loaded for %s in Case: %s',linetype,casedesc),[],3)
         end
 
@@ -164,7 +168,7 @@ classdef PL_Sections < handle
             switch linetype
                 case 'Boundary'
                     type = 'Boundary';
-                case 'Channel network'
+                case 'Channel Network'
                     type = 'ChannelLine';
                 case 'Section Lines'
                     type = 'SectionLines';
@@ -205,7 +209,7 @@ classdef PL_Sections < handle
             switch linetype
                 case 'Boundary'
                     type = 'Boundary';
-                case 'Channel network'
+                case 'Channel Network'
                     type = 'ChannelLine';
                 case 'Section Lines'
                     type = 'SectionLines';
@@ -298,13 +302,6 @@ classdef PL_Sections < handle
             obj.ChannelLine = clines;
             obj.ChannelProps = props;
 
-            % %define connectivity of finished lines (topology)
-            % [cumlen,G,hf,hg] = gd_linetopology(grid,clines);
-            % props.topo = G;
-            % props.ChannelLengths = cumlen;
-            % delete([hf,hg])
-            % obj.ChannelProps = props;
-
             %save results to grid class instance
             cobj.Sections = obj;
             getdialog(sprintf('Channel network added to grid for Case: %s',grid.desc),[],3)
@@ -315,7 +312,7 @@ classdef PL_Sections < handle
         end
 
 %%
-        function setSectionLines(obj,cobj,muicat)
+        function setSectionLines(obj,cobj,catrec)
             %use the centre-line to generate a set of sections at right
             %angles and interactively edit them, or digitise them manually.
             %at the moment this requires a grid to be present but not needed ** 
@@ -342,7 +339,7 @@ classdef PL_Sections < handle
             obj.SectionLines = slines;
             obj.ChannelLine = clines;
             cobj.Sections = obj;
-            casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+            casedesc = catrec.CaseDescription;
             msgtxt = sprintf('Section lines added to grid for Case: %s',...
                                                                 casedesc);
             getdialog(msgtxt,[],3)
@@ -369,7 +366,7 @@ classdef PL_Sections < handle
         end
 
 %%
-        function setChannelTopology(obj,cobj,muicat)
+        function setChannelTopology(obj,cobj,catrec)
             %define the toplogy for a channel network            
             if isempty(obj.ChannelLine)
                 warndlg('Channel network need to be defined to extract Section Lines')
@@ -398,7 +395,7 @@ classdef PL_Sections < handle
             obj.ChannelProps.topo = G;
             obj.ChannelProps.ChannelLengths = cumlen;
             delete(hf)            %delete the figure but not network graph
-            casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+            casedesc = catrec.CaseDescription;
             msgtxt = sprintf('Section lines added to grid for Case: %s',...
                                                                 casedesc);
             getdialog(msgtxt,[],3)
@@ -484,7 +481,7 @@ classdef PL_Sections < handle
 
 
 %%
-function setWaterbody(~,cobj,muicat,classrec)
+        function setWaterbody(~,cobj,muicat,classrec)
             %use PL_Boundary to create a polygon boundary
             if ~isfield(cobj.Data,'Grid')
                 warndlg('No grid for selected case'); return;
@@ -513,17 +510,17 @@ function setWaterbody(~,cobj,muicat,classrec)
 %--------------------------------------------------------------------------
 % Plot functions
 %--------------------------------------------------------------------------
-        function viewSections(obj,cobj,muicat,srcText)
+        function viewSections(obj,cobj,catrec,srcText)
             %view boundary channel network and cross-sections line work
             %or along-channel sections summary plot
             switch srcText
                 case 'Layout'
                     viewPlanSections(obj,cobj);
                 case 'Sections'
-                    casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+                    casedesc = catrec.CaseDescription;
                     viewAlongChannelSections(obj,casedesc);
                 case 'Network'
-                    casedesc = muicat.Catalogue.CaseDescription(cobj.CaseIndex);
+                    casedesc = catrec.CaseDescription;
                     viewChannelNetwork(obj,casedesc);
             end
         end

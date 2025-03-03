@@ -33,6 +33,6 @@ function ax = gd_plotgrid(hfig,grid)
         gd_colormap([mnmx(1),mnmx(2)]);
     end
     colorbar
-    xlabel('Length (m)'); 
-    ylabel('Width (m)')
+    xlabel('X-dimension (m)'); 
+    ylabel('Y-dimension (m)')
 end 
