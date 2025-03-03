@@ -35,7 +35,11 @@
 % - initialise a figure and panel for PL classes
 %%
 %   obj = setFigure(obj,figtitle,tag,position);
-
+%%
+% where _obj_ is an instance of any class that inherits *PLinterface*,
+% _figtitle_ is text for the figure title, _tag_ is text for the figure Tag 
+% and _position_ is the figure Position (optional with default of   
+% [0.37,0.58,0.26,0.34].
 
 %%
 % Static methods:

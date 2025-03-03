@@ -65,8 +65,8 @@ classdef (Abstract = true) PLinterface < handle
             %initialise a figure and panel for PL classes
             %   figtitle - figure title
             %   tag - figure Tag name
-            %   position - figure position; optional, default is [0.372,0.576,0.255,0.34]  
-            if isempty(position), position = [0.372,0.576,0.255,0.34]; end
+            %   position - figure position; optional, default is [0.37,0.58,0.26,0.34] 
+            if isempty(position), position = [0.37,0.58,0.26,0.34]; end
 
             h_fig = figure('Name',figtitle,'Tag',tag,'NextPlot','add',...
                            'Units','normalized','Position',position,...

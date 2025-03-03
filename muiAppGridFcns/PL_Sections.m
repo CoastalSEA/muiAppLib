@@ -196,6 +196,35 @@ classdef PL_Sections < handle
                 getdialog(sprintf('Edits saved for %s in Case: %s',linetype,grid.desc),[],3)
             end
         end
+
+%%
+        function deleteLines(mobj,src,gridclasses)
+            %delete linework for the selected line type
+             muicat = mobj.Cases;   %handle to muiCatalogue
+            linetype = src.Parent.Text;
+            switch linetype
+                case 'Boundary'
+                    type = 'Boundary';
+                case 'Channel network'
+                    type = 'ChannelLine';
+                case 'Section Lines'
+                    type = 'SectionLines';
+                otherwise
+                    return
+            end        
+            
+            promptxt = sprintf('Select a Case to delete %s:',linetype);
+            [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            %delete the selected line and save to case    
+            qprompt = sprintf('Delete %s for Case %s',linetype,catrec.CaseDescription);
+            answer = questdlg(qprompt,linetype,'Yes','No','Yes');
+            if strcmp(answer,'Yes')
+                cobj.Sections.(type) = [];
+                getdialog(sprintf('%s deleted for Case: %s',linetype,...
+                                          catrec.CaseDescription),[],3)
+            end
+        end
+
     end
 %%
     methods
