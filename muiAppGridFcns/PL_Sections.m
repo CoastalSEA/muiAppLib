@@ -137,6 +137,10 @@ classdef PL_Sections < handle
                     type = 'ChannelLine';
                 case 'Section Lines'
                     type = 'SectionLines';
+                case 'Waterbody'
+                    type = 'WaterBody' ;
+                otherwise
+                    return
             end
             promptxt = sprintf('Select a Case to load %s from shapefile:',linetype);           
             [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
@@ -144,17 +148,21 @@ classdef PL_Sections < handle
             [fname,path,nfiles] = getfiles('MultiSelect','off',...
                 'FileType',{'*.shp;'},'PromptText','Select shape file):');
             if nfiles~=1, return; end
-            
-            %initialise PL_Sections instance if not already available
-            obj = PL_Sections.getSections(cobj);
 
             %get file and read the data
             shp = gd_readshapefile(path,fname);
             if isrow(shp.x)
                 shp = structfun(@transpose,shp,'UniformOutput',false);
+            end    
+            if strcmp(type,'WaterBody')
+                cobj.WaterBody = shp;
+            else
+                %initialise PL_Sections instance if not already available
+                obj = PL_Sections.getSections(cobj);
+                obj.(type) = shp;  %overwrites any existing lines
+                cobj.Sections = obj;
             end
-            obj.(type) = shp;  %overwrites any existing lines
-            cobj.Sections = obj;
+            
             casedesc = catrec.CaseDescription;
             getdialog(sprintf('Data loaded for %s in Case: %s',linetype,casedesc),[],3)
         end
@@ -172,18 +180,21 @@ classdef PL_Sections < handle
                     type = 'ChannelLine';
                 case 'Section Lines'
                     type = 'SectionLines';
+                case 'Waterbody'
+                    type = 'WaterBody' ;
                 otherwise
                     return
             end
             
             promptxt = sprintf('Select a Case to edit %s:',linetype);
-            [cobj,~] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            casedesc = catrec.CaseDescription;
 
-            if ~isa(cobj.Sections,'PL_Sections') && strcmp(src.Text,'Edit')
+            if ~isa(cobj.Sections,'PL_Sections') || isempty(cobj.WaterBody)
                 warndlg(sprintf('No %s data available to edit',linetype));
                 return;
-            elseif strcmp(src.Text,'Digitise')
-                clines = 2;  %2 define outype as struct array of xy
+            elseif strcmp(type,'WaterBody')
+                clines = cobj.WaterBody;
             else
                 clines = cobj.Sections.(type);
             end
@@ -196,8 +207,12 @@ classdef PL_Sections < handle
             if isempty(clines), return; end
             answer = questdlg(sprintf('Save the edited %s',linetype),linetype,'Yes','No','Yes');
             if strcmp(answer,'Yes')
-                cobj.Sections.(type) = clines;
-                getdialog(sprintf('Edits saved for %s in Case: %s',linetype,grid.desc),[],3)
+                if strcmp(type,'WaterBody')
+                    cobj.WaterBody = clines;
+                else
+                    cobj.Sections.(type) = clines;                
+                end
+                getdialog(sprintf('Edits saved for %s in Case: %s',linetype,casedesc),[],3)
             end
         end
 
@@ -213,6 +228,8 @@ classdef PL_Sections < handle
                     type = 'ChannelLine';
                 case 'Section Lines'
                     type = 'SectionLines';
+                case 'Waterbody'
+                    type = 'WaterBody' ;
                 otherwise
                     return
             end        
@@ -223,12 +240,64 @@ classdef PL_Sections < handle
             qprompt = sprintf('Delete %s for Case %s',linetype,catrec.CaseDescription);
             answer = questdlg(qprompt,linetype,'Yes','No','Yes');
             if strcmp(answer,'Yes')
-                cobj.Sections.(type) = [];
+                if strcmp(type,'WaterBody')
+                    cobj.WaterBody = [];
+                else
+                    cobj.Sections.(type) = [];
+                end
                 getdialog(sprintf('%s deleted for Case: %s',linetype,...
                                           catrec.CaseDescription),[],3)
             end
         end
 
+%%
+        function view_WBlines(mobj,src,gridclasses)
+            %plot the waterbody boundary
+            muicat = mobj.Cases;   %handle to muiCatalogue
+            promptxt = sprintf('Select a Case to view %s:',src.Parent.Text);
+            [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            if isempty(cobj.WaterBody)
+                warndlg('No Waterbody data available to view');
+                return
+            end
+            lines = cobj.WaterBody;
+            hf = figure('Name','Waterbody','Units','normalized','Tag','PlotFig');                                          
+            ax = PL_Sections.getGrid(cobj,hf); 
+            hold on
+            plot(ax,lines.x,lines.y,'-r','DisplayName','Waterbody',...
+                                               'ButtonDownFcn',@godisplay);
+            hold off
+            %add lablels and title
+            xlabel('Eastings (m)'); 
+            ylabel('Northings (m)');    
+            title(catrec.CaseDescription); 
+        end
+
+%%
+        function ax = getGrid(cobj,hf)
+            isgrid = false; isimage = false;
+            if isfield(cobj.Data,'Grid')
+                grid = getGrid(cobj,1);                 %grid selected
+                ax = gd_plotgrid(hf,grid);
+                hplt = findobj(ax,'Tag','PlotGrid');
+                hplt.Annotation.LegendInformation.IconDisplayStyle = 'off';  
+                isgrid = true;
+            elseif isfield(cobj.Data,'GeoImage')
+                dst = cobj.Data.GeoImage;
+                im = dst.geoimage;                      %image object
+                ax = axes(hf);
+                h_im = imagesc(ax,'XData',im.XData,'YData',im.YData,'CData',im.CData);
+                set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent              
+                isimage = true;
+            end
+            %
+            if isgrid || isimage 
+                axis equal tight
+                colormap(ax,'gray');
+                cb = colorbar;
+                cb.Label.String = 'Elevation (mAD)';                 
+            end            
+        end
     end
 %%
     methods
@@ -243,7 +312,7 @@ classdef PL_Sections < handle
 
             blines = 2;                         %output format when new line
             if ~isempty(obj.Boundary)           %channel line exists
-                answer = questdlg('A centre-line exists. Modify existing or create new one?',...
+                answer = questdlg('A boundaray line exists. Modify existing or create new one?',...
                                   'Channel','Modify','New','Modify');
                 if strcmp(answer,'Modify')
                     blines = obj.Boundary;      %existing lines
@@ -272,8 +341,8 @@ classdef PL_Sections < handle
             grid = getGrid(cobj,1);   %grid for selected year
             
             if ~isempty(obj.ChannelLine)           %channel line exists
-                promptxt = sprintf('A centre-line exists.\nEdit Existing centre-line or create a New one?');
-                answer = questdlg(promptxt,'Channel','Existing','New','Existing');                                 
+                promptxt = sprintf('A centre-line exists.\nModify existing centre-line or create a New one?');
+                answer = questdlg(promptxt,'Channel','Modify','New','Modify');                                 
             else
                 answer = 'New';
             end   
@@ -491,8 +560,8 @@ classdef PL_Sections < handle
             wlines = 2;                         %output format when new line
             if ~isempty(cobj.WaterBody)         %waterbody line exists
                 answer = questdlg('A waterbody polygon exists. Edit existing or create a new one?',...
-                                  'Channel','Edit','New','Edit');
-                if strcmp(answer,'Extend')
+                                  'Channel','Modify','New','Modify');
+                if strcmp(answer,'Modify')
                     wlines = cobj.WaterBody;      %existing lines
                 end                    
             end 
@@ -513,46 +582,23 @@ classdef PL_Sections < handle
         function viewSections(obj,cobj,catrec,srcText)
             %view boundary channel network and cross-sections line work
             %or along-channel sections summary plot
+            casedesc = catrec.CaseDescription;
             switch srcText
                 case 'Layout'
-                    viewPlanSections(obj,cobj);
-                case 'Sections'
-                    casedesc = catrec.CaseDescription;
+                    viewPlanSections(obj,cobj,casedesc);
+                case 'Sections'                    
                     viewAlongChannelSections(obj,casedesc);
                 case 'Network'
-                    casedesc = catrec.CaseDescription;
                     viewChannelNetwork(obj,casedesc);
             end
         end
 
 %%
-        function viewPlanSections(obj,cobj)
+        function viewPlanSections(obj,cobj,casedesc)
             %plot boundary channel network and cross-sections line work
             hf = figure('Name','Sections','Units','normalized',...
                                         'Tag','PlotFig','Visible','off');  
-            isgrid = false; isimage = false;
-            if isfield(cobj.Data,'Grid')
-                dst = cobj.Data.Grid;
-                grid = getGrid(cobj,1);                 %grid selected
-                ax = gd_plotgrid(hf,grid);
-                hplt = findobj(ax,'Tag','PlotGrid');
-                hplt.Annotation.LegendInformation.IconDisplayStyle = 'off';  
-                isgrid = true;
-            elseif isfield(cobj.Data,'GeoImage')
-                dst = cobj.Data.GeoImage;
-                im = dst.geoimage;                      %image object
-                ax = axes(hf);
-                h_im = imagesc(ax,'XData',im.XData,'YData',im.YData,'CData',im.CData);
-                set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent              
-                isimage = true;
-            end
-            %
-            if isgrid || isimage 
-                axis equal tight
-                colormap(ax,'gray');
-                cb = colorbar;
-                cb.Label.String = 'Elevation (mAD)';                 
-            end
+            ax = PL_Sections.getGrid(cobj,hf); 
 
             type = {'Boundary','ChannelLine','SectionLines'};
             for i=1:3
@@ -580,10 +626,10 @@ classdef PL_Sections < handle
                 end
             end
 
-            %axis equal tight
+            %add lablels and legend
             xlabel('Eastings (m)'); 
             ylabel('Northings (m)');    
-            title(dst.Description);    
+            title(casedesc);    
             legend
             hf.Visible = 'on';
         end
@@ -628,6 +674,7 @@ classdef PL_Sections < handle
             plot(ax,G,'EdgeLabel',G.Edges.Weight,'NodeLabel',nlabel)
             title(sprintf('Channel network for %s',casedesc))   
         end
+
     end
 %--------------------------------------------------------------------------
 % Static utility functions

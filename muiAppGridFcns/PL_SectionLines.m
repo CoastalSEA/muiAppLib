@@ -137,21 +137,30 @@ classdef PL_SectionLines < PLinterface
                 [mpnt,hp] = gd_setpoint(obj.Axes,promptxt,'startpoint',false);
                 delete(hp)
                 if isempty(mpnt)
-                    return;                        %figure has been deleted
+                    ok = 2;  %user cancelled
                 else
                    [isNear,idL] = PLinterface.isPointNearLine(obj.cLines,mpnt,tol);                        
-                   if isNear, ok = 1; end
+                   if isNear
+                       ok = 1; 
+                   else
+                       answer = questdlg('Could not find point. Try again?',...
+                                              'Sections','Yes','No','Yes');
+                       if strcmp(answer,'No'), ok = 2; end
+                   end
                 end
-            end     
-            %for each point from idL to the end use the centreline coordinates and
-            %direction to define a section at right angles to the centreline
-            c_cplines = gd_plines2cplines(obj.cLines);
-            [clinedir,c_cplines,~] = gd_curvelineprops(c_cplines,idL(1));
-        
-            %generate the section lines for clinedir +pi/2 and -pi/2
-            obj.pLines = setSectionLines(obj,c_cplines,clinedir,obj.xLength);
-            obj.cLines = gd_cplines2plines(c_cplines);
-            plotSections(obj);
+            end 
+            %
+            if ok==1
+                %for each point from idL to the end use the centreline coordinates and
+                %direction to define a section at right angles to the centreline
+                c_cplines = gd_plines2cplines(obj.cLines);
+                [clinedir,c_cplines,~] = gd_curvelineprops(c_cplines,idL(1));
+            
+                %generate the section lines for clinedir +pi/2 and -pi/2
+                obj.pLines = setSectionLines(obj,c_cplines,clinedir,obj.xLength);
+                obj.cLines = gd_cplines2plines(c_cplines);
+                plotSections(obj);
+            end
             resetMenu(obj,false)  
         end
 
@@ -182,6 +191,17 @@ classdef PL_SectionLines < PLinterface
                                     [obj.cLines(:).y]==c_lines(idc(i),2)); 
                  if ~isempty(idd), obj.cLines(idd) = []; end
             end
+
+            %check that all points in a reach have not been deleted
+            cplines = gd_plines2cplines(obj.cLines);
+            for j=1:length(cplines)
+                
+                if length(cplines{j})==1
+                    cplines{j} = [];
+                end
+            end
+            obj.cLines = gd_cplines2plines(cplines);
+
             clearGraphics(obj,{'mylines','mypoints','mytext','clines'});
             ax = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);  %set line  
             obj.Axes = gd_plotpoints(ax,obj.cLines,'clines',5); %set centre-lines

@@ -89,10 +89,11 @@ classdef PL_Boundary < PLinterface
 
             %handle input of existing lines
             outype = getInLines(obj,inlines);
+            obj.Grid = grid; %assign as property for use in callbacks
 
             if isempty(obj.pLines)   %no lines imported
                 zlevel = PLinterface.setLevel();
-                obj.Grid = grid; %assign as property for use in callbacks
+                if isempty(zlevel), lines = []; return; end                
                 blines =  gd_getcontour(grid,zlevel,false);
                 obj.pLines = gd_lines2points(blines);
                 obj.outLines = obj.pLines; %?????????check that this suits workflow
@@ -122,6 +123,7 @@ classdef PL_Boundary < PLinterface
         function Reset(obj,~,~)
             %resample contour to create new boundary
             zlevel = PLinterface.setLevel();
+            if isempty(zlevel), return; end
             blines =  gd_getcontour(obj.Grid,zlevel,false);
             obj.pLines = gd_lines2points(blines);
             clearGraphics(obj,{'mylines'});

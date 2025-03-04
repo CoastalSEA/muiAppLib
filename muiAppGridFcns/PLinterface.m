@@ -113,8 +113,19 @@ classdef (Abstract = true) PLinterface < handle
                 idmain = find(ismember(cbs.Parent,label));
                 for j=1:length(idmain)
                     callback = cbs.Callback{idmain(j)};
-                    uimenu(cmenu, 'Text',cbs.Label(idmain(j)),...
-                                  'Callback',callback,'Tag','subPLmenu');                        
+                    if isempty(callback)
+                        submenu = uimenu(cmenu, 'Text',cbs.Label(idmain(j)),'Tag','subPLmenu');                                  
+                        sublabel = cbs.Label(idmain(j));
+                        idsub = find(ismember(cbs.Parent,sublabel));
+                        for k=1:length(idsub)
+                            callback = cbs.Callback{idsub(k)};
+                            uimenu(submenu, 'Text',cbs.Label(idsub(k)),...
+                                  'Callback',callback,'Tag','subsubPLmenu'); 
+                        end
+                    else
+                        uimenu(cmenu, 'Text',cbs.Label(idmain(j)),...
+                                  'Callback',callback,'Tag','subPLmenu'); 
+                    end
                 end
             end
 
@@ -193,8 +204,7 @@ classdef (Abstract = true) PLinterface < handle
 
             [edline,Hl] = gd_getpline(obj.Axes,promptxt1,'mylines');       %get line to delete
             while ~isempty(edline)
-                obj.Axes = gd_plotpoints(obj.Axes,edline,'edpnt',1);       %plot points for line to be edited
-                
+                obj.Axes = gd_plotpoints(obj.Axes,edline,'edpnt',1);       %plot points for line to be edited                
                 [editpnt,H] = gd_getpoint(obj.Axes,promptxt2,'edpnt');     %get points to edit
                 while ~isempty(editpnt)
                     newpnt = gd_setpoint(obj.Axes,promptxt2,'edpnt',obj.isXYZ); %define new point
@@ -306,6 +316,32 @@ classdef (Abstract = true) PLinterface < handle
                 resetLines(obj);                                           %reset line state
                 spline = gd_getpline(obj.Axes,promptxt1,'mylines');        %get line to split
             end
+            resetMenu(obj,false)
+        end
+
+%%
+        function delLinePoint(obj,~,~)
+            %callback function to delete points in a line
+            resetMenu(obj)
+            promptxt1 = sprintf('Delete points in a line\nSelect line, right click on any line to quit');
+            promptxt2 = sprintf('Delete points in a line\nLeft click to select point, right click to quit');
+
+            [edline,~] = gd_getpline(obj.Axes,promptxt1,'mylines');       %get line to delete point on
+            while ~isempty(edline)
+                obj.Axes = gd_plotpoints(obj.Axes,edline,'delpnt',1);      %plot points for line to be edited                
+                [delpnt,H] = gd_getpoint(obj.Axes,promptxt2,'delpnt');     %get point to delete
+                while ~isempty(delpnt)
+                    obj.pLines = deleteApoint(obj,'pLines',delpnt);        %delete point in line
+                    delete(H)
+                    resetPoints(obj);
+                    [delpnt,H] = gd_getpoint(obj.Axes,promptxt2,'delpnt'); %get another point and loop
+                end
+                clearGraphics(obj,{'delpnt'})                              %clear any edit graphics
+                resetLines(obj);                                           %reset line state
+                [edline,~] = gd_getpline(obj.Axes,promptxt1,'mylines');   %get another line to edit
+            end
+            clearGraphics(obj,{'mylines'});
+            obj.Axes = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);     %2= plot as lines
             resetMenu(obj,false)
         end
 
@@ -576,10 +612,20 @@ classdef (Abstract = true) PLinterface < handle
             answer = questdlg('Confirm deletion','Delete point','Yes','No','Yes');
             if strcmp(answer,'Yes')
                 points(idp) = [];
-
-                h_pnts = findobj(obj.Axes,'Tag','mypoints');
-                idx = [h_pnts(:).XData]==delpoint.x & [h_pnts(:).YData]==delpoint.y;
-                delete([h_pnts(idx)]);  %remove any existing points
+                if strcmp(type,'pLines')
+                    h_lns = findobj(obj.Axes,'Tag','mylines');
+                    for i=1:length(h_lns)
+                        idx = [h_lns(i).XData]==delpoint.x & [h_lns(i).YData]==delpoint.y;
+                        if any(idx)
+                            h_lns(i).XData(idx) =[]; 
+                            h_lns(i).YData(idx) =[];
+                        end
+                    end
+                else
+                    h_pnts = findobj(obj.Axes,'Tag','mypoints');
+                    idx = [h_pnts(:).XData]==delpoint.x & [h_pnts(:).YData]==delpoint.y;
+                    delete([h_pnts(idx)]);  %remove any existing points
+                end
             end
         end
 
@@ -788,10 +834,17 @@ function plines = resampleLines(obj,cint)
             %default line menu variables
             stext = ["Add";"Edit";"Extend";"Insert";"Join";"Split";"Delete"];
             scall = {@obj.addLine; @obj.editLine; @obj.Extend; @obj.Insert;...
-                                     @obj.Join; @obj.Split; @obj.deleteLine}; 
+                                     @obj.Join; @obj.Split; []}; 
             nrec = length(stext);
             spart = repmat("Line",nrec,1);
             call{2} = table(spart,scall,stext,'VariableNames',varnames);
+
+            %default line submenu variables
+            stext = ["Point";"Line"];
+            scall = {@obj.delLinePoint; @obj.deleteLine};
+            nrec = length(stext);
+            spart = repmat("Delete",nrec,1);
+            call{3} = table(spart,scall,stext,'VariableNames',varnames);
 
             for i=1:length(call)
                 calltable = [calltable;call{i}]; %#ok<AGROW> 
@@ -926,7 +979,7 @@ function plines = resampleLines(obj,cint)
             %of points to smooth
             promptxt = {'Method (0-moving av, 1-smooth)','Window size',...
                 'Savitzky-Golay degree (<window)','Mininum points in line to smooth'};
-            defaults = {'0','10','4','10'};
+            defaults = {'1','10','4','10'};
             input = inputdlg(promptxt,'Boundary',1,defaults);
             if isempty(input), inp = []; return; end      %user cancelled
             inp.idm= logical(str2double(input{1}));
