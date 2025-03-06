@@ -93,7 +93,9 @@ classdef PL_Boundary < PLinterface
 
             if isempty(obj.pLines)   %no lines imported
                 zlevel = PLinterface.setLevel();
-                if isempty(zlevel), lines = []; return; end                
+                if isempty(zlevel)
+                    lines = []; delete(obj.Figure); return; 
+                end                
                 blines =  gd_getcontour(grid,zlevel,false);
                 obj.pLines = gd_lines2points(blines);
                 obj.outLines = obj.pLines; %?????????check that this suits workflow

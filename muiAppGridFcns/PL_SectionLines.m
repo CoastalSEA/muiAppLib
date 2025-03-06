@@ -24,7 +24,7 @@ classdef PL_SectionLines < PLinterface
                        %same field names
         cLines         %updated plines version of Set.ChannelLine (modified
                        %when sections are set but not saved)
-       xLength         %half length of cross-sections
+        xLength        %half length of cross-sections
     end
        
     methods
@@ -36,19 +36,20 @@ classdef PL_SectionLines < PLinterface
     end
 %% 
     methods (Static)  
-        function [slines,clines] = Figure(grid,promptxt,setlines,isdel)
+        function [slines,clines] = Figure(grid,promptxt,sobj,isdel)
             %
             %-------function help------------------------------------------
             % PURPOSE
             %   Figure to interactively edit points or lines
             % USAGE
-            %   lines = PL_SectionLines.Figure(grid,promptxt,setlines,isdel);
+            %   lines = PL_SectionLines.Figure(grid,promptxt,sobj,isdel);
             % INPUTS
             %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
             %   promptxt- character string used for initial prompt in title
-            %   setlines - struct with fields Boundary, ChannelLine, 
-            %              ChannelProps and SectionLines, or an instance 
-            %              of the PL_Sections class
+            %   sobj - instance of the PL_Sections class properties 
+            %          Boundary, ChannelLine, and ChannelProps a struct
+            %          for maximum water level, depth exponent and sampling
+            %          interval (maxwl,dexp,cint)
             %   isdel - logical flag true to delete figure on completion - optional, 
             %           default is false
             % OUTPUTS
@@ -87,12 +88,13 @@ classdef PL_SectionLines < PLinterface
             submenus = setSubMenus(obj);
             %set the menus and submenus            
             obj = setMenu(obj,menu,submenus);
-            
-            obj.Set = setlines;                  %PL_Sections instance
-            b_lines = obj.Set.Boundary;          %Boundary coordinates   
-            hold on
-            plot(obj.Axes,b_lines.x,b_lines.y,'k');
-            hold off;
+            obj.Set = sobj;                       %used to access PL_Sections for reset
+            if ~isempty(sobj.Boundary)
+                b_lines = obj.Set.Boundary;           %Boundary coordinates
+                hold on
+                plot(obj.Axes,b_lines.x,b_lines.y,'k','LineWidth',1);
+                hold off;
+            end
      
             obj.cLines = gd_lines2points(obj.Set.ChannelLine);%Centre line coordinates
             gd_plotpoints(obj.Axes,obj.cLines,'clines',5);    %5= plot as centre-lines
@@ -185,7 +187,6 @@ classdef PL_SectionLines < PLinterface
             obj.pLines = gd_lines2points(s_lines);
 
             %idc is the centre-line index of deleted points excluding NaNs
-
             for i=1:length(idc)
                  idd = find([obj.cLines(:).x]==c_lines(idc(i),1) & ...
                                     [obj.cLines(:).y]==c_lines(idc(i),2)); 
@@ -194,8 +195,7 @@ classdef PL_SectionLines < PLinterface
 
             %check that all points in a reach have not been deleted
             cplines = gd_plines2cplines(obj.cLines);
-            for j=1:length(cplines)
-                
+            for j=1:length(cplines)                
                 if length(cplines{j})==1
                     cplines{j} = [];
                 end
@@ -204,7 +204,7 @@ classdef PL_SectionLines < PLinterface
 
             clearGraphics(obj,{'mylines','mypoints','mytext','clines'});
             ax = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);  %set line  
-            obj.Axes = gd_plotpoints(ax,obj.cLines,'clines',5); %set centre-lines
+            obj.Axes = gd_plotpoints(ax,obj.cLines,'clines',5);   %set centre-lines
             resetMenu(obj,false)  
         end
 
@@ -246,12 +246,16 @@ classdef PL_SectionLines < PLinterface
         function deleteLine(obj,~,~)
             %order the lines to be in along-channel sequence
             resetMenu(obj);
-            promptxt = sprintf('Delete line\nSelect line to Delete, right click on any line to quit\nRedraw to update centre-line');
+            promptxt = sprintf('Delete line\nSelect line to Delete, right click on any line to quit');
             [deline,H] = gd_getpline(obj.Axes,promptxt,'mylines');         %get line to delete
-            while ~isempty(deline)                
-                [obj.pLines,idl] = deleteAline(obj,'pLines',deline);       %delete the line
-                delete(H)
-                obj.cLines(idl) = [];                                      %delete centre-line point
+            while ~isempty(deline)    
+                [idc,Hc] = centreLinePoint(obj);
+                [obj.pLines,isdel] = deleteAline(obj,'pLines',deline);     %delete the line
+                if isdel
+                    obj.cLines(idc) = [];                                  %delete centre-line point
+                    delete(H); 
+                end
+                delete(Hc)
                 clearGraphics(obj,{'mylines','clines'});
                 ax = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);       %set line 
                 gd_plotpoints(ax,obj.cLines,'clines',5);                   %set centreline
@@ -268,7 +272,6 @@ classdef PL_SectionLines < PLinterface
             obj.cLines = gd_lines2points(obj.Set.ChannelLine);%Centre line coordinates
             gd_plotpoints(obj.Axes,obj.cLines,'clines',5);    %5= plot as centre-lines            
         end
-
 
 %%
         function Redraw(obj,~,~)
@@ -369,11 +372,15 @@ classdef PL_SectionLines < PLinterface
                     end
                     %
                     if isp || isn
-                        spos = findNearest(spos,cpnt);
-                        sneg = findNearest(sneg,cpnt);
+                        spos = findNearest(obj,spos,cpnt);
+                        sneg = findNearest(obj,sneg,cpnt);
                         if ~isempty(spos) &&  ~isempty(sneg)
                             s_lines = [s_lines;spos';sneg';[NaN,NaN]];     %#ok<AGROW> 
-                        else
+                        elseif ~isempty(spos)
+                            s_lines = [s_lines;spos';s_line(2,:);[NaN,NaN]];     %#ok<AGROW> 
+                        elseif ~isempty(sneg)
+                            s_lines = [s_lines;s_line(1,:);sneg';[NaN,NaN]];     %#ok<AGROW> 
+                        else 
                             idc = [idc,i]; %#ok<AGROW>
                         end
                     else
@@ -386,21 +393,10 @@ classdef PL_SectionLines < PLinterface
                     % hold off   
                     spos = []; sneg = [];   %clear for next iteration
                 else
-                    idc = [idc,i]; %#ok<AGROW>
+                    %idc = [idc,i]; %#ok<AGROW>
+                    s_lines = [s_lines;s_line]; %#ok<AGROW> 
                 end
             end
-
-            %nested function-----------------------------------------------
-            function point = findNearest(points,cpnt)
-                if size(points,2)>1
-                    p = abs(points-cpnt);
-                    D = hypot(p(1,:),p(2,:));
-                    [~,idx] = min(D);
-                    point = points(:,idx);
-                else
-                    point = points;
-                end
-            end %----------------------------------------------------------
         end
 
 %%
@@ -412,8 +408,7 @@ classdef PL_SectionLines < PLinterface
                 %insert the new centre-line point
                 [obj.cLines,~] = insertPoints(obj,'cLines',cline(idP([1,2])),newpnt);
             else
-                %point not found in line so assume it is extending line
-                
+                %point not found in line so assume it is extending line                
                 if idP(1)==1 || idP(1)==length(cline)-1  %starat or end of line
                     obj.cLines = extendAline(obj,'cLines',newpnt,cline(idP(1)));
                 else
@@ -432,6 +427,71 @@ classdef PL_SectionLines < PLinterface
             [clinedir,c_cplines,~] = gd_curvelineprops(c_cplines,1);
             obj.pLines = setSectionLines(obj,c_cplines,clinedir,obj.xLength);
         end
+
+%%
+        function [idc,Hc] = centreLinePoint(obj)
+            %find the index of the centre-line point for a selected section
+            clines = gd_points2lines(obj.cLines,1)';
+            promptxt = sprintf('Centreline point\nLeft click to mark centreline point');
+            [delpnt,Hc] = gd_setpoint(obj.Axes,promptxt,'mypoints',obj.isXYZ);   
+            while isempty(delpnt)
+                %loop until point set
+                [delpnt,Hc] = gd_setpoint(obj.Axes,promptxt,'mypoints',obj.isXYZ);   
+            end
+            delpnt = gd_points2lines(delpnt,1);
+            [~,idc] = findNearest(obj,clines,delpnt');
+            Hc.MarkerSize = 8;
+        end
+
+%%
+        function [idc,Hc] = centreLineCrossing(obj,spline)
+            %find the index of the centre-line point for a selected section
+            %this version searches for the centline point and only prompts
+            %if there are 2 points. However, currently finds the wrong
+            %point if the section to be deleted is on the end of a
+            %centreline.
+            Hc = [];
+            clines = gd_points2lines(obj.cLines,1)';
+            sline = gd_points2lines(spline,1);
+            P = InterX(clines,[sline';sline']); %intersections for 1 line
+            np = size(P,2);
+            ison = false(1,np);
+            if ~isempty(P)
+                for i=1:np
+                    %find the point on the section line
+                    ison(i) = ispointonline(sline',P(:,i),true); 
+                end
+                %can be more than one centreline point on the section being deleted 
+                if sum(ison)>1
+                    promptxt = sprintf('Centreline point\nLeft click to mark centreline point');
+                    [delpnt,Hc] = gd_setpoint(obj.Axes,promptxt,'mypoints',obj.isXYZ);   
+                    while isempty(delpnt)
+                        %loop until point set
+                        [delpnt,Hc] = gd_setpoint(obj.Axes,promptxt,'mypoints',obj.isXYZ);   
+                    end
+                    delpnt = gd_points2lines(delpnt,1);
+                    [~,idc] = findNearest(obj,clines,delpnt');
+                    Hc.MarkerSize = 8;
+                elseif sum(ison)==1
+                    [~,idc] = findNearest(obj,clines,P(:,i));
+                else
+                    idc = [];
+                end
+            else
+                idc = [];
+            end
+        end
+%%
+        function [point,idx] = findNearest(~,points,cpnt)
+            if size(points,2)>1
+                p = abs(points-cpnt);
+                D = hypot(p(1,:),p(2,:));
+                [~,idx] = min(D);
+                point = points(:,idx);
+            else
+                point = points;
+            end
+        end 
 
 %%
         function setSectionLength(obj)
@@ -456,31 +516,25 @@ classdef PL_SectionLines < PLinterface
 
 %%
         function ax = plotGrid(obj,grid)
-            %plot either the bathymetry grid or an image of it as a backdrop
-            isgrid = false; isimage = false;
+            %plot either the bathymetry grid or an image of it as a backdrop;
             hfig = obj.Figure;
             if isstruct(grid)
                 %xyz grid is passed as the input variable
                 ax = gd_plotgrid(hfig,grid);
                 hplt = findobj(ax,'Tag','PlotGrid');
                 hplt.Annotation.LegendInformation.IconDisplayStyle = 'off';  
-                isgrid = true;
             else
                 ax = axes(hfig);
                 %image is passed to class as the 'grid' input variable
                 img = grid.geoimage;     %image object
                 h_im = imagesc(ax,'XData',img.XData,'YData',img.YData,'CData',img.CData);
                 set(h_im, 'AlphaData', 1-isnan(img.CData)); %set Nan values to be transparent   
-                colormap(img.CMap);
+                cb = colormap(img.CMap);
                 clim(img.CLim);
-                isimage = true;
+                cb.Label.String = 'Elevation (mAD)'; 
             end
-            %
-            if isgrid || isimage 
-                axis equal tight
-                cb = colorbar;
-                cb.Label.String = 'Elevation (mAD)';    
-            end
+
+            axis equal tight
         end
 
 %%

@@ -352,9 +352,10 @@ classdef (Abstract = true) PLinterface < handle
             promptxt = sprintf('Delete line\nSelect line to Delete, right click on any line to quit');
             [deline,H] = gd_getpline(obj.Axes,promptxt,'mylines');         %get line to delete
             while ~isempty(deline)                
-                obj.pLines = deleteAline(obj,'pLines',deline);             %delete the line
-                delete(H)
+                [obj.pLines,isdel] = deleteAline(obj,'pLines',deline);       %delete the line
+                if isdel, delete(H); end
                 resetLines(obj);
+                pause(1)
                 [deline,H] = gd_getpline(obj.Axes,promptxt,'mylines');     %get line to delete
             end
             resetMenu(obj,false)
@@ -737,22 +738,19 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function [plines,idl] = deleteAline(obj,type,deline)
+        function [plines,isdel] = deleteAline(obj,type,deline)
             %delete a line from a set of lines
             plines = obj.(type);
-            idl= gd_findline(plines, deline(1));
+            idl = gd_findline(plines, deline(1));
             if idl<1, return; end           %line not found
             answer = questdlg('Confirm deletion','Delete point','Yes','No','Yes');
             if strcmp(answer,'Yes')
-                cplines = gd_plines2cplines(obj.pLines);
-                % pline = cplines(idl);
+                cplines = gd_plines2cplines(plines);
                 cplines(idl) = [];          %delete from lines cell array
                 plines = gd_cplines2plines(cplines);
-                % %remove any associated text label
-                % htxt = findobj(obj.Axes,'Tag','mytext');
-                % 
-                % idt = [htxt(:).XData]==pline(1).x & [htxt(:).YData]==pline(1).y; 
-                % delete(htxt(idt))
+                isdel = true;
+            else
+                isdel = false;
             end
         end
 
@@ -779,23 +777,23 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-function plines = resampleLines(obj,cint)
+        function plines = resampleLines(obj,cint)
             %resample the contour lines at intervals of cint
             %idN = [0;find(isnan(obj.pLines(:).x))];
             cplines = gd_plines2cplines(obj.pLines);
             nlines = length(cplines);
-            newlines = [];            
-            for i=1:nlines
-                cline = cplines{1,i};                         %extract line
+            newlines = [];  
+            for i=1:nlines                
+                cline = cplines{1,i};                         %extract line   
                 cline = gd_points2lines(cline(1:end-1),1);    %convert to matrix omit trailing NaN
-                if size(cline,1)>1                            %trap single point lines
-                    clength = sum(vecnorm(diff(cline),2,2));  %cline is a column vector [Nx2]
-                    cpoints = round(clength/cint);            %number of points in new line
+                clength = sum(vecnorm(diff(cline),2,2));      %cline is a column vector [Nx2]                
+                if clength>cint                                   %must be > cint                    
+                    cpoints = round(clength/cint);                %number of points in new line
                     newcline = curvspace(cline,cpoints);
-                else
-                    newcline = cline;
-                end
-                newlines = [newlines;newcline;[NaN,NaN]]; %#ok<AGROW>
+                    if size(newcline,1)>2                         %trap single point lines
+                        newlines = [newlines;newcline;[NaN,NaN]]; %#ok<AGROW>
+                    end
+                end                
             end
             plines = gd_lines2points(newlines);
         end

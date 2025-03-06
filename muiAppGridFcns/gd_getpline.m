@@ -49,14 +49,17 @@ function [pline,H] = gd_getpline(ax,promptxt,tagname,ispoints)
         end
         %callback for setpoint sets UserData to event when line selected
         if all([h_lines.UserData]==0)      %no line set
-            return; %but = 999;                     %stay in loop
+            but = 999;                     %stay in loop
         elseif any([h_lines.UserData]==3)  %user right clicked a line
             return;                        %exit with no line data
         end        
     end
     
     idx = [h_lines.UserData]>0;
-    if isnan(h_lines(idx).XData(end))
+    test = isnan(h_lines(idx).XData(end));
+    if isempty(idx)
+        return
+    elseif isnan(h_lines(idx).XData(end))
         pline.x = h_lines(idx).XData';     %xy of lines are column vectors
         pline.y = h_lines(idx).YData';        
     else

@@ -26,7 +26,7 @@ function [clinedir,ncplines,cumlen] = gd_curvelineprops(cplines,idL)
     nlines = length(cplines);
     %cumlen is local reach specific cumulative lengths from start point
     cumlen = cell(1,nlines); clinedir = cumlen; 
-    nrec = length(cplines{1,1});               %length of first line
+    nrec = length(cplines{1,1});               %number of points in first line
     %nrec = 0;
     j = 1;                                     %count of lines included
     for i=1:nlines
@@ -47,18 +47,20 @@ function [clinedir,ncplines,cumlen] = gd_curvelineprops(cplines,idL)
         end
         
         if ~isempty(dx)                        %trap single point at end of line
-            %pad to make same length as lines
-            dx = [dx(1),dx,dx(end)];           %#ok<AGROW> 
-            dy = [dy(1),dy,dy(end)];           %#ok<AGROW> 
-    
             slen = hypot(dx,dy);               %length between points
             cumlength = cumsum(slen);          %cumulative length
-            cumlen{j} = [0,cumlength(2:end-1),NaN];
-            theta = atan2(dy,dx);              %direction between points
-            clinedir{j}(1) = theta(1);
-            for k=2:length(theta)              %mean direction at point
-                clinedir{j}(k) = (theta(k-1)+theta(k))/2;
+            cumlen{j} = [0,cumlength,NaN];     %pad to make same length as lines
+
+            %now pad dx,dy to make angles same length as lines
+            dx = [dx(1),dx,dx(end)];           %#ok<AGROW> 
+            dy = [dy(1),dy,dy(end)];           %#ok<AGROW>             
+            theta = atan2(dy,dx);              %direction between points            
+            dirs(1) = theta(1);
+            for k=2:length(theta)-1             %mean direction at point
+                dirs(k) = (theta(k-1)+theta(k+1))/2; %#ok<AGROW> 
             end  
+            clinedir{j} = [dirs,NaN];           %pad to make same length as lines
+            dirs = [];
             j = j+1; 
         end
     end  

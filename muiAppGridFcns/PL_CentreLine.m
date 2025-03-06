@@ -20,7 +20,8 @@ classdef PL_CentreLine < PLinterface
         isXYZ = false  %not used but has to be set
         outLines = []
         Grid           %imported grid for use in callback functions
-        Props          %imported props for use in callback functions
+        Set            %instance of PL_Sections class, or struct with 
+                       %same field names
     end
        
     methods
@@ -32,21 +33,20 @@ classdef PL_CentreLine < PLinterface
     end
 %% 
     methods (Static)  
-        function [lines,props] = Figure(grid,promptxt,inlines,props,isdel)
+        function [lines,props] = Figure(grid,promptxt,sobj,isdel)
             %
             %-------function help------------------------------------------
             % PURPOSE
             %   Figure to interactively edit points or lines
             % USAGE
-            %   lines = PL_CentreLine.setFigure(grid,promptxt,inlines,props,isdel);
+            %   lines = PL_CentreLine.setFigure(grid,promptxt,setlines,props,isdel);
             % INPUTS
             %   grid - struct of x, y, z (eg as used in getGrid in the GDinterface)
             %   promptxt- character string used for initial prompt in title
-            %   inlines - can be a struct of points and lines or a struct
-            %             (or table) of x,y vectors to be edited or the 
-            %             format of output if no lines are being input -
-            %             see Outputs for details
-            %   props - struct for maximum water level and depth exponent (maxwl,dexp,cint)
+            %   sobj - instance of the PL_Sections class properties 
+            %          Boundary, ChannelLine, and ChannelProps a struct
+            %          for maximum water level, depth exponent and sampling
+            %          interval (maxwl,dexp,cint)
             %   isdel - logical flag true to delete figure on completion - optional, 
             %           default is false
             % OUTPUTS
@@ -63,14 +63,14 @@ classdef PL_CentreLine < PLinterface
             %       not the input points
             %--------------------------------------------------------------
             %
-            if nargin<5, isdel = false; end
+            if nargin<4, isdel = false; end
             figtitle = sprintf('Extract centre-line');
             tag = 'PlotFig'; %used for collective deletes of a group
             position = [0,0.03,1,0.93];
             obj = PL_CentreLine(figtitle,tag,position);
 
             %plot grid and initialise axes (needed for context menus)
-            initialiseGrid(obj,grid,props)
+            initialiseGrid(obj,grid,sobj.ChannelProps)
             obj.Axes.Title.String = promptxt; %initial prompt
 
             %define menu to be used
@@ -86,9 +86,17 @@ classdef PL_CentreLine < PLinterface
             submenus = setSubMenus(obj);
             %set the menus and submenus            
             obj = setMenu(obj,menu,submenus);
+            obj.Set = sobj;                       %used to access PL_Sections for reset
+
+            if ~isempty(sobj.Boundary)
+                b_lines = sobj.Boundary;          %Boundary coordinates   
+                hold on
+                plot(obj.Axes,b_lines.x,b_lines.y,'k','LineWidth',1);
+                hold off;
+            end
 
             %handle input of existing lines
-            outype = getInLines(obj,inlines);
+            outype = getInLines(obj,sobj.ChannelLine);
 
             obj.Figure.Visible = 'on';
             obj = waitForFigure(obj);
@@ -98,7 +106,7 @@ classdef PL_CentreLine < PLinterface
             else                
                 lines = gd_points2lines(obj.outLines,outype.lines);
             end
-            props = obj.Props;
+            props = obj.Set.ChannelProps;
 
             %delete figure if isdel has been set by call.
             if isdel
@@ -140,9 +148,17 @@ classdef PL_CentreLine < PLinterface
             clearGraphics(obj,{'mylines'});
             obj.Axes = gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);     %2= plot as lines
             if isprop(obj,'Props')
-                obj.Props.cint = cint;
+                obj.Set.ChannelProps.cint = cint;
             end
         end  
+
+%%
+        function Reset(obj,~,~)
+            %Reset to the input centre-line and boundary
+            clearGraphics(obj,{'mylines','mypoints','mytext','clines'});
+            obj.pLines = gd_lines2points(obj.Set.ChannelLine);%Centre line coordinates
+            gd_plotpoints(obj.Axes,obj.pLines,'mylines',2);   %2= plot as lines (editable)            
+        end
 
 %%
 %--------------------------------------------------------------------------
@@ -152,7 +168,7 @@ classdef PL_CentreLine < PLinterface
             %create a centreline of a channel using function a_star to trace the
             %shortest path between start and end points whilst finding the deepest
             %points (ie a thalweg)
-            grid = obj.Grid; props = obj.Props;
+            grid = obj.Grid; props = obj.Set.ChannelProps;
             %index of nearest grid point to selected start end end points    
             start = dsearchn(grid.xy,[points(1).x,points(1).y]); 
             goal = dsearchn(grid.xy,[points(2).x,points(2).y]);
@@ -173,7 +189,7 @@ classdef PL_CentreLine < PLinterface
 %%
         function plines = setCentreLine(obj,newline)
             %allow user to accept or reject the new addition to the centre-line
-            props = obj.Props;
+            props = obj.Set.ChannelProps;
             plines = obj.pLines;
             nline = newline(1:end-1);                     %remove trailing NaNs
             nline = gd_points2lines(nline,1);
@@ -222,7 +238,7 @@ classdef PL_CentreLine < PLinterface
             grid.water = water;
             obj.Grid= grid;       
             obj.Grid.z(~water') = NaN;
-            obj.Props = props;
+            obj.Set.ChannelProps = props;
             obj.Axes = gd_plotgrid(obj.Figure,obj.Grid);
         end 
 

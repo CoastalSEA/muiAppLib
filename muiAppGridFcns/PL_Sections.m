@@ -313,10 +313,18 @@ classdef PL_Sections < handle
             blines = 2;                         %output format when new line
             if ~isempty(obj.Boundary)           %channel line exists
                 answer = questdlg('A boundaray line exists. Modify existing or create new one?',...
-                                  'Channel','Modify','New','Modify');
+                                  'Channel','Modify','New','Copy','Modify');
                 if strcmp(answer,'Modify')
                     blines = obj.Boundary;      %existing lines
-                end                    
+                elseif strcmp(answer,'Copy') 
+                    blines = cobj.WaterBody;
+                end    
+            else
+                answer = questdlg('Copy Waterbody boundary or create a new boundary?',...
+                                  'Channel','New','Copy','New');
+                if strcmp(answer,'Copy') 
+                    blines = cobj.WaterBody;
+                end  
             end 
 
             %clean-up shoreline
@@ -356,15 +364,16 @@ classdef PL_Sections < handle
                 props.maxwl = str2double(inp{1});
                 props.dexp = str2double(inp{2});
                 props.cint = str2double(inp{3});
-                plines = [];
+                obj.ChannelProps = props;
+                obj.ChannelLine = [];
             else
-                props = obj.ChannelProps;
-                plines = obj.ChannelLine;
+%                 props = obj.ChannelProps;
+%                 plines = obj;
                 %nlines(:,1) = c_plines.x; nlines(:,2) = c_plines.y;  %matrix of xy points
             end
 
             promptxt = sprintf('Create a channel network of centre-lines\nSelect menu option');
-            [clines,props] = PL_CentreLine.Figure(grid,promptxt,plines,props,true);
+            [clines,props] = PL_CentreLine.Figure(grid,promptxt,obj,true);
             if isempty(clines), return; end   %user cancelled without creating any lines
             
             %save linework so that can reload if mess up defining topology           
@@ -550,7 +559,7 @@ classdef PL_Sections < handle
 
 
 %%
-        function setWaterbody(~,cobj,muicat,classrec)
+        function setWaterbody(obj,cobj,muicat,classrec)
             %use PL_Boundary to create a polygon boundary
             if ~isfield(cobj.Data,'Grid')
                 warndlg('No grid for selected case'); return;
@@ -560,10 +569,18 @@ classdef PL_Sections < handle
             wlines = 2;                         %output format when new line
             if ~isempty(cobj.WaterBody)         %waterbody line exists
                 answer = questdlg('A waterbody polygon exists. Edit existing or create a new one?',...
-                                  'Channel','Modify','New','Modify');
+                                  'Channel','Modify','New','Copy','Modify');
                 if strcmp(answer,'Modify')
-                    wlines = cobj.WaterBody;      %existing lines
-                end                    
+                    wlines = cobj.WaterBody;    %existing lines
+                elseif strcmp(answer,'Copy') 
+                    wlines = obj.Boundary;      %copy Sections boundary
+                end 
+            else
+                answer = questdlg('Copy Sections boundary or create a new waterbody?',...
+                                  'Channel','New','Copy','New');
+                if strcmp(answer,'Copy') 
+                    wlines = obj.Boundary;      %copy Sections boundary
+                end 
             end 
 
             %clean-up shoreline
@@ -605,7 +622,7 @@ classdef PL_Sections < handle
                 switch type{i}
                     case 'Boundary'
                         green = mcolor('green');
-                        sc = green; ss = '-'; sw = 0.6;
+                        sc = green; ss = '-'; sw = 2;
                     case 'ChannelLine'
                         sc = 'b'; ss = ':'; sw = 1.5;
                     case  'SectionLines'
