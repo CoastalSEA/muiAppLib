@@ -611,10 +611,12 @@ classdef PL_Sections < handle
         end
 
 %%
-        function viewPlanSections(obj,cobj,casedesc)
+        function ax = viewPlanSections(obj,cobj,casedesc,hf)
             %plot boundary channel network and cross-sections line work
-            hf = figure('Name','Sections','Units','normalized',...
-                                        'Tag','PlotFig','Visible','off');  
+            if nargin<4
+                hf = figure('Name','Sections','Units','normalized',...
+                                         'Tag','PlotFig','Visible','off');
+            end
             ax = PL_Sections.getGrid(cobj,hf); 
 
             type = {'Boundary','ChannelLine','SectionLines'};
