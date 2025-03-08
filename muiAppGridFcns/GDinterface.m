@@ -830,6 +830,20 @@ function [grid,orient] = orientGrid(obj,grid0)
 
             cLimits = clim;
             im = struct('XData',xLim,'YData',yLim,'CData',C.CData,'CMap',cmap,'CLim',cLimits);
+
+            % Use the whos function to get information about the array
+            info = whos('Z');            
+            if info.bytes>1e6  %extract the size in bytes (Z==C.CData)
+                %option to resize the image
+                answer = questdlg('Resize image?','Image','Yes','No','Yes');
+                if strcmp(answer,'Yes')
+                    inp = inputdlg('Enter scaling factor','Image',1,{'1'});
+                    if ~isempty(inp) && ~strcmp(inp{1},'1')
+                        factor = str2double(inp{1});
+                        im.CData = imresize(C.CData,factor);
+                    end
+                end
+            end
             delete(hf)
             
             %check plot by overlaying image (set hf to Visible and comment
