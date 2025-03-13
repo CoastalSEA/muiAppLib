@@ -199,7 +199,7 @@ classdef (Abstract = true) PLinterface < handle
         function editLine(obj,~, ~)
             %callback function to edit lines
             resetMenu(obj)
-            promptxt1 = sprintf('Edit line\nSelect line to Edit, right click to quit');
+            promptxt1 = sprintf('Edit line\nSelect line to Edit, right click on any line to quit');
             promptxt2 = sprintf('Edit point\nLeft click to select point, right click to quit');
 
             [edline,Hl] = gd_getpline(obj.Axes,promptxt1,'mylines');       %get line to delete
@@ -253,7 +253,7 @@ classdef (Abstract = true) PLinterface < handle
         function Insert(obj,~, ~)
             %callback function to insert points into a line
             resetMenu(obj)
-            promptxt1 = sprintf('Insert points\nSelect line, right click to quit');
+            promptxt1 = sprintf('Insert points\nSelect line, right click on any line to quit');
             promptxt2 = sprintf('Insert points\nLeft click to create points, right click to finish');
             prompts = {'Select first point','Select adjacent point'};
         
@@ -300,7 +300,7 @@ classdef (Abstract = true) PLinterface < handle
         function Split(obj,~, ~)
             %callback function to split a line into two lines
             resetMenu(obj)
-            promptxt1 = sprintf('Split line\nSelect line to split, right click to quit');
+            promptxt1 = sprintf('Split line\nSelect line to split, right click on any line to quit');
             promptxt2 = sprintf('Split point\nLeft click to select point, right click to quit');
 
             spline = gd_getpline(obj.Axes,promptxt1,'mylines');            %get line to split
@@ -594,7 +594,9 @@ classdef (Abstract = true) PLinterface < handle
             %delete point defined by delpnt if newpnt is empty, otherwise edit
             %point to new value as defined in newpnt
             points = obj.(type);
-            idp = [points(:).x]==edpoint.x & [points(:).y]==edpoint.y; 
+            %idp = [points(:).x]==edpoint.x & [points(:).y]==edpoint.y;
+            idp = find([points(:).x]==edpoint.x & [points(:).y]==edpoint.y,1,'first'); 
+            if isempty(idp), return; end
             points(idp).x = newpnt.x;
             points(idp).y = newpnt.y;
 
@@ -609,7 +611,9 @@ classdef (Abstract = true) PLinterface < handle
             %delete point defined by delpnt if newpnt is empty, otherwise edit
             %point to new value as defined in newpnt
             points = obj.(type);
-            idp = [points(:).x]==delpoint.x & [points(:).y]==delpoint.y;
+            %idp = [points(:).x]==delpoint.x & [points(:).y]==delpoint.y;
+            idp = find([points(:).x]==delpoint.x & [points(:).y]==delpoint.y,1,'first'); 
+            if isempty(idp), return; end
             answer = questdlg('Confirm deletion','Delete point','Yes','No','Yes');
             if strcmp(answer,'Yes')
                 points(idp) = [];
@@ -635,7 +639,9 @@ classdef (Abstract = true) PLinterface < handle
             %delete point defined by edpoint and edit point to new value 
             %as defined in newpnt
             plines = obj.(type);
-            idp = [plines(:).x]==edpoint.x & [plines(:).y]==edpoint.y; 
+            %idp = [plines(:).x]==edpoint.x & [plines(:).y]==edpoint.y; 
+            idp = find([plines(:).x]==edpoint.x & [plines(:).y]==edpoint.y,1,'first'); 
+            if isempty(idp), return; end
             plines(idp).x = newpnt.x;
             plines(idp).y = newpnt.y;
 
@@ -649,7 +655,7 @@ classdef (Abstract = true) PLinterface < handle
         function points = extendAline(obj,type,newpnts,endpnt)
             %find end to add points to and extend existing line
             points = obj.(type);
-            idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y); 
+            idp = find([points(:).x]==endpnt.x & [points(:).y]==endpnt.y,1,'first'); 
             if isempty(idp), return; end
 
             %check direction of new points relative to existing line
@@ -666,12 +672,14 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
-        function [points,idpos] = insertPoints(obj,type,inspnts,newpnts)
+        function points = insertPoints(obj,type,inspnts,newpnts)
             %insert additional points, 'newpnts', between the selected points,
             %'pnt', in the digitised points vector,'points'.
             points = obj.(type);
-            idpos1 = find([points(:).x]==inspnts(1).x & [points(:).y]==inspnts(1).y); 
-            idpos2 = find([points(:).x]==inspnts(2).x & [points(:).y]==inspnts(2).y); 
+            idpos1 = find([points(:).x]==inspnts(1).x & [points(:).y]==inspnts(1).y,1,'first'); 
+            idpos2 = find([points(:).x]==inspnts(2).x & [points(:).y]==inspnts(2).y,1,'first'); 
+            if isempty(idpos1) || isempty(idpos2), return; end
+
             %polygons can have the same point twice
             idx = abs(idpos1-idpos2)==1;  %finds the adjacent point, assuming more than 3 points
             if length(idpos1)>1
@@ -697,9 +705,10 @@ classdef (Abstract = true) PLinterface < handle
             %join two lines based on selected end points
             points = obj.(type);
             msg = {'Cannot join line to itself','Creating a polygon'};
-            idi = find([points(:).x]==joinpnts(1).x & [points(:).y]==joinpnts(1).y); 
-            idj = find([points(:).x]==joinpnts(2).x & [points(:).y]==joinpnts(2).y); 
-            
+            idi = find([points(:).x]==joinpnts(1).x & [points(:).y]==joinpnts(1).y,1,'first'); 
+            idj = find([points(:).x]==joinpnts(2).x & [points(:).y]==joinpnts(2).y,1,'first'); 
+             if isempty(idi) || isempty(idj),return; end
+
             %check not trying to join a line to itself
             if idi==idj,titleWarning(obj,msg{1}); return; end
 
@@ -732,7 +741,7 @@ classdef (Abstract = true) PLinterface < handle
         function points = splitLine(obj,type,initpnt)
             %split a line at the defined point
             points = obj.(type);
-            idi = find([points(:).x]==initpnt.x & [points(:).y]==initpnt.y); 
+            idi = find([points(:).x]==initpnt.x & [points(:).y]==initpnt.y,1,'first'); 
             if isempty(idi), return; end
             points = [points(1:idi),obj.NaNpnts,points(idi+1:end)];
         end

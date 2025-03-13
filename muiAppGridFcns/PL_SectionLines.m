@@ -406,7 +406,7 @@ classdef PL_SectionLines < PLinterface
             [ison,idP] = obj.isPointNearLine(cline,newpnt,tol);
             if ison
                 %insert the new centre-line point
-                [obj.cLines,~] = insertPoints(obj,'cLines',cline(idP([1,2])),newpnt);
+                obj.cLines = insertPoints(obj,'cLines',cline(idP([1,2])),newpnt);
             else
                 %point not found in line so assume it is extending line                
                 if idP(1)==1 || idP(1)==length(cline)-1  %starat or end of line

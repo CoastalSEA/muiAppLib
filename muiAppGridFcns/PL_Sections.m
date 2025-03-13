@@ -144,6 +144,7 @@ classdef PL_Sections < handle
             end
             promptxt = sprintf('Select a Case to load %s from shapefile:',linetype);           
             [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            if isempty(cobj), return; end
 
             [fname,path,nfiles] = getfiles('MultiSelect','off',...
                 'FileType',{'*.shp;'},'PromptText','Select shape file):');
@@ -188,6 +189,7 @@ classdef PL_Sections < handle
             
             promptxt = sprintf('Select a Case to edit %s:',linetype);
             [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            if isempty(cobj), return; end
             casedesc = catrec.CaseDescription;
 
             if ~isa(cobj.Sections,'PL_Sections') || isempty(cobj.WaterBody)
@@ -219,7 +221,7 @@ classdef PL_Sections < handle
 %%
         function deleteLines(mobj,src,gridclasses)
             %delete linework for the selected line type
-             muicat = mobj.Cases;   %handle to muiCatalogue
+            muicat = mobj.Cases;   %handle to muiCatalogue
             linetype = src.Parent.Text;
             switch linetype
                 case 'Boundary'
@@ -229,13 +231,15 @@ classdef PL_Sections < handle
                 case 'Section Lines'
                     type = 'SectionLines';
                 case 'Waterbody'
-                    type = 'WaterBody' ;
+                    type = 'WaterBody';
                 otherwise
                     return
             end        
             
             promptxt = sprintf('Select a Case to delete %s:',linetype);
             [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            if isempty(cobj), return; end
+            
             %delete the selected line and save to case    
             qprompt = sprintf('Delete %s for Case %s',linetype,catrec.CaseDescription);
             answer = questdlg(qprompt,linetype,'Yes','No','Yes');
@@ -256,7 +260,7 @@ classdef PL_Sections < handle
             muicat = mobj.Cases;   %handle to muiCatalogue
             promptxt = sprintf('Select a Case to view %s:',src.Parent.Text);
             [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
-            if isempty(cobj.WaterBody)
+            if isempty(cobj) || isempty(cobj.WaterBody)
                 warndlg('No Waterbody data available to view');
                 return
             end
@@ -273,6 +277,89 @@ classdef PL_Sections < handle
             title(catrec.CaseDescription); 
         end
 
+
+%%
+        function exportLines(mobj,src,gridclasses)
+            %export the selected line type to a text file or shape file
+            %for a text file the format is an x,y struct with lines
+            %separated by NaNs.
+            muicat = mobj.Cases;   %handle to muiCatalogue
+            promptxt = sprintf('Select a Case to Export %s:',src.Parent.Text);
+            [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
+            if isempty(cobj), return; end
+
+            linetype = src.Parent.Text;
+            isSXN = ~isempty(cobj.Sections);
+            isWBD = ~isempty(cobj.WaterBody);
+            lines = [];
+            switch linetype
+                case 'Boundary'
+                    if isSXN && ~isempty(cobj.Sections.Boundary)
+                        lines = cobj.Sections.Boundary;
+                    end
+                case 'Channel Network'
+                    if isSXN && ~isempty(cobj.Sections.ChannelLine)
+                        lines = cobj.Sections.ChannelLine;
+                    end
+                case 'Section Lines'
+                    if isSXN && ~isempty(cobj.Sections.SectionLines)
+                        lines = cobj.Sections.SectionLines;
+                    end
+                case 'Waterbody'
+                    if isWBD && ~isempty(cobj.WaterBody)
+                        lines = cobj.WaterBody;
+                    end
+                otherwise                    
+                    return
+            end
+            %
+            if isempty(lines)
+                warndlg(sprintf('No %s data for case %s',linetype,catrec.CaseDescription))
+                return
+            end
+
+            answer = questdlg('Export format to use:','Export','txt','mat','shp','txt');
+            fname = matlab.lang.makeValidName(sprintf('%s_%s',linetype,catrec.CaseDescription));
+            fname = inputdlg({'Filename for export:'},'Export',[1 60],{fname},'on');
+
+            lines.Source = 'CoastalSEA EstuaryDB App';
+            lines.Filename = mobj.Info.FileName;
+            lines.CaseIndex = catrec.CaseID;
+            lines.CaseDescription = catrec.CaseDescription;
+            lines.LineType = linetype;
+            if strcmp(answer,'txt')
+                fileID = fopen([fname{1},'.txt'],'w');
+                fprintf(fileID,'Source: %s\n',lines.Source);
+                fprintf(fileID,'Project filename: %s\n',lines.Filename);
+                fprintf(fileID,'CaseID: %s\n',num2str(lines.CaseIndex));
+                fprintf(fileID,'Description: %s\n',lines.CaseDescription);
+                fprintf(fileID,'Line Type: %s\n',lines.LineType);
+                fprintf(fileID,'%6s %12s\n','x','y');
+                A = [lines.x,lines.y];
+                fprintf(fileID,'%f %f\n',A');
+                fclose(fileID);
+            elseif strcmp(answer,'mat')
+                save(fname{1},'lines','-mat');
+            else
+                istoolbox = false;
+                if check4toolbox('MAP_Toolbox')                              %toolbox is licensed to use
+                    addons = matlab.addons.installedAddons;
+                    istoolbox = any(matches(addons.Name,'Mapping Toolbox')); %toolbox is installed
+                end 
+                if ~istoolbox
+                    warndlg('Mapping Toolbox is not available. Cannot export as a shape file')
+                    return; 
+                end
+                s = mapshape(lines.x,lines.y);
+                s.Metadata.Source = 'CoastalSEA EstuaryDB App';
+                s.Metadata.Filename = mobj.Info.FileName;
+                s.Metadata.CaseIndex = catrec.CaseID;
+                s.Metadata.CaseDescription = catrec.CaseDescription;
+                s.Metadata.LineType = linetype;
+                shapewrite(s,fname{1});
+            end
+            getdialog(sprintf('Data written to %s',fname{1}))
+        end
 %%
         function ax = getGrid(cobj,hf)
             isgrid = false; isimage = false;
