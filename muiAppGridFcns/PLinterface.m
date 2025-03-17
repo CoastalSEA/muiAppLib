@@ -752,7 +752,7 @@ classdef (Abstract = true) PLinterface < handle
             plines = obj.(type);
             idl = gd_findline(plines, deline(1));
             if idl<1, return; end           %line not found
-            answer = questdlg('Confirm deletion','Delete point','Yes','No','Yes');
+            answer = questdlg('Confirm deletion','Delete line','Yes','No','Yes');
             if strcmp(answer,'Yes')
                 cplines = gd_plines2cplines(plines);
                 cplines(idl) = [];          %delete from lines cell array
