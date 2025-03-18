@@ -867,6 +867,7 @@ classdef (Abstract = true) PLinterface < handle
             if nargin<2, ispoints = false; end
 
             hm = findobj(obj.Figure,'Tag','mainPLmenu');
+            if isempty(hm), return; end %user closes figure during operation
             if strcmp(hm(1).Visible,'on')
                 [hm(:).Visible] = deal('off');
             else

@@ -178,7 +178,7 @@ classdef PL_SectionLines < PLinterface
             nsections = length(s_cplines);
             if nsections~=ncentres
                 warndlg('Number of sections do not match number of points on centre-lines')
-                return;
+                resetMenu(obj,false); return;
             else
                 c_lines = gd_points2lines(c_lines,1);
             end

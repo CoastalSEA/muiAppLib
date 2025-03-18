@@ -95,7 +95,7 @@ classdef PL_Sections < handle
                     obj = PL_Sections.getSections(cobj);
                     setSections(obj,cobj,muicat);
                 case 'View Sections'
-                    promptxt = 'Select a Case to use to extract sections:';
+                    promptxt = 'Select a Case to use to view section linework:';
                     [cobj,~,catrec] = selectCaseObj(muicat,[],gridclasses,promptxt);
                     if isempty(cobj.Sections) || ~isa(cobj.Sections,'PL_Sections')
                         warndlg('No Section data available to view');
@@ -589,7 +589,7 @@ classdef PL_Sections < handle
                     pline = s_cplines{1,i};              %for each cross-section
                     sline = gd_points2lines(pline,1);
                     % hold on, plot(sline(:,1),sline(:,2)); hold off
-        
+                    % cp = [];
                     P = InterX(sline',cline'); %intersections for 1 line
                     %line intersection misses points at the start and end of each
                     %centre-line line. Check if the point is a least on the section.
@@ -612,9 +612,10 @@ classdef PL_Sections < handle
                         plines = [plines,cp];                 %#ok<AGROW> 
                         
                     end
-                    if ~isempty(cp)
+
+                    % if ~isempty(cp)
                     % hold on, plot(cp.x,cp.y,'ok')
-                    end
+                    % end
                 end
                 cplines{1,j} = plines;                        %#ok<AGROW> 
             end
@@ -706,7 +707,7 @@ classdef PL_Sections < handle
             end
             ax = PL_Sections.getGrid(cobj,hf); 
 
-            type = {'Boundary','ChannelLine','SectionLines'};
+            type = {'Boundary','SectionLines','ChannelLine'};
             for i=1:3
                 switch type{i}
                     case 'Boundary'
@@ -724,9 +725,12 @@ classdef PL_Sections < handle
                     plot(ax,lines.x,lines.y,'Color',sc,'LineStyle',ss,...
                                      'LineWidth',sw,'DisplayName',type{i});
                     if strcmp(type{i},'ChannelLine')
-                        hp = plot(ax,lines.x(1),lines.y(1),'ok','MarkerSize',4,...
-                                                        'MarkerFaceColor','w');
-                        hp.Annotation.LegendInformation.IconDisplayStyle = 'off';
+                        cplines = gd_plines2cplines(gd_lines2points(lines)); 
+                        for j=1:length(cplines)
+                            pline = cplines{1,j};
+                            [ax,H] = gd_plotpoints(ax,pline,num2str(j),3); 
+                            H(1).Annotation.LegendInformation.IconDisplayStyle = 'off';
+                        end
                     end
                     hold off
                 end
@@ -745,27 +749,37 @@ classdef PL_Sections < handle
             %plot along-channel sections
             hf = figure('Name','Sections','Units','normalized',...
                              'Tag','PlotFig','Visible','on');
-            ax = axes(hf);
+            subplot(axes(hf));
             glines = {'-','--',':','-.'};
-            hold on
+
             plines = obj.XSections;
             cplines = gd_plines2cplines(gd_lines2points(plines));
-            nlines = length(cplines);
-            for i=1:nlines
-                aline = cplines{1,i};
-                spnts = [aline(:).x];
-                zpnts =[ aline(:).y];
-                nline = length(findobj(ax,'Tag','asection'));
-                lname = sprintf('Section %d',nline+1);        
-                plot(ax,spnts,zpnts,'LineStyle',glines{rem(nline,4)+1},...
-                      'LineWidth',1,'Tag','asection','DisplayName',lname,...
-                      'ButtonDownFcn',@godisplay)
+
+            x = obj.ChannelProps.ChannelLengths;
+            idN = [0,find(isnan(x))];
+            idN = arrayfun(@(x,i) x-(i-1),idN,1:length(idN));
+            nreach = length(idN)-1;
+            for i=1:nreach
+                si = subplot(ceil(nreach/2),2,i);
+                hold on
+                idx = idN(i)+1:idN(i+1);
+                nlines = length(idx);
+                for k=1:nlines
+                    aline = cplines{1,idx(k)};
+                    spnts = [aline(:).x];
+                    zpnts = [aline(:).y];
+                    
+                    lname = sprintf('Reach %d, Section %d',i,k);        
+                    plot(si,spnts,zpnts,'LineStyle',glines{rem(k,4)+1},...
+                          'LineWidth',1,'Tag','asection','DisplayName',lname,...
+                          'ButtonDownFcn',@godisplay)
+                end
+                hold off 
+
+                title(sprintf('Reach %d',i))        
+                
             end
-            hold off
-            if nlines<20
-                legend
-            end
-            title(sprintf('Along-channel sections for %s',casedesc))    
+            sgtitle(sprintf('Along-channel sections for %s',casedesc))
         end
 
 %%

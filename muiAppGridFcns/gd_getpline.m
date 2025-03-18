@@ -56,11 +56,12 @@ function [pline,H] = gd_getpline(ax,promptxt,tagname,ispoints)
     end
     
     idx = [h_lines.UserData]>0;
-    test = isnan(h_lines(idx).XData(end));
+    if sum(idx)>1, return; end             %multiple lines active
+
     if isempty(idx)
         return
     elseif isnan(h_lines(idx).XData(end))
-        pline.x = h_lines(idx).XData';     %xy of lines are column vectors
+        pline.x = h_lines(idx).XData';    %xy of lines are column vectors
         pline.y = h_lines(idx).YData';        
     else
         pline.x = [h_lines(idx).XData';NaN]; %xy of lines are column vectors

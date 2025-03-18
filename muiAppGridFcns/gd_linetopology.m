@@ -183,15 +183,15 @@ function cumlen = alongLineLengths(cplines,G)
     clength = reachlen;
     nlines = length(cplines);
     for i=1:nlines            
-        idl = etable.Weight==i;
-        idn1 = etable.Node1(idl);
-        idn2 = etable.Node2(idl);
-        idx = idn1(ismember(idn1,idn2));
-        idp1 = idx-idN(i);
-        linelen = reachlen{i}(idp1);
+        idl = etable.Weight==i;           %index of occurrences of line i
+        idn1 = etable.Node1(idl);         %index of first node
+        idn2 = etable.Node2(idl);         %index of second node
+        idx = idn1(ismember(idn1,idn2));  %points on line that are joins
+        idp1 = idx-idN(i);                %index within the line
+        linelen = reachlen{i}(idp1);      %length from start of the line
         for j=1:length(linelen)
-            idj = etable.Weight==0 & etable.Node1==idx(j);                
-            idp2 = etable.Node2(idj)-idN(i);
+            idj = etable.Weight==0 & etable.Node1==idx(j);              
+            idp2 = abs(etable.Node2(idj)-idN(i));   %depends on line order
             joinlength = getLength(plines,idp1(j),idp2);
             joinlength = linelen(j)+joinlength;
             iline = etable.Line2(idj);
