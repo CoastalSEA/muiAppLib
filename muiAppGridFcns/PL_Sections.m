@@ -24,7 +24,7 @@ classdef PL_Sections < handle
         Boundary            %lines used to clip cross-section lines
         ChannelLine         %lines used to define channel network
         ChannelProps        %properties used to extract channel network
-                            %fields: maxwl,dexp,cint
+                            %fields: maxwl,dexp,cint,ChannelLengths
         SectionLines        %lines that define cross-sections
         XSections           %cross-sections obtained from grid
     end
@@ -376,6 +376,8 @@ classdef PL_Sections < handle
                 h_im = imagesc(ax,'XData',im.XData,'YData',im.YData,'CData',im.CData);
                 set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent              
                 isimage = true;
+            else
+                ax = axes(hf);
             end
             %
             if isgrid || isimage 
@@ -705,6 +707,7 @@ classdef PL_Sections < handle
                 hf = figure('Name','Sections','Units','normalized',...
                                          'Tag','PlotFig','Visible','off');
             end
+
             ax = PL_Sections.getGrid(cobj,hf); 
 
             type = {'Boundary','SectionLines','ChannelLine'};
