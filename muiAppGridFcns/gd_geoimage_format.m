@@ -49,7 +49,7 @@ function obj = getFormat(obj,formatfile)
     %return the file import format settings
     obj.DataFormats = {'muiUserData',formatfile,'data'};
     obj.idFormat = 1;
-    obj.FileSpec = {'on','*.mat;'};
+    obj.FileSpec = {'on','*.mat;*.tif;*.tiff;*.txt;'};
 end
 
 %%
@@ -59,10 +59,20 @@ end
 function newdst = getData(obj,filename,metatxt) %#ok<INUSD>
     %read and load a data set from a file
     dsp = setDSproperties;                 %set metadata
-    [~,location,~] = fileparts(filename);   
-    imdata = {load(filename)};    
-    %load the results into a dstable - Image is the dataset name for this format
-    dst = dstable(imdata{1}.im,'RowNames',{location},'DSproperties',dsp);  
+    [~,location,ext] = fileparts(filename);  
+    if strcmp(ext,'.mat')
+        imdata = {load(filename)};    
+        %load the results into a dstable
+        dst = dstable(imdata{1}.im,'RowNames',{location},'DSproperties',dsp); 
+    elseif strcmp(ext,'.txt')
+        im = gd_read_image(filename);
+        %load the results into a dstable
+        dst = dstable(im,'RowNames',{location},'DSproperties',dsp); 
+    else
+        im = readTiff(filename,ext(2:end));
+        %load the results into a dstable
+        dst = dstable(im,'RowNames',{location},'DSproperties',dsp); 
+    end
     dst.Description = location;
     dst.Source = filename;
     dst.MetaData = metatxt;
@@ -134,9 +144,11 @@ function ok = getPlot(obj,src,dsetname)
     if isempty(dst), return; end
     %test for array of allowed data types for a color image
     img = dst.geoimage;     %image object
-    him = imshow(img.CData, 'XData',img.XData,'YData',img.YData,'Parent',ax);
+    him = imagesc(ax,'XData',img.XData,'YData',img.YData,'CData',img.CData);
     set(gca, 'YDir', 'normal'); % Correct the Y direction
-    set(him, 'AlphaData', 1-isnan(img.CData)); %set Nan values to be transparent
+    if any(isnan(img.CData))
+        set(him, 'AlphaData', 1-isnan(img.CData)); %set Nan values to be transparent
+    end
     colormap(img.CMap);
     clim(img.CLim);
     shading interp
@@ -166,6 +178,9 @@ function output = dataQC(obj)                    %#ok<INUSD>
 end
 
 %%
+%--------------------------------------------------------------------------
+% Utility functions
+%--------------------------------------------------------------------------
 function addBox(img)
     %add enclosing box to image
     mnmxX = minmax(img.XData);
@@ -176,3 +191,19 @@ function addBox(img)
     xlim(xlim()+[-.001,.001]*diff(mnmxX)) % add 1% to the x axis limits
     ylim(ylim()+[-.001,.001]*diff(mnmxY)) % add 1% to the y axis limits
 end
+
+ %%
+ function im = readTiff(filename,ext)
+    %read data from a tiff file
+    cdata = flipud(imread(filename,ext));
+    info = imfinfo(filename,ext);
+    cmap = info.Colormap;
+    climits = str2num(info.DocumentName); %#ok<ST2NM> vector
+    nrows = info.Height;
+    ncols = info.Width;
+    dx = info.XResolution;              %dx
+    dy = info.YResolution; 
+    xLim = [info.XPosition,info.XPosition+ncols*dx];
+    yLim = [info.YPosition,info.YPosition+nrows*dy];
+    im = struct('XData',xLim,'YData',yLim,'CData',cdata,'CMap',cmap,'CLim',climits);
+ end

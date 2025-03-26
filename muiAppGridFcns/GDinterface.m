@@ -422,8 +422,6 @@ function grid = getGrid(obj,irow,promptxt,dsetname)
         function infillSurface(obj,muicat)
             %add horizontal surface to an extisting grid (eg surrounding
             %land level)
-            grid = getGrid(obj,1); %first row/time 
-
             methods = {'0 - default plate method',...
                        '1 - least squares plate method',...
                        '2 - linear system of nan elements',...
@@ -827,23 +825,26 @@ function [grid,orient] = orientGrid(obj,grid0)
             axis equal tight            
             xlim(xLim);  ylim(yLim);
             cmap = gd_colormap([min(grid.z,[],'all'),max(grid.z,[],'all')]);
-
             cLimits = clim;
             im = struct('XData',xLim,'YData',yLim,'CData',C.CData,'CMap',cmap,'CLim',cLimits);
-
+            
             % Use the whos function to get information about the array
             info = whos('Z');            
             if info.bytes>1e6  %extract the size in bytes (Z==C.CData)
                 %option to resize the image
                 answer = questdlg('Resize image?','Image','Yes','No','Yes');
                 if strcmp(answer,'Yes')
-                    inp = inputdlg('Enter scaling factor','Image',1,{'1'});
+                    inp = inputdlg('Enter scaling factor (sf x dimensions)','Image',1,{'1'});
                     if ~isempty(inp) && ~strcmp(inp{1},'1')
                         factor = str2double(inp{1});
                         im.CData = imresize(C.CData,factor);
                     end
                 end
             end
+            ax = axes(hf);
+            imagesc(ax,'XData',im.XData,'YData',im.YData,'CData',im.CData); 
+            axis equal tight
+            frame = getframe(ax);
             delete(hf)
             
             %check plot by overlaying image (set hf to Visible and comment
@@ -867,11 +868,20 @@ function [grid,orient] = orientGrid(obj,grid0)
                 getdialog(sprintf('GeoImage added to Case: %s',grid.desc),[],1)   
             else
                 desc = matlab.lang.makeValidName(grid.desc);
-                filename = sprintf('GeoImage_%s.mat',desc);
+                answer = questdlg('Save as .mat or .tif file?','GridImage',...
+                                                 'mat','tif','txt','txt');                
+                filename = sprintf('GeoImage_%s.%s',desc,answer);
                 inp = inputdlg('Filename:','GeoImage',1,{filename});
                 if isempty(inp); return; end
-                save(inp{1},'im',"-mat");
-            end
+                if strcmp(answer,'mat')
+                    save(inp{1},'im',"-mat");
+                elseif strcmp(answer,'tif')
+                    gd_write_tiff(filename,frame.cdata,im);  
+                else
+                    gd_write_image(filename,desc,im)
+                end
+                getdialog(sprintf('Image written to %s',filename));
+            end            
         end
 %%
         function gridMenuOptions(mobj,src,gridclasses)
@@ -1182,7 +1192,8 @@ function [grid,orient] = orientGrid(obj,grid0)
             end
             [m,n] = size(new_z);
             new_z = reshape(new_z,1,m,n);  %dimenions for row in dstable
-        end    
+        end  
+
 %% ------------------------------------------------------------------------
 % Protected methods to set DSproperties
 %-------------------------------------------------------------------------- 

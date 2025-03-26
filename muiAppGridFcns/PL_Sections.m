@@ -24,7 +24,7 @@ classdef PL_Sections < handle
         Boundary            %lines used to clip cross-section lines
         ChannelLine         %lines used to define channel network
         ChannelProps        %properties used to extract channel network
-                            %fields: maxwl,dexp,cint,ChannelLengths
+                            %fields: maxwl,dexp,cint,ChannelLengths,Network
         SectionLines        %lines that define cross-sections
         XSections           %cross-sections obtained from grid
     end
@@ -374,7 +374,17 @@ classdef PL_Sections < handle
                 im = dst.geoimage;                      %image object
                 ax = axes(hf);
                 h_im = imagesc(ax,'XData',im.XData,'YData',im.YData,'CData',im.CData);
-                set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent              
+                if any(isnan(im.CData))
+                    set(h_im, 'AlphaData', 1-isnan(im.CData)); %set Nan values to be transparent 
+                end
+                colormap(im.CMap);
+                clim(im.CLim);
+                isimage = true;
+            elseif isfield(cobj.Data,'Image') %&& isfield(cobj.Data.Image,'XData')
+                dst = cobj.Data.Image;
+                im = dst.image;                      %image object
+                ax = axes(hf);
+                imagesc(ax,im{1})
                 isimage = true;
             else
                 ax = axes(hf);
@@ -455,10 +465,6 @@ classdef PL_Sections < handle
                 props.cint = str2double(inp{3});
                 obj.ChannelProps = props;
                 obj.ChannelLine = [];
-            else
-%                 props = obj.ChannelProps;
-%                 plines = obj;
-                %nlines(:,1) = c_plines.x; nlines(:,2) = c_plines.y;  %matrix of xy points
             end
 
             promptxt = sprintf('Create a channel network of centre-lines\nSelect menu option');
@@ -559,7 +565,7 @@ classdef PL_Sections < handle
 
             %generate the toplogy based on updated
             [cumlen,G,hf,~] = gd_linetopology(grid,obj.ChannelLine);
-            obj.ChannelProps.topo = G;
+            obj.ChannelProps.Network = G;
             obj.ChannelProps.ChannelLengths = cumlen;
             delete(hf)            %delete the figure but not network graph
             casedesc = catrec.CaseDescription;
@@ -791,7 +797,7 @@ classdef PL_Sections < handle
             hf = figure('Name','Network','Units','normalized',...
                              'Tag','PlotFig','Visible','on');
             ax = axes(hf);
-            G = obj.ChannelProps.topo;
+            G = obj.ChannelProps.Network;
             nlabel = strcat(cellstr(G.Nodes.Names),{' ('},...
                                         cellstr(G.Nodes.Distance),{'m)'});
             plot(ax,G,'EdgeLabel',G.Edges.Weight,'NodeLabel',nlabel)
