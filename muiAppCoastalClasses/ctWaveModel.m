@@ -48,9 +48,8 @@ classdef ctWaveModel < muiDataSet
                 end
             end
             
-            obj = ctWaveModel;                            
-            dsp = modelDSproperties(obj,isin);
-            
+            obj = ctWaveModel;                          
+
             %now check that the input data has been entered
             %isValidModel checks the InputHandles defined in CoastalTools
             %NB - water level data not checked because optional
@@ -62,16 +61,22 @@ classdef ctWaveModel < muiDataSet
 % Model code 
 %-------------------------------------------------------------------------- 
             %get the timeseries input data and site parameters
-            [tsdst,inputxt] = getInputData(obj,mobj);
+            [tsdst,inputxt,isel] = getInputData(obj,mobj);
             if isempty(tsdst), return; end   %user cancelled data selection
+            dsp = modelDSproperties(obj,isin,isel);
+
             %get the input site parameters as a class instance
             site_params = mobj.Inputs.ctWaveParameters;  
             
             if isin
                 inp = inputParameters(site_params); %convert class to struct
                 inp.g = mobj.Constants.Gravity;     %add gravity
-                [Hsi,Diri,depi,bs] = hs_surf(tsdst,inp);            
-                results = {Hsi,Diri,tsdst.swl,depi};
+                [Hsi,Diri,depi,bs] = hs_surf(tsdst,inp);      
+                if isel %variables selected (non-standard names) so include Tp
+                    results = {Hsi,tsdst.Tp,Diri,tsdst.swl,depi};
+                else    %default naming convention
+                    results = {Hsi,Diri,tsdst.swl,depi};
+                end
                 %inshore bed level can be array or single value so not added to table           
                 obj.InshoreBedSlope = bs; 
                 obj.ModelType = 'Inwave_model';
@@ -100,12 +105,12 @@ classdef ctWaveModel < muiDataSet
     end
 %%
     methods
-        function [tsdst,caserec] = getWaveModelDataset(obj,mobj,type,varnames,caserec)
+        function [tsdst,caserec] = getWaveModelDataset(obj,mobj,type,addnames,caserec)
             %prompt user to select a model wave dataset and add Tp if inshore
             %
             muicat = mobj.Cases;
             if nargin<4
-                varnames = {'Tp'};  %default is to add Tp
+                addnames = {'Tp'};  %default is to add Tp
             end
             %
             if nargin<5   %no caserec to prompt for selection
@@ -115,8 +120,7 @@ classdef ctWaveModel < muiDataSet
             else
                 wvobj = getCase(muicat,caserec);
                 wvdst = wvobj.Data.Dataset;
-            end
-            
+            end            
             
             %if inshore wave dataset add variables requested otherwise just
             %copy dstable
@@ -126,14 +130,17 @@ classdef ctWaveModel < muiDataSet
                 inpwaverec = caseRec(muicat,inpwavecid);
                 inpdst = getDataset(muicat,inpwaverec,1);
                 dstnames = inpdst.VariableNames;
-                for i=1:length(varnames)                    
-                    if any(strcmp(dstnames,varnames{i})) && ...
-                                            ~isempty(inpdst.(varnames{i}))
-                        tsdst = addvars(tsdst,inpdst.(varnames{i}),...
-                                           'NewVariableNames',varnames{i});
+                varnames = tsdst.VariableNames;
+                for i=1:length(addnames)    
+                    if any(strcmp(varnames,addnames{i}))
+                        continue;
+                    elseif any(strcmp(dstnames,addnames{i})) && ...
+                                            ~isempty(inpdst.(addnames{i}))
+                        tsdst = addvars(tsdst,inpdst.(addnames{i}),...
+                                           'NewVariableNames',addnames{i});
                     else
-                        warndlg('Variable %s not found so not added to wave dataset',...
-                                                           varnames{i});
+                        warndlg(sprintf('Variable %s not found so not added to wave dataset',...
+                                                           addnames{i}));
                     end
                 end
             end
@@ -148,10 +155,10 @@ classdef ctWaveModel < muiDataSet
     end 
 %%    
     methods (Access = private)
-        function [tsdst,inputxt] = getInputData(obj,mobj)
+        function [tsdst,inputxt,isel] = getInputData(obj,mobj)
             %prompt user to select wave and water level data and return in
             %input dstable of data and metadata for inputs used
-            tsdst = []; inputxt = [];
+            tsdst = []; inputxt = []; isel = false;
             muicat = mobj.Cases;
             promptxt = 'Select input wave data set:';           
             [wv_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
@@ -160,6 +167,14 @@ classdef ctWaveModel < muiDataSet
             wvdst = getDataset(muicat,wv_crec,1);
             wvtime = wvdst.RowNames;
             inputxt = sprintf('%s used for offshore waves',wvdst.Description);
+
+            %check whether default variable names are not used and selection needed
+            varnames = wvdst.VariableNames;
+            if ~any(strcmp(varnames,'Hs'))
+                wvdst = extract_wave_data(wvdst);
+                if isempty(wvdst), return; end
+                isel = true;
+            end
 
             promptxt = 'Select input water level data set (Cancel to use SWL=0):';           
             [wl_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
@@ -232,7 +247,7 @@ classdef ctWaveModel < muiDataSet
             results = {Hso,tsdst.Tp,Diro};
         end
 %%
-        function dsp = modelDSproperties(~,isin) 
+        function dsp = modelDSproperties(~,isin,isel) 
             %define a dsproperties struct and add the model metadata
             dsp = struct('Variables',[],'Row',[],'Dimensions',[]); 
             %define each variable to be included in the data table and any
@@ -240,7 +255,17 @@ classdef ctWaveModel < muiDataSet
             %accept most data types but the values in each vector must be unique
             
             %struct entries are cell arrays and can be column or row vectors
-            if isin                                      %inshore waves
+            if isin && isel                               %inshore waves
+                dsp.Variables = struct(...                      
+                    'Name',{'Hsi','Tp','Diri','swl','depi'},...
+                    'Description',{'Inshore wave height','Peak wave period',...
+                                   'Inshore wave direction',...
+                                   'Still water level','Inshore depth'},...
+                    'Unit',{'m','s','deg','mOD','m'},...
+                    'Label',{'Wave height (m)','Wave period (s)','Wave direction (deg)',...
+                               'Water level (mOD)','Water depth (m)'},...
+                    'QCflag',repmat({'model'},1,5)); 
+            elseif isin                                  %inshore waves
                 dsp.Variables = struct(...                      
                     'Name',{'Hsi','Diri','swl','depi'},...
                     'Description',{'Inshore wave height','Inshore wave direction',...
