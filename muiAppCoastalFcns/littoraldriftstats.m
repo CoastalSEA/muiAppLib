@@ -6,11 +6,11 @@ function dst = littoraldriftstats(qs,tdt,varargin)
 % PURPOSE
 %   Estimate net drift over selected period from the time series of drift rates
 % USAGE
-%   var = littoraldriftstats(qs,tdt,varargin)
+%   dst = littoraldriftstats(qs,tdt,'month');
 % INPUTS
 %   qs     - alongshore drift rate (m3/s) as a time series
 %   tdt    - time as a datetime array
-%   period - optional variable to define annual or monthly output to be
+%   varargin - period: optional variable to define annual or monthly output to be
 %          returned in var. Use 'year' or 'month'. Default is 'month'
 % OUTPUT
 %   Plot of gaps and monthly/annual drift plot
@@ -18,9 +18,9 @@ function dst = littoraldriftstats(qs,tdt,varargin)
 %               gap in data = data values that are NaN
 %               calms = |qs|<calmsthreshold
 %   Option to return time series of results (e.g. monthly values) 
-%   dst - dstable if defined period is chose or a struct if annual and
-%   monthly are to be saved. Each table contains:
-%       qtime, qdrift - depends on selection 
+%   dst - dstable if defined period is chosen or a struct of dstables if 
+%         annual and monthly are to be saved. Each table contains:
+%         qtime, qdrift - depends on selection 
 %   Otherwise returns the average annual values (return value required by muiUserModel) 
 % NOTES
 %	designed to be called from Derive Output in any muitoolbox model UI
@@ -116,7 +116,7 @@ function dst = littoraldriftstats(qs,tdt,varargin)
     %convert from datenum to datetime for plotting and output
     andtn  = datetime(yearrecs,7,1);
 
-    %set output as cell array of drift and time
+    %set output of drift and time
     if strcmp(period,'year') || strcmp(period,'annual')
         qdrift = andrift; qtime = andtn';
     else
@@ -206,6 +206,7 @@ function dst = littoraldriftstats(qs,tdt,varargin)
         mtime.Format = mdsp.Row.Format;  %force format to defined format
         dst.Month = dstable(mdrift,'RowNames', mtime,'DSproperties',mdsp);
     end
+    sgtitle('Drift potential')
 end
 %%
 function excludefromlegend(hp)

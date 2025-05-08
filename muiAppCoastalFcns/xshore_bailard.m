@@ -19,13 +19,15 @@ function Qx = xshore_bailard(Hs,Tp,Dir,theta,bs,d50,g,rhow,rhos,visc)
 %   rhos - density of sediment (default = 2650 kg/m^3)
 %   visc - viscosity of water (m^2/s)
 % OUTPUT
-%   Qx  - cross-shore volumetric transport rate (m^3/s)
+%   Qx  - cross-shore volumetric transport rate (m^3/s) and is positive in 
+%         the onshore direction
 % NOTES
-%   Based on Bailard & Inman, 1981, Bailard, 1981,1982
-% NEEDS UPDATING SEE
+%   Based on Bailard & Inman, 1981, Bailard, 1981,1982 (see 82 for Eqs used)
 %   Gallagher E L, Elgar S and Guza R T, 1998, JGR
+%   Thornton E B, Humiston R T and Birkemeier W, 1996, JGR: Oceans
 % SEE ALSO
 %   littoraldrift.m, drag_coefficient.m, wave_friction.m
+
 %
 % Author: Ian Townend
 % CoastalSEA (c)June 2020
@@ -54,7 +56,7 @@ Cf = 0.005;                  %Bailard's assumed friction value
 % u5st = 1.5+0.00346*Hs;     %normalsised velocity of u5
 % Cf = 0.005;                  %Bailard's assumed friction value
 
-% alternaive formulations considered
+% alternative formulations considered
 % coeffs = drag_coefficient(1,dep,d50,visc); %indicative drag coefficient
 % Cf = coeffs.Cd;                            %lower than Cf based on 1m/s
 % fw = wave_friction(Hs,Tp,dep,d50,g,visc);  %higher than Cf

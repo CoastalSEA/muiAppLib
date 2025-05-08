@@ -212,6 +212,7 @@ classdef GD_ImportData < GDinterface
             else
                 ax = src; %user passing an axis as src rather than a uicontrol
             end
+            axis equal tight
 
             %plot form as a contour plot
             contourf(grid.x,grid.y,grid.z');
