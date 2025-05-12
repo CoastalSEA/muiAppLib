@@ -64,7 +64,7 @@ function basic_scatter_plot(dst)
     hold on
     nbins = [20,20];
     X = [T,H];
-    [Z,XY]=hist3(X,nbins);
+    [Z,XY] = hist3(X,nbins);
     htrec = max(length(find(~isnan(T))),length(find(~isnan(H))));
     Z = Z/htrec*100;                %percentage occurrence
     zmx = max(max(Z));

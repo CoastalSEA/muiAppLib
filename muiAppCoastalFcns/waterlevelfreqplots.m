@@ -81,16 +81,16 @@ end
 %%
 function wl_spectrum(wl,t)
     %Plot - 'Water level spectrum'
-    %code to compute the fft of the water level signal (based on Matlab Help)
+    %code to compute the fft of the water level signal (based on Matlab fft Help)
     wl(isnan(wl)) = [];  %remove Nans
-    Y= fft(wl);
-    Ts = seconds(mean(diff(datenum(t))));
-    Fs = seconds(1)/Ts;
-    L = length(wl);
-    P2 = abs(Y/L);
-    P1 = P2(1:L/2+1);
-    P1(2:end-1) = 2*P1(2:end-1);
-    f = 1/Fs/24.*(0:(L/2))/L;
+    Y = fft(wl);
+    Ts = seconds(mean(diff(t)));  %sampling period (returns a double)
+    Fs = 1/Ts;                    %sampling frequency in Hz
+    L = length(wl);              %signal length
+    P2 = abs(Y/L);                %double sided spectrum
+    P1 = P2(1:floor(L/2)+1);     
+    P1(2:end-1) = 2*P1(2:end-1);  %single sided spectrum 
+    f = Fs.*(0:floor(L/2))/L;     %frequency values
     figure('Name','Water level spectrum','Units','normalized',...                
            'Resize','on','HandleVisibility','on','Tag','PlotFig'); 
     plot(f,P1)

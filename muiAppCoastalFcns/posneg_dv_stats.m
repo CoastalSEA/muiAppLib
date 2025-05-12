@@ -36,7 +36,7 @@ function ok = posneg_dv_stats(v,t,varname,method)
     end
 
     dV = [NaN;diff(v)];              %volume change
-    dt = [NaN;days(diff(t))];           %time interval
+    dt = [NaN;days(diff(t))];        %time interval
     dVdt = dV./dt;                   %rate of change of variable
     plot_dVdt(v,t,dV,dVdt,varname)   %plot input data and rates of change
     
@@ -162,16 +162,18 @@ function plot_dVdt(v,t,dV,dVdt,varname)
     yyaxis(s2,'left')
     s2.ColorOrder = coloroptions(2,:);
     bar(t,dV,ceil(length(dV)/50));
+    % plot(t,dV)
     ylabel('Change (dV)')
     %
     yyaxis(s2,'right') 
     s2.ColorOrder = coloroptions(4,:);
     stem(t,dt);
+    % plot(t,dt);
     ylabel('Survey interval (d)');
     
     s3 = subplot(3,1,3);
     bar(t,dVdt,ceil(length(dV)/50),'FaceColor',s3.ColorOrder(3,:));
-    %plot(t,dVdt,'Color',s3.ColorOrder(3,:));
+    % plot(t,dVdt,'Color',s3.ColorOrder(3,:));
     xlabel('Year')
     ylabel('Rate of change (per day)')
     
