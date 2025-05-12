@@ -6,7 +6,7 @@ function [hc,hb] = hallermeier_zones(H,T,stdH,d50,rhow,rhos)
 %   To compute the limits of the surf and shoal zones and returning the
 %   surf zone limit, hb and the closure depth or shoal limit, hc.
 % USAGE
-%   [hc,hb] = hallermeierZones(H,T,stdH,d50,rhow,rhos)
+%   [hc,hb] = hallermeier_zones(H,T,stdH,d50,rhow,rhos)
 % INPUTS (except for plot)
 %   Hs   - mean wave height (m)
 %   Tp   - mean peak wave period (s)
@@ -37,9 +37,9 @@ function [hc,hb] = hallermeier_zones(H,T,stdH,d50,rhow,rhos)
     gamma = (rhos-rhow)/rhow;
     gTpi = g.*T.^2/(4*pi()^2);
 
-    %seaward shoal zone limiti - closure depth 
+    %seaward shoal zone limit - closure depth 
     %limit of significant on/offshore transport
-    denom = 8*gamma*g*d50.*T.^2;
+    denom = 8*gamma*g*d50.*T.^2; % should this be denom = 8/(gamma*g*d50.*T.^2);????
     etac = asinh(sqrt(pi()^2*(H-0.3*stdH).^2./denom));
     hc = etac.*tanh(etac).*gTpi;
 
