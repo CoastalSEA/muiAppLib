@@ -433,6 +433,14 @@ classdef (Abstract = true) PLinterface < handle
         end
 
 %%
+        function ClearAll(obj,~,~)
+            %clear all existing user graphics
+            obj.Points = [];
+            obj.pLines = [];
+            clearGraphics(obj,{'mypoints','mylines','mytext'});
+        end
+
+%%
         function Distance(obj,~,~)
             %show distance between two points
             prompt1 = sprintf('Distance\nSelect first point');   
@@ -824,9 +832,9 @@ classdef (Abstract = true) PLinterface < handle
             varnames = {'Parent','Callback','Label'};
             
             %default Figure menu variables
-            stext = ["Redraw";"Undo";"Distance";"Save";"Save & Exit";"Quit"];
-            scall = {@obj.Redraw; @obj.Undo; @obj.Distance; @obj.Save; ...
-                                                 @obj.SaveExit; @obj.Quit}; 
+            stext = ["Redraw";"Undo";"Clear all";"Distance";"Save";"Save & Exit";"Quit"];
+            scall = {@obj.Redraw; @obj.Undo; @obj.ClearAll; @obj.Distance; ...
+                                  @obj.Save; @obj.SaveExit; @obj.Quit}; 
             nrec = length(stext);
             spart = repmat("Figure",nrec,1);
             calltable = table(spart,scall,stext,'VariableNames',varnames);
