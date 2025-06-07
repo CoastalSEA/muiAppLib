@@ -22,8 +22,8 @@ function ct_coastal_plots(mobj)
 % CoastalSEA (c) May 2025
 %--------------------------------------------------------------------------
 %
-listxt = {'Littoral Drift','Generic Scatter Plot','Wave Scatter Plot',...
-          'Frequency Analysis','Pos-Neg Change Plot'};
+    listxt = {'Littoral Drift','Generic Scatter Plot','Wave Scatter Plot',...
+              'Frequency Analysis','Pos-Neg Change Plot'};
     % ok = 1;
     % while ok>0
         selection = listdlg("ListString",listxt,"PromptString",...

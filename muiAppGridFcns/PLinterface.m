@@ -83,7 +83,7 @@ classdef (Abstract = true) PLinterface < handle
                 warndlg('isXYZ nhas not been set'); return; 
             else
                 %initialise the nan points struct
-                nanpnts = struct('x',NaN','y',NaN);
+                nanpnts = struct('x',NaN,'y',NaN);
                 if obj.isXYZ
                     nanpnts.z = NaN;
                 end

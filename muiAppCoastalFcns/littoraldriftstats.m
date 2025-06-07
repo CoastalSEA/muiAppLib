@@ -10,8 +10,11 @@ function dst = littoraldriftstats(qs,tdt,varargin)
 % INPUTS
 %   qs     - alongshore drift rate (m3/s) as a time series
 %   tdt    - time as a datetime array
-%   varargin - period: optional variable to define annual or monthly output to be
-%          returned in var. Use 'year' or 'month'. Default is 'month'
+%   varargin - period: optional variable to define annual or monthly output 
+%              to be returned in var. Use 'year' or 'month'. Default is
+%              'month'.
+%              isprompt: optional variable set to false to suppres prompts 
+%              for ouput. Default is true.
 % OUTPUT
 %   Plot of gaps and monthly/annual drift plot
 %   Defintions: gap in record = difference between dt*ndt in year and nrecs in each year
@@ -33,18 +36,22 @@ function dst = littoraldriftstats(qs,tdt,varargin)
 %
     maxgap = 12;  %to avoid drift being applied over large data gaps set 
                   %maximum gap that can be used to derive drift volume
-    calmsthreshold = 3e-5;  %"calms" are drift rates less than threshold
-                            % 1000m^3/yr ~= 3e-5 m^3/s; 
-    answer = inputdlg('Calms threshold:','Drift stats',...
+    calmsthreshold = 100;  %"calms" are drift rates less than threshold
+                           % 100m^3/yr ~= 3e-6 m^3/s; 
+    answer = inputdlg('Calms threshold (Qs (m^3/yr):','Drift stats',...
                                         1,{num2str(calmsthreshold)});
     if isempty(answer), return; end %user cancelled
-    calmsthreshold = str2double(answer{1});
+    calmsthreshold = str2double(answer{1})/31556952; %default y2s
     
     %check input
+    isprompt = true;
     if nargin<3
-        period = 'month';
+        period = 'month';        
     else
         period = varargin{1};
+        if length(varargin)>1
+            isprompt = varargin{2};
+        end
     end
 
     %time variables
@@ -182,31 +189,33 @@ function dst = littoraldriftstats(qs,tdt,varargin)
     ylabel('Drift volumes (m^3)');
     legend({'+ve annual: left to right','-ve annual: right to left','+ve monthly x2','-ve monthly x2'},...
         'Location','best');
-    
-    hqd = questdlg('Save results?','Drift','Defined','All','No','No');
-    if strcmp(hqd,'No') %returns total drift over period of record
-        reclen = dur;                   %duration of record in years
-        qdrift = (sum(qdrift))/reclen;  %returns drift rate (m3/yr) - Tian edited
-        pdrift = (sum(pdrift))/reclen; 
-        ndrift = (sum(ndrift))/reclen; 
-        %single valued answer is returned as char in first column:
-        txt1 = sprintf('Average annual drift rate %.1f m^3/y',qdrift);
-        txt2 = sprintf('Average annual positive drift %.1f m^3/y',pdrift);
-        txt3 = sprintf('Average annual negative drift %.1f m^3/y',ndrift);
-        dst = sprintf('%s\n%s\n%s',txt1,txt2,txt3);
-    elseif strcmp(hqd,'Defined')
-        dsp = modelDSproperties(period);
-        qtime.Format = dsp.Row.Format;   %force format to defined format
-        dst = dstable(qdrift,'RowNames',qtime,'DSproperties',dsp);
-    else
-        adsp = modelDSproperties('year');
-        andtn.Format = adsp.Row.Format;  %force format to defined format
-        dst.Year = dstable(andrift,'RowNames', andtn,'DSproperties',adsp);
-        mdsp = modelDSproperties('month');
-        mtime.Format = mdsp.Row.Format;  %force format to defined format
-        dst.Month = dstable(mdrift,'RowNames', mtime,'DSproperties',mdsp);
-    end
     sgtitle('Drift potential')
+    
+    if isprompt
+        hqd = questdlg('Save results?','Drift','Defined','All','No','No');
+        if strcmp(hqd,'No') %returns total drift over period of record
+            reclen = dur;                   %duration of record in years
+            qdrift = (sum(qdrift))/reclen;  %returns drift rate (m3/yr) - Tian edited
+            pdrift = (sum(pdrift))/reclen; 
+            ndrift = (sum(ndrift))/reclen; 
+            %single valued answer is returned as char in first column:
+            txt1 = sprintf('Average annual drift rate %.1f m^3/y',qdrift);
+            txt2 = sprintf('Average annual positive drift %.1f m^3/y',pdrift);
+            txt3 = sprintf('Average annual negative drift %.1f m^3/y',ndrift);
+            dst = sprintf('%s\n%s\n%s',txt1,txt2,txt3);
+        elseif strcmp(hqd,'Defined')
+            dsp = modelDSproperties(period);
+            qtime.Format = dsp.Row.Format;   %force format to defined format
+            dst = dstable(qdrift,'RowNames',qtime,'DSproperties',dsp);
+        else
+            adsp = modelDSproperties('year');
+            andtn.Format = adsp.Row.Format;  %force format to defined format
+            dst.Year = dstable(andrift,'RowNames', andtn,'DSproperties',adsp);
+            mdsp = modelDSproperties('month');
+            mtime.Format = mdsp.Row.Format;  %force format to defined format
+            dst.Month = dstable(mdrift,'RowNames', mtime,'DSproperties',mdsp);
+        end
+    end
 end
 %%
 function excludefromlegend(hp)

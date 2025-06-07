@@ -196,7 +196,7 @@ classdef PL_SectionLines < PLinterface
             %check that all points in a reach have not been deleted
             cplines = gd_plines2cplines(obj.cLines);
             for j=1:length(cplines)                
-                if length(cplines{j})==1
+                if isscalar(cplines{j})
                     cplines{j} = [];
                 end
             end

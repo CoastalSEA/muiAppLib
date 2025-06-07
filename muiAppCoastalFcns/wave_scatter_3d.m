@@ -18,7 +18,7 @@ function res = wave_scatter_3d(H,T,D)
 % CoastalSEA (c) Jan 2025
 %----------------------------------------------------------------------
 %
-    res = 'no output'; %cell ouput required by call from DataManip.createVar 
+    res = 'no output'; %null ouput required for exit in muiUserModel.setEqnData
     ok = 1;
     while ok>0
         %allow user to generate various plots

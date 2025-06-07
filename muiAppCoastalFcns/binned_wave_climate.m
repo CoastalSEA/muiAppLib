@@ -28,7 +28,7 @@ function res = binned_wave_climate(H,T,D)
 % CoastalSEA (c) March 2023
 %----------------------------------------------------------------------
 %
-    res = {'no output'}; %cell ouput required by call from DataManip.createVar 
+    res = 'no output'; %null ouput required for exit in muiUserModel.setEqnData
     %extract data
     if nargin>1
         meta{1} = 'Wave height (m)';

@@ -10,7 +10,8 @@ function [clinedir,ncplines,cumlen] = gd_curvelineprops(cplines,idL)
 %   [clinedir,ncplines,cumlen] = gd_curvelineprops(cplines,idL)
 % INPUTS
 %   cplines - cell array of lines with x,y struct defining line points
-%   idL - x,y start point on one of the lines in cplines
+%   idL - index of a start point on one of the lines in cplines (1 for
+%   first point in line)
 % OUTPUTS
 %   clinedir - mean direction of line at each point in x,y space
 %   ncplines - updated cplines starting from point idL

@@ -17,7 +17,7 @@ function res = waterlevelfreqplots(wl,t)
 % CoastalSEA (c)June 2019
 %--------------------------------------------------------------------------
 %
-    res = {'Plots completed'}; %cell ouput required by call from DataManip.createVar   
+    res = 'no output';  %null ouput required for exit in muiUserModel.setEqnData  
     ok = 1;
     while ok>0
         %allow user to generate various plots
@@ -121,9 +121,8 @@ function thr_durations(wl,t,z0)
     end
     %
     if stid(1)>edid(1)
-        temp = stid;
-        stid = edid;
-        edid  = temp;
+        stid = stid(1:end-1);
+        edid = edid(2:end);
     end
     wetdur = t(edid)-t(stid);
     wetdur.Format = 'h';
@@ -160,9 +159,8 @@ function movingtime_thr_duration(wl,t,z0)
     end
     %
     if stid(1)>edid(1)
-        temp = stid;
-        stid = edid;
-        edid  = temp;
+        stid = stid(1:end-1);
+        edid = edid(2:end);
     end
     wetdur = t(edid)-t(stid);
     wetdur.Format = 'h';
