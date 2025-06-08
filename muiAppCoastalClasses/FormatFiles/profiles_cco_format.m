@@ -208,6 +208,16 @@ function [data,header] = readInputData(filename)
         %Easting Northing Elevation_OD Chainage FC Profile Reg_ID
         nnum = 4;
         dataSpec = '%f %f %f %f %s %s %s';
+    elseif ncols==5
+        %Easting Northing Elevation_OD FC Name
+        % nnum = 5;
+        % dataSpec = '%f %f %f %s %s';
+        errmsg = sprintf('Chainage missing in %s',...
+                            filename);
+        errordlg(errmsg,'Data error','modal')
+        data = [];
+        fclose(fid);
+        return;
     elseif ncols==4
         %Easting Northing Elevation_OD FC
         %dataSpec = '%f %f %f %s';        
