@@ -868,17 +868,34 @@ function [grid,orient] = orientGrid(obj,grid0)
                 getdialog(sprintf('GeoImage added to Case: %s',grid.desc),[],1)   
             else
                 desc = matlab.lang.makeValidName(grid.desc);
-                answer = questdlg('Save as .mat or .tif file?','GridImage',...
-                                                 'mat','tif','txt','txt');                
-                filename = sprintf('GeoImage_%s.%s',desc,answer);
-                inp = inputdlg('Filename:','GeoImage',1,{filename});
-                if isempty(inp); return; end
-                if strcmp(answer,'mat')
-                    save(inp{1},'im',"-mat");
-                elseif strcmp(answer,'tif')
-                    gd_write_tiff(filename,frame.cdata,im);  
+                answer = questdlg('Save as .mat, .tif or an image format file?','GridImage',...
+                                                 'mat','tif','image','image');
+
+                if strcmp(answer,'image')
+                    %save image as a text file or image format (tif or jpg)
+                    image = questdlg('Save as .txt, .jpg, .tif?','Image',...
+                                                 'txt','jpg','tif','jpg');  
+                    filename = sprintf('Image_%s.%s',desc,image);
+                    inp = inputdlg('Filename:','Image',1,{filename});
+                    if isempty(inp); return; end
+
+                    if strcmp(image,'txt')
+                        gd_write_image_ascii(inp{1},desc,im);  %ascii text file
+                    else
+                        gd_write_image(inp{1},im);             %jpg or tif image file
+                    end
                 else
-                    gd_write_image(filename,desc,im)
+                    %save the image as a mat file
+                    filename = sprintf('GeoImage_%s.%s',desc,answer);
+                    inp = inputdlg('Filename:','GeoImage',1,{filename});
+                    if isempty(inp); return; end
+
+                    if strcmp(answer,'mat')                        
+                        save(inp{1},'im',"-mat");
+                    elseif strcmp(answer,'tif')
+                        %writes a geotif file with location details
+                        gd_write_tiff(inp{1},frame.cdata,im);
+                    end
                 end
                 getdialog(sprintf('Image written to %s',filename));
             end            

@@ -63,10 +63,13 @@
 % - extract a subdomain from a grid and return the extracted
 % grid and the source grid indices of the bounding rectangle.
 % * *gd_write_image.m*
+% - write image to a jpg or tif file.
+% * *gd_write_image_ascii.m*
 % - write cdata from an image to an ASCII text file, with the positional 
 % information.
 % * *gd_write_tiff.m*
-% - write the data from an image to a tif file including the position info
+% - write the data from an image to a tif file including the position
+% information.
 % * *gd_xy2sn*
 % - map grid from cartesian to curvilinear coordinates with option to return 
 % the elevations on the source cartesian grid, or as a curvilinear grid.
