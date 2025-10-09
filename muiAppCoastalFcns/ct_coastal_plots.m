@@ -52,7 +52,8 @@ function drift_plot(mobj)
     %get the inshore wave data, compute the littoral drift and plot as
     %monthly and annual values. Option to save results.
     promptxt = 'Select wave data set:'; 
-    inwave = selectCaseObj(mobj.Cases,[],{'ctWaveModel','WRM_WaveModel'},promptxt);              
+    inwave = selectCaseObj(mobj.Cases,[],{'ctWaveModel','WRM_WaveModel'},promptxt); 
+    if isempty(inwave), warndlg('No suitable data available'); return; end
     %retrieve an inshore wave data set
     [wv,output.wvrec] = getWaveModelDataset(inwave,mobj,...
                                                 {'Inwave_model'},{'Tp'});

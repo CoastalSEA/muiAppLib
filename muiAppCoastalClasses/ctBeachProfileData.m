@@ -162,10 +162,17 @@ classdef ctBeachProfileData < muiDataSet
             %prompt user to select profiles to be used (multiple profiles)
             [~,caserec] = getProfileSelection(obj,muicat);
             %
-            hf = figure('Name','Profile Locations', ...
-                'NumberTitle','off', ...
-                'Units','normalized');
-            ax = axes(hf);            
+            answer = questdlg('Use existing base figure or new figure?',...
+                               'Profiles','New','Existing','New');
+            if strcmp(answer,'New')
+                hf = figure('Name','Profile Locations','Tag','PlotFig', ...
+                            'NumberTitle','off','Units','normalized');                    
+                ax = axes(hf);
+            else
+                selectedFig = select_figure({'PlotFig'});
+                if isempty(selectedFig),return; end
+                ax = findobj(selectedFig.Children,'Type','Axes');
+            end
             plotProfileLocations(obj,muicat,ax,caserec,false);
             ax.XLabel.String = 'Eastings';
             ax.YLabel.String = 'Northings';
