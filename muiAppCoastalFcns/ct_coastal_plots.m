@@ -221,6 +221,6 @@ function positive_negative_plot(mobj)
     t = dst.RowNames;
     
     vardesc = dst.VariableDescriptions{ivar};
-    res = posneg_dv_stats(var,t,vardesc);
+    res = posneg_dv_stats(var,t,{vardesc,dst.Description});
     msgbox(res,'Pos-Neg plot');
 end

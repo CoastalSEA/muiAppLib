@@ -11,7 +11,7 @@ function ok = posneg_dv_stats(v,t,varname,method)
 % INPUTS: 
 %   v - variable
 %   t - time
-%   varname - a text description of the variable (optional
+%   varname - a text description of the variable (optional)
 %   method - defines the case: only 1 implemented = posnegVals (optional)
 % OUTPUTS 
 %   timeseries plot of change histogram plot of Poisson fits to data
@@ -46,8 +46,8 @@ function ok = posneg_dv_stats(v,t,varname,method)
         case 2
     end
     %return message with results
-    ok = {sprintf('Exponential mu:\npostive dV %g\npostive dVdt %g\nnegative dV %g\nnegative dVdt %g',...
-           pdV.mu_pdV.mu,pdV.mu_pdVdt.mu,pdV.mu_ndV.mu,pdV.mu_ndVdt.mu)};
+    ok = sprintf('Exponential mu:\npostive dV %g\npostive dVdt %g\nnegative dV %g\nnegative dVdt %g',...
+           pdV.mu_pdV.mu,pdV.mu_pdVdt.mu,pdV.mu_ndV.mu,pdV.mu_ndVdt.mu);
 end
 %%
 function pnVr = posnegVals(dV,dVdt,varname)
@@ -86,13 +86,15 @@ function pnVr = posnegVals(dV,dVdt,varname)
     pnVr.mu_ndVdt = fitdist(-pnV.ndVdt',pdf_name);
     pnV.pd_ndVdt = pdf(pnVr.mu_ndVdt,-pnV.ndv);
     %plot results
-    plotdVarStats(pnV,pnVr,varname)
+    plotdVarStats(pnV,pnVr,varname);
 end
 %%
 function plotdVarStats(pnV,pnVr,varname)
     % plot results as positive and negative pdfs
     %
-    varname = sprintf('%s change',varname);
+    if iscell(varname), sgtxt = varname{2}; varname = varname{1}; end
+
+    vartxt = sprintf('%s change',varname);
     hf = figure('Name','Rates of change','Units','normalized',...
                 'Tag','PlotFig');
     nbins = 10;
@@ -101,7 +103,7 @@ function plotdVarStats(pnV,pnVr,varname)
     subplot(2,2,1)
     histogram(pnV.ndV,nbins,'Normalization',norm_type);
     title(sprintf('Negative values: mu=%0.2g',pnVr.mu_ndV.mu))
-    xlabel(varname)
+    xlabel(vartxt)
     ylabel('Probability')
     hold on
     plot(pnV.nv,pnV.pd_ndV,'--r')
@@ -111,7 +113,7 @@ function plotdVarStats(pnV,pnVr,varname)
     subplot(2,2,2)
     histogram(pnV.pdV,nbins,'Normalization',norm_type);
     title(sprintf('Positive values: mu=%0.2g',pnVr.mu_pdV.mu))
-    xlabel(varname)
+    xlabel(vartxt)
     hold on
     plot(pnV.pv,pnV.pd_pdV,'--r')
     xlim([0,max(pnV.pv)]);
@@ -136,6 +138,7 @@ function plotdVarStats(pnV,pnVr,varname)
     xlim([0,max(pnV.pdv),]);
     hold off
     
+    sgtitle(sgtxt)
     out_mu = table(pnVr.mu_ndV.mu,pnVr.mu_pdV.mu,pnVr.mu_ndVdt.mu,pnVr.mu_pdVdt.mu,...
                    'VariableNames',{'mu_ndV','mu_pdV','mu_ndVdt','mu_pdVdt'});
     outable = [pnV,out_mu];
@@ -144,6 +147,7 @@ end
 %%
 function plot_dVdt(v,t,dV,dVdt,varname)
     %generate plot volume timeseries and rates of change
+    if iscell(varname), sgtxt = varname{2}; varname = varname{1}; end
     
     dt = [NaN;days(diff(t))];  %time interval between surveys in days    
     fprintf('Mean time interval = %0.3f days',mean(dt,'omitnan'))
@@ -177,6 +181,7 @@ function plot_dVdt(v,t,dV,dVdt,varname)
     xlabel('Year')
     ylabel('Rate of change (per day)')
     
+    sgtitle(sgtxt)
     outable = dstable(v,dV,dVdt,'RowNames',t,'VariableNames',{'V','dV','dVdt'});
     add_copy_button(hf,outable);
 end
