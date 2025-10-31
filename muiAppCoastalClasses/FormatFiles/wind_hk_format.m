@@ -68,13 +68,15 @@ function dst = getData(obj,filename)
     varData = table(data{1,3:end});
     varData = standardizeMissing(varData,[99,99.9,99.99,999,9999]);
     % information on data location (could be in header)
-%     Latitude = [];
-%     Longitude = [];
+    % Latitude = [];
+    % Longitude = [];
 
     %load the results into a dstable  
     dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp); 
-%     dst.Dimensions.Position = [Latitude,Longitude];    
+    dst.MetaData.zW = setHeight(obj);
+    % dst.Dimensions.Position = [Latitude,Longitude];    
 end
+
 %%
 function [data,header] = readInputData(filename)
     %read wind data (read format is file specific).
@@ -82,6 +84,7 @@ function [data,header] = readInputData(filename)
     nhead = 1;     %number of header lines
     [data,header] = readinputfile(filename,nhead,dataSpec); %see muifunctions
 end
+
 %%
 %--------------------------------------------------------------------------
 % dataDSproperties

@@ -62,12 +62,12 @@ function dst = getData(obj,filename)
     myDatetime.Format = dsp.Row.Format;
 
     % information on data location
-%     Latitude = [];
-%     Longitude = [];        
+    % Latitude = [];
+    % Longitude = [];        
 
     %load the table varData into a dstable  
     dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp); 
-%     dst.Dimensions.Position = [Latitude,Longitude];    
+    % dst.Dimensions.Position = [Latitude,Longitude];    
 end
 %%
 %--------------------------------------------------------------------------

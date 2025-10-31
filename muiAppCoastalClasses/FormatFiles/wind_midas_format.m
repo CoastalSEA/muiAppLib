@@ -45,8 +45,8 @@ function dst = getData(obj,filename)
     dsp = setDSproperties;
 
     % default information on data location
-%     Latitude = 0;
-%     Longitude = 0; 
+    % Latitude = 0;
+    % Longitude = 0; 
 
     %extract required subset of data        
     myDatetime = data.ob_end_time;
@@ -60,11 +60,12 @@ function dst = getData(obj,filename)
     varData{:,3} = varData{:,3}*factor;
 
     %load the results into a dstable  
-    dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp); 
-%     dst.Dimensions.Position = [Latitude,Longitude];    
+    dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp);
+    dst.MetaData.zW = setHeight(obj);
+    % dst.Dimensions.Position = [Latitude,Longitude];    
 end
-%%
-%--------------------------------------------------------------------------
+
+%% ------------------------------------------------------------------------
 % dataDSproperties
 %--------------------------------------------------------------------------
 function dsp = setDSproperties()

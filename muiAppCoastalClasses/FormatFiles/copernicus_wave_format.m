@@ -1,13 +1,13 @@
-function output = copernicus_format(funcall,varargin)
+function output = copernicus_wave_format(funcall,varargin)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   copernicus_format.m
+%   copernicus_wave_format.m
 % PURPOSE
 %   Functions to define metadata, read and load data from file for:
 %   Copernicus wave reanalysis data
 % USAGE
-%   output = copernicus_format(funcall,varargin)
+%   output = copernicus_wave_format(funcall,varargin)
 % INPUTS
 %   funcall - function being called
 %   varargin - function specific input (filename,class instance,dsp,src, etc)
@@ -36,6 +36,7 @@ function output = copernicus_format(funcall,varargin)
 % SEE ALSO
 %   Atlantic- European North West Shelf- Wave Physics Reanalysis
 %   https://data.marine.copernicus.eu/product/NWSHELF_REANALYSIS_WAV_004_015/description
+%   https://doi.org/10.48670/moi-00060
 %   files are in NetCDF format
 %
 % Author: Ian Townend

@@ -20,25 +20,42 @@ function wvdst = extract_wave_data(inwvdst)
 %--------------------------------------------------------------------------
 %  
     wvdst = [];
-
+    varnames = inwvdst.VariableNames;
+    if sum(ismatch(varnames,{'Hs','Tp','Dir'}))==3 
+        wvdst = copy(inwvdst);
+        return; 
+    end        
+        
     vardesc = inwvdst.VariableDescriptions;
-    %select wave height
-    select_Hs = inputSelection(vardesc,'Wave height');
-    if isempty(select_Hs), return; end
-    %select wave period
-    select_Tp = inputSelection(vardesc,'Wave period');
-    if isempty(select_Tp), return; end
-    %select wave direction
-    select_Dir = inputSelection(vardesc,'Wave direction');
-    if isempty(select_Dir), return; end
+    %call UI to select all required fields
+    sel = getInputUI(vardesc);
+    if isempty(sel), return; end
 
     inwv = inwvdst.DataTable;
-    indata = {inwv{:,select_Hs},inwv{:,select_Tp},inwv{:,select_Dir}};
+    indata = {inwv{:,sel{1}},inwv{:,sel{2}},inwv{:,sel{3}}};
     
     wvtime = inwvdst.RowNames;
     dsp = setDSproperties();
     wvdst = dstable(indata{:},'RowNames',wvtime,'DSproperties',dsp);
 end
+
+
+%%
+function selection = getInputUI(vardesc)
+    %define inputgui for the selection of variables
+    % to see field defintions use >>help inputgui
+    inp.fields = {'Sig. wave height','Peak period','Mean direction'};                              
+    inp.style = {'popupmenu','popupmenu','popupmenu'};
+    inp.defaults = {vardesc,vardesc,vardesc};
+
+    selection = inputgui('FigureTitle','Wind data',...
+                         'InputFields',inp.fields,...
+                         'Style',inp.style,...
+                         'ActionButtons', {'Select','Cancel'},...
+                         'DefaultInputs',inp.defaults,...
+                         'PromptText','Select variables to use');
+end
+
 
 %%
 function dsp = setDSproperties()
@@ -64,11 +81,4 @@ function dsp = setDSproperties()
         'Unit',{''},...
         'Label',{''},...
         'Format',{''});         
-end
-
-%%
-function selection = inputSelection(vardesc,varname)
-    promptxt = sprintf('Select variable for %s',varname);
-    selection = listdlg("PromptString",promptxt,"ListSize",[320,160],...
-                        "ListString",vardesc,"SelectionMode","single");
 end

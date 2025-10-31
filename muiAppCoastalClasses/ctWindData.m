@@ -18,6 +18,7 @@ classdef ctWindData < muiDataSet
     properties  
         %inherits Data, RunParam, MetaData and CaseIndex from muiDataSet
         %Additional properties:  
+        zW   %height of wind measurement
     end
     
     methods  
@@ -31,10 +32,23 @@ classdef ctWindData < muiDataSet
             %define file specification, format is: {multiselect,file extension types}
             obj.FileSpec = {'on','*.txt;*.csv'};               
         end
+
 %%
         function tabPlot(obj,src)
             %generate plot for display on Q-Plot tab
             tabDefaultPlot(obj,src);
-        end         
+        end  
+
+%%
+        function zW = setHeight(~)
+            %prompt user to define the height of measurement
+            promptxt = {'Height of measurement above msl (m)'};
+            inpt = inputdlg(promptxt,'Wind height',1,{'10'});
+            if isempty(inpt)
+                zW = NaN; 
+            else
+                zW = str2double(inpt{1});
+            end 
+        end
     end
 end

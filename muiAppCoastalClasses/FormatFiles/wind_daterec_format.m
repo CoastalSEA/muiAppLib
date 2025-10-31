@@ -33,7 +33,7 @@ end
 %--------------------------------------------------------------------------
 % getData
 %--------------------------------------------------------------------------
-function dst = getData(~,filename) 
+function dst = getData(obj,filename) 
     [data,~] = readInputData(filename);             
     if isempty(data), dst = []; return; end
     
@@ -41,8 +41,8 @@ function dst = getData(~,filename)
     dsp = setDSproperties;
 
     % default information on data location
-%     Latitude = 0;
-%     Longitude = 0; 
+    % Latitude = 0;
+    % Longitude = 0; 
     % concatenate date and time
     mdat = data{1};
     mtim = data{2};
@@ -63,8 +63,10 @@ function dst = getData(~,filename)
 
     %load the results into a dstable  
     dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp);
-%     dst.Dimensions.Position = [Latitude,Longitude];    
+    dst.MetaData.zW = setHeight(obj);
+    % dst.Dimensions.Position = [Latitude,Longitude];    
 end
+
 %%
 function [data,header] = readInputData(filename)
     %read wind data (read format is file specific).
@@ -72,6 +74,7 @@ function [data,header] = readInputData(filename)
     nhead = 1;     %number of header lines
     [data,header] = readinputfile(filename,nhead,dataSpec); %see muifunctions
 end
+
 %%
 %--------------------------------------------------------------------------
 % dataDSproperties

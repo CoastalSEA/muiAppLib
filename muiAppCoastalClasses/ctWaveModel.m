@@ -1,13 +1,14 @@
-classdef ctWaveModel < muiDataSet 
+classdef ctWaveModel < waveModels
 %
 %-------class help------------------------------------------------------
 % NAME
 %   ctWaveModel.m
 % PURPOSE
 %    Class for inshore and offshore wave models to be run in CoastalTools 
-%    and other ModelUI apps
+%    and other ModelUI apps. Inherits abstract class waveModels which is
+%    subclass of muiDataSet.
 % SEE ALSO
-%   muiDataSet
+%   muiDataSet, waveModels
 %
 % Author: Ian Townend
 % CoastalSEA (c) Jan 2021
@@ -23,7 +24,7 @@ classdef ctWaveModel < muiDataSet
         ModelType        %model used for the particular instance
     end
     
-    methods (Access={?muiDataSet,?muiStats})
+    methods (Access={?muiDataSet,?muiStats,?ctWaveData})
         function obj = ctWaveModel()                    
             %class constructor
         end
@@ -61,9 +62,10 @@ classdef ctWaveModel < muiDataSet
 % Model code 
 %-------------------------------------------------------------------------- 
             %get the timeseries input data and site parameters
-            [tsdst,inputxt,isel] = getInputData(obj,mobj);
+            [tsdst,meta] = getInputData(obj,mobj);            
             if isempty(tsdst), return; end   %user cancelled data selection
-            dsp = modelDSproperties(obj,isin,isel);
+            setRunParam(obj,mobj,meta.caserecs{:}) %assign run parameters
+            dsp = modelDSproperties(obj,isin,meta.iselvar);
 
             %get the input site parameters as a class instance
             site_params = mobj.Inputs.ctWaveParameters;  
@@ -72,7 +74,7 @@ classdef ctWaveModel < muiDataSet
                 inp = inputParameters(site_params); %convert class to struct
                 inp.g = mobj.Constants.Gravity;     %add gravity
                 [Hsi,Diri,depi,bs] = hs_surf(tsdst,inp);      
-                if isel %variables selected (non-standard names) so include Tp
+                if meta.iselvar %variables selected (non-standard names) so include Tp
                     results = {Hsi,tsdst.Tp,Diri,tsdst.swl,depi};
                 else    %default naming convention
                     results = {Hsi,Diri,tsdst.swl,depi};
@@ -97,7 +99,7 @@ classdef ctWaveModel < muiDataSet
             %assign metadata about model            
             dst.Source =  sprintf('Class %s, using %s',metaclass(obj).Name,...
                                                          obj.ModelType);
-            dst.MetaData = inputxt;            
+            dst.MetaData = meta.inptxt;            
             %save results
             setDataSetRecord(obj,mobj.Cases,dst,'model');
             getdialog('Run complete');
@@ -105,46 +107,48 @@ classdef ctWaveModel < muiDataSet
     end
 %%
     methods
-        function [tsdst,caserec] = getWaveModelDataset(obj,mobj,type,addnames,caserec)
-            %prompt user to select a model wave dataset and add Tp if inshore
-            %
-            muicat = mobj.Cases;
-            if nargin<4
-                addnames = {'Tp'};  %default is to add Tp
-            end
-            %
-            if nargin<5   %no caserec to prompt for selection
-                [wvobj,wvdst,ok] = selectClassInstance(obj,'ModelType',type);
-                if ok<1, tsdst = []; caserec = []; return; end
-                caserec = caseRec(muicat,wvobj.CaseIndex);
-            else
-                wvobj = getCase(muicat,caserec);
-                wvdst = wvobj.Data.Dataset;
-            end            
-            
-            %if inshore wave dataset add variables requested otherwise just
-            %copy dstable
-            tsdst = copy(wvdst);
-            if strcmp(type,'Inwave_model')
-                inpwavecid = wvobj.RunParam.ctWaveData.caseid;
-                inpwaverec = caseRec(muicat,inpwavecid);
-                inpdst = getDataset(muicat,inpwaverec,1);
-                dstnames = inpdst.VariableNames;
-                varnames = tsdst.VariableNames;
-                for i=1:length(addnames)    
-                    if any(strcmp(varnames,addnames{i}))
-                        continue;
-                    elseif any(strcmp(dstnames,addnames{i})) && ...
-                                            ~isempty(inpdst.(addnames{i}))
-                        tsdst = addvars(tsdst,inpdst.(addnames{i}),...
-                                           'NewVariableNames',addnames{i});
-                    else
-                        warndlg(sprintf('Variable %s not found so not added to wave dataset',...
-                                                           addnames{i}));
-                    end
-                end
-            end
-        end
+        % function [tsdst,caserec] = getWaveModelDataset(obj,mobj,type,addnames,caserec)
+        %     %prompt user to select a model wave dataset and add Tp if inshore
+        %     %
+        %     muicat = mobj.Cases;
+        %     if nargin<4
+        %         addnames = {'Tp'};  %default is to add Tp
+        %     end
+        %     %
+        %     if nargin<5   %no caserec to prompt for selection
+        %         [wvobj,wvdst,ok] = selectClassInstance(obj,'ModelType',type);
+        %         if ok<1, tsdst = []; caserec = []; return; end
+        %         caserec = caseRec(muicat,wvobj.CaseIndex);
+        %     else
+        %         wvobj = getCase(muicat,caserec);
+        %         wvdst = wvobj.Data.Dataset;
+        %     end            
+        % 
+        %     %if inshore wave dataset add variables requested otherwise just
+        %     %copy dstable
+        %     tsdst = copy(wvdst);
+        %     if strcmp(type,'Inwave_model')
+        %         inpwavecid = wvobj.RunParam.ctWaveData.caseid;  %source dataset (offshore)
+        %         inpwaverec = caseRec(muicat,inpwavecid);        %case record
+        %         inpdst = getDataset(muicat,inpwaverec,1);       %dst used to create inshore waves
+        %         dstnames = inpdst.VariableNames;                %source variables
+        %         varnames = tsdst.VariableNames;                 %inshore wave variables
+        %         for i=1:length(addnames)    
+        %             if any(strcmp(varnames,addnames{i}))
+        %                 %variable already included
+        %                 continue;
+        %             elseif any(strcmp(dstnames,addnames{i})) && ...
+        %                                     ~isempty(inpdst.(addnames{i}))
+        %                 %variable to be added exists in source dataset
+        %                 tsdst = addvars(tsdst,inpdst.(addnames{i}),...
+        %                                    'NewVariableNames',addnames{i});
+        %             else
+        %                 warndlg(sprintf('Variable %s not found so not added to wave dataset',...
+        %                                                    addnames{i}));
+        %             end
+        %         end
+        %     end
+        % end
 %%        
         function tabPlot(obj,src) %abstract class for muiDataSet
             %generate plot for display on Q-Plot tab
@@ -155,75 +159,75 @@ classdef ctWaveModel < muiDataSet
     end 
 %%    
     methods (Access = private)
-        function [tsdst,inputxt,isel] = getInputData(obj,mobj)
-            %prompt user to select wave and water level data and return in
-            %input dstable of data and metadata for inputs used
-            tsdst = []; inputxt = []; isel = false;
-            muicat = mobj.Cases;
-            promptxt = 'Select input wave data set:';           
-            [wv_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
-                           'CaseClass',{'ctWaveData','muiUserModel'},'ListSize',[300,100]);                                    
-            if ok<1, return; end
-            wvdst = getDataset(muicat,wv_crec,1);
-            wvtime = wvdst.RowNames;
-            inputxt = sprintf('%s used for offshore waves',wvdst.Description);
-
-            %check whether default variable names are not used and selection needed
-            varnames = wvdst.VariableNames;
-            if ~any(strcmp(varnames,'Hs'))
-                wvdst = extract_wave_data(wvdst);
-                if isempty(wvdst), return; end
-                isel = true;
-            end
-
-            promptxt = 'Select input water level data set (Cancel to use SWL=0):';           
-            [wl_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
-                                'CaseClass',{'ctWaterLevelData','ctTidalAnalysis',...
-                                              'muiUserModel'},...
-                                'ListSize',[300,100]); 
-
-            swl = zeros(size(wvtime));               
-            if ok<1 || isempty(wl_crec)
-                getdialog('Using SWL=0');
-                inputxt = sprintf('%s, 0mOD used for water level',inputxt);
-                wl_crec = 0;     %assign a null value if no water level data available
-            else
-                wldst = getDataset(muicat,wl_crec,1); 
-                %check that there is water level data for period of interest
-                [idst,idnd] = ts2_endpoints_in_ts1(wvdst,wldst);
-                if isempty(idst)
-                    getdialog('Data do not overlap. Using SWL=0');
-                    inputxt = sprintf('%s, 0mOD used for water level',inputxt);
-                    wl_crec = 0; %assign a null value if no water level data available
-                else 
-                    %select a variable from the water level dataset
-                    varnames = wldst.VariableNames;
-                    idx = 1;
-                    if length(varnames)>1
-                        [idx,ok] = listdlg('Name','WL options', ...
-                            'PromptString','Select a variable:', ...
-                            'SelectionMode','single','ListSize',[200,100],...
-                            'ListString',varnames);
-                        if ok<1, idx = 1; end
-                    end
-                    wldata = wldst.(varnames{idx});
-                    wltime = wldst.RowNames;
-                    swltime = wvtime(idst:idnd);                                        
-                    %now interpolate water levels onto wave height times
-                    swl(idst:idnd,1) = interp1(wltime,wldata,swltime,'linear','extrap');
-                    swl(isnan(swl)) = 0;
-                    inputxt = sprintf('%s, %s used for water levels',...
-                                                inputxt,wldst.Description);
-                end
-            end
-            tsdst = addvars(wvdst,swl,'NewVariableNames','swl');
-            %assign the run parameters to the model instance
-            if wl_crec==0
-                setRunParam(obj,mobj,wv_crec);
-            else
-                setRunParam(obj,mobj,wv_crec,wl_crec); %input caserecs passed as varargin     
-            end
-        end
+        % function [tsdst,inputxt,isel] = getInputData(obj,mobj)
+        %     %prompt user to select wave and water level data and return in
+        %     %input dstable of data and metadata for inputs used
+        %     tsdst = []; inputxt = []; isel = false;
+        %     muicat = mobj.Cases;
+        %     promptxt = 'Select input wave data set:';           
+        %     [wv_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
+        %                    'CaseClass',{'ctWaveData','muiUserModel'},'ListSize',[300,100]);                                    
+        %     if ok<1, return; end
+        %     wvdst = getDataset(muicat,wv_crec,1);
+        %     wvtime = wvdst.RowNames;
+        %     inputxt = sprintf('%s used for offshore waves',wvdst.Description);
+        % 
+        %     %check whether default variable names are not used and selection needed
+        %     varnames = wvdst.VariableNames;
+        %     if ~any(strcmp(varnames,'Hs'))
+        %         wvdst = extract_wave_data(wvdst);
+        %         if isempty(wvdst), return; end
+        %         isel = true;
+        %     end
+        % 
+        %     promptxt = 'Select input water level data set (Cancel to use SWL=0):';           
+        %     [wl_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
+        %                         'CaseClass',{'ctWaterLevelData','ctTidalAnalysis',...
+        %                                       'muiUserModel'},...
+        %                         'ListSize',[300,100]); 
+        % 
+        %     swl = zeros(size(wvtime));               
+        %     if ok<1 || isempty(wl_crec)
+        %         getdialog('Using SWL=0');
+        %         inputxt = sprintf('%s, 0mOD used for water level',inputxt);
+        %         wl_crec = 0;     %assign a null value if no water level data available
+        %     else
+        %         wldst = getDataset(muicat,wl_crec,1); 
+        %         %check that there is water level data for period of interest
+        %         [idst,idnd] = ts2_endpoints_in_ts1(wvdst,wldst);
+        %         if isempty(idst)
+        %             getdialog('Data do not overlap. Using SWL=0');
+        %             inputxt = sprintf('%s, 0mOD used for water level',inputxt);
+        %             wl_crec = 0; %assign a null value if no water level data available
+        %         else 
+        %             %select a variable from the water level dataset
+        %             varnames = wldst.VariableNames;
+        %             idx = 1;
+        %             if length(varnames)>1
+        %                 [idx,ok] = listdlg('Name','WL options', ...
+        %                     'PromptString','Select a variable:', ...
+        %                     'SelectionMode','single','ListSize',[200,100],...
+        %                     'ListString',varnames);
+        %                 if ok<1, idx = 1; end
+        %             end
+        %             wldata = wldst.(varnames{idx});
+        %             wltime = wldst.RowNames;
+        %             swltime = wvtime(idst:idnd);                                        
+        %             %now interpolate water levels onto wave height times
+        %             swl(idst:idnd,1) = interp1(wltime,wldata,swltime,'linear','extrap');
+        %             swl(isnan(swl)) = 0;
+        %             inputxt = sprintf('%s, %s used for water levels',...
+        %                                         inputxt,wldst.Description);
+        %         end
+        %     end
+        %     tsdst = addvars(wvdst,swl,'NewVariableNames','swl');
+        %     %assign the run parameters to the model instance
+        %     if wl_crec==0
+        %         setRunParam(obj,mobj,wv_crec);
+        %     else
+        %         setRunParam(obj,mobj,wv_crec,wl_crec); %input caserecs passed as varargin     
+        %     end
+        % end
 %%
         function results = callRefraction(~,tsdst,site_params)
             %parse inputs for call to refraction function

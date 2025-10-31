@@ -23,7 +23,7 @@ function ct_coastal_plots(mobj)
 %--------------------------------------------------------------------------
 %
     listxt = {'Littoral Drift','Generic Scatter Plot','Wave Scatter Plot',...
-              'Frequency Analysis','Pos-Neg Change Plot'};
+              'Frequency Analysis','Spectrum Plots','Pos-Neg Change Plot'};
     % ok = 1;
     % while ok>0
         selection = listdlg("ListString",listxt,"PromptString",...
@@ -41,6 +41,8 @@ function ct_coastal_plots(mobj)
                 wave_scatter_plot(mobj);
             case 'Frequency Analysis'
                 frequency_analysis(mobj);
+            case 'Spectrum Plots'
+                ctWaveSpectra.getPlotOption(mobj);
             case 'Pos-Neg Change Plot'
                positive_negative_plot(mobj);
         end
@@ -209,6 +211,16 @@ function frequency_analysis(mobj)
     end
     getdialog(res);
 end
+
+%%
+% function spectrum_plots(mobj)
+%     %use the functions in ctWaveData to plot imported wave spectra data 
+%     %with option to compare with model spectrum
+%     promptxt = 'Select a Case to use:'; 
+%     [cobj,~] = selectCaseObj(mobj.Cases,[],{'ctWaveData'},promptxt);
+%     if isempty(cobj), getdialog('No imported wave data available'); return; end
+%     plotSpectra(cobj);
+% end
 
 %%
 function positive_negative_plot(mobj)

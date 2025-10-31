@@ -31,7 +31,9 @@ function output = wave_cco_spectra(funcall,varargin)
         case 'dataQC'
             output = dataQC(varargin{1});
         case 'getPlot'
-            output = 0;    
+            output = 0;  
+        case 'setDSproperties'
+            [output.dspec,output.dsprop] = setDSproperties();
     end
 end
 %%
@@ -86,7 +88,7 @@ function [dspec,dsprop] = setDSproperties()
     %     Incli: magnetic inclination [°] 
     % for now just use Hs, Tz, Smax and SST (Tsea).
     dsprop.Variables = struct(...
-        'Name',{'Hs','Tz','Smax','SST'},...
+        'Name',{'Hs','Tz','Spk','SST'},...
         'Description',{'Significant wave height','Zero-upcrossing period ',...
                 'Maximum spectral energy','Sea surface temperature'},...
         'Unit',{'m','s','m^2/Hz','degC'},...
@@ -115,6 +117,11 @@ function dst = getData(~,filename)
     [data,header] = readInputData(filename);             
     if isempty(data), dst = []; return; end
 
+    if length(data{1})~=64
+        getdialog(sprintf('Incorrect record length in file:\n%s',filename))
+        dst = []; return;
+    end
+
     %set metadata
     [dspectra,dsparams] = setDSproperties;
     
@@ -139,8 +146,14 @@ function dst = getData(~,filename)
     %extract spectral data
     varData = data(2:end);    
     Smax = str2double(header{4});
+
+    % trapz(data{1},varData{1})
+
     varData{1} = varData{1}*Smax;  %convert relative to absolute spectral energy
     varData = cellfun(@transpose,varData,'UniformOutput',false);
+
+    % trapz(data{1},varData{1})
+    % max(varData{1})
 
     %load the results into a dstable  
     dst.Spectra = dstable(varData{:},'RowNames',myDatetime,'DSproperties',dspectra); 

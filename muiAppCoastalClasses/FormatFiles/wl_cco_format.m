@@ -56,16 +56,16 @@ function dst = getData(~,filename)
     end  
     
     % information on data location
-%     Latitude = [];
-%     Longitude = [];
-    
+    % Latitude = [];
+    % Longitude = [];
+    % 
     varData = table(data{1,3:end});
     varData = standardizeMissing(varData,[99,99.9,99.99,999,9999]);
     varData = varData(iu,:);
     
     %load the results into a dstable  
     dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp); 
-%     dst.Dimensions.Position = [Latitude,Longitude];    
+    % dst.Dimensions.Position = [Latitude,Longitude];    
 end
 %%
 function [data,header] = readInputData(filename)
