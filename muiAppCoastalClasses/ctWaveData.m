@@ -32,10 +32,11 @@ classdef ctWaveData < muiDataSet
                                'Cefas Wavenet format','wavenet_format';...                               
                                'ShoreCast data format','wave_scast_format';...
                                'CCO directional wave spectra','wave_cco_spectra';...
-                               'Copernicus wave physics reanalysis','copernicus_format'};
+                               'Copernicus wave physics reanalysis','copernicus_wave_format'};
             %define file specification, format is: {multiselect,file extension types}
             obj.FileSpec = {'on','*.txt;*.csv;*.spt;*.nc'};
         end
+
 %%
         function tabPlot(obj,src)
             %generate plot for display on Q-Plot tab
