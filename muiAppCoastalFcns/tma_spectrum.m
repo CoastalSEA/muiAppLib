@@ -1,4 +1,4 @@
-function [Hs,Tp,Tz] = tma_spectrum(Uw,zw,Fch,df,ds)
+function [Hs,Tp,T2] = tma_spectrum(Uw,zw,Fch,df,ds)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -6,7 +6,7 @@ function [Hs,Tp,Tz] = tma_spectrum(Uw,zw,Fch,df,ds)
 % PURPOSE
 %   Calculate the TMA spectrum for waves that are depth limited
 % USAGE
-%   [Hs Tp Tz] = tma_spectrum(Uw,zw,Fch,df,ds)
+%   [Hs Tp T2] = tma_spectrum(Uw,zw,Fch,df,ds)
 % INPUTS
 %   Uw - wind speed (m/s) <can be vector>
 %   zw - elevation of wind speed measurement (m)
@@ -17,7 +17,7 @@ function [Hs,Tp,Tz] = tma_spectrum(Uw,zw,Fch,df,ds)
 % RESULTS
 %   Hs - significant wave height (m)
 %   Tp - peak wave period (s)
-%   Tz - mean sero crossing wave period (s)
+%   T2 - spectral zero upcross period or mean sero crossing wave period (s)
 % NOTES
 %   CERC-84-7 (p10-12) 
 %   Bouws et al, 1985,
@@ -43,7 +43,7 @@ function [Hs,Tp,Tz] = tma_spectrum(Uw,zw,Fch,df,ds)
     intflag = check_vector_lengths(U,Fch,ds);
     if isempty(intflag)
         warndlg('Vector inputs are a different length');
-        Hs=[]; Tp=[]; Tz=[];
+        Hs=[]; Tp=[]; T2=[];
         return;
     end
     
@@ -57,7 +57,7 @@ function [Hs,Tp,Tz] = tma_spectrum(Uw,zw,Fch,df,ds)
     F2 = @(f) (f.^2).*kit_limit(f,ds).*jonswap(f,fp,kp);
     m2 = integral(F2,min(fp/10),max(10*fp),'ArrayValued',intflag);
     Hs = 4*sqrt(m0);
-    Tz = sqrt(m0./m2);
+    T2 = sqrt(m0./m2);
     
     if length(Hs)~=length(Tp)  
         %if depth varies Hs can be vector when Tp is scalar
