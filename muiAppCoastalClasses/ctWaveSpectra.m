@@ -637,49 +637,6 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             obj.inpData = inp;           
         end
 
-% %%
-%         function obj = setSprectrumInput(obj,ists)
-%             %match input used in getForcingConditions when the input is a
-%             %measured spectrum and is called for same purpose in runWaves
-%             % inputs = []; 
-%             % promptxt = {'Include depth saturation (1=Yes,0=No)'};
-%             % defaults = {'1'};
-%             % inpt = inputdlg(promptxt,'Input conditions',1,defaults);
-%             % if isempty(inpt), obj = []; return; end  %user cancelled
-%             % inputs.issat = logical(str2double(inpt{1}));    
-%             % inputs.form = 'Measured';      
-%             % inputs.source = 'Spectrum'; 
-%             % inputs.tsdst = tsdst;
-%             % if inputs.logical(str2double(inpt{1}))
-%             %     inputs.txt = 'Measured spectrum including depth saturation';
-%             % else
-%             %     inputs.txt = 'Measured spectrum excluding depth saturation';
-%             % end
-%             % obj.inpData = inputs;
-%             % obj.spModel.inptxt = [];
-% 
-%             % if ists
-%             %     inp = obj.inpData.tsdst;
-%             % else
-% 
-%             % end
-        % function obj = setSprectrumInput(obj,ists)
-        %     %match input used in getForcingConditions when the input is a
-        %     %measured spectrum and is called for same purpose in runWaves
-        %     inp = obj.inpData;
-        %     sptype = obj.inpData.source;
-        %     if strcmp(sptype,'Wave')
-        %         obj.inpData.wvsp_inputs = {sptype,inp.Hs,inp.Tp};
-        %     elseif strcmp(sptype,'Wind')
-        %         obj.inpData.wvsp_inputs = {sptype,inp.Uw,inp.zW,inp.Fetch};
-        %     end   
-        % 
-        %     % if ists
-        %     %     inp = obj.inpData.tsdst;
-        %     % else
-        %     % end
-        % end
-
 %%
         function inputMessage(obj)
             %write details of the input conditions to the command window
@@ -720,11 +677,11 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             % saved in 64 frequency intervals
             flim = obj.Interp.flim;
             obsfreq = [flim(1):0.005:0.1,0.11:0.01:flim(2)];
-            nrec = length(obj);
-            for i=1:nrec
-            stats = setSpectrum(obj,obsfreq);
-
-            varData = table2cell(stats);
+            nvar = length(obj);
+            varData = cell(1,nvar);
+            for i=1:nvar
+                stats = setSpectrum(obj(i),obsfreq);    
+                varData{i} = table2cell(stats);
             end
 
             dsp = wave_cco_spectra('setDSproperties');
