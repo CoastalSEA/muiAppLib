@@ -20,19 +20,24 @@ function output = copernicus_wave_format(funcall,varargin)
 %   VHM0_SW1 - Sea surface primary swell wave significant height [m]
 %   VHM0_SW2 - Sea surface secondary swell wave significant height [m]
 %   VHM0_WW - Sea surface wind wave significant height [m]
+%
 %   VMDR - Sea surface wave from direction [°]
 %   VMDR_SW1 - Sea surface primary swell wave from direction [°]
 %   VMDR_SW2 - Sea surface secondary swell wave from direction [°]
 %   VMDR_WW - Sea surface wind wave from direction[°]
 %   VPED - Sea surface wave from direction at variance spectral density maximum [°]
+%
 %   VSDX - Sea surface wave stokes drift x velocity [m/s]
 %   VSDY - Sea surface wave stokes drift y velocity [m/s]
+%
 %   VTM01_SW1 - Sea surface primary swell wave mean period [s]
 %   VTM01_SW2 - Sea surface secondary swell wave mean period [s]
 %   VTM01_WW - Sea surface wind wave mean period [s]
+
 %   VTM02 - Sea surface wave mean period from variance spectral density second frequency moment [s]
 %   VTM10 - Sea surface wave mean period from variance spectral density inverse frequency moment [s]
 %   VTPK - Sea surface wave period at variance spectral density maximum [s]
+%
 % SEE ALSO
 %   Atlantic- European North West Shelf- Wave Physics Reanalysis
 %   https://data.marine.copernicus.eu/product/NWSHELF_REANALYSIS_WAV_004_015/description
@@ -40,7 +45,7 @@ function output = copernicus_wave_format(funcall,varargin)
 %   files are in NetCDF format
 %
 % Author: Ian Townend
-% CoastalSEA (c)Dec 2024
+% CoastalSEA (c) Dec 2024
 %--------------------------------------------------------------------------
 %
     switch funcall
@@ -102,9 +107,11 @@ function dsp = setDSproperties(varnames)
 
     %struct entries are cell arrays and can be column or row vectors
     dsp.Variables = struct(...
-        'Name',{'VHM0','VHM0_SW1','VHM0_SW2','VHM0_WW','VMDR','VMDR_SW1',...
-                'VMDR_SW2','VMDR_WW','VPED','VSDX','VSDY','VTM01_SW1',...
-                'VTM01_SW2','VTM01_WW','VTM02','VTM10','VTPK'},...              
+        'Name',{'VHM0','VHM0_SW1','VHM0_SW2','VHM0_WW',...         %wave heights
+                'VMDR','VMDR_SW1','VMDR_SW2','VMDR_WW','VPED',...  %directions
+                'VSDX','VSDY',...                                  %stokes drift velocity
+                'VTM01_SW1','VTM01_SW2','VTM01_WW',...             %mean periods
+                'VTM02','VTM10','VTPK'},...                        %other periods     
         'Description',{'Sea surface wave significant height',...
                        'Sea surface primary swell wave significant height',...
                        'Sea surface secondary swell wave significant height',...

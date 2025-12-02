@@ -19,36 +19,49 @@ function wvdst = extract_wave_data(inwvdst)
 % CoastalSEA (c) April 2025
 %--------------------------------------------------------------------------
 %  
-    wvdst = [];
     varnames = inwvdst.VariableNames;
     if sum(ismatch(varnames,{'Hs','Tp','Dir'}))==3 
         wvdst = copy(inwvdst);
         return; 
-    end        
-        
-    vardesc = inwvdst.VariableDescriptions;
-    %call UI to select all required fields
-    sel = getInputUI(vardesc);
-    if isempty(sel), return; end
+    end 
 
-    inwv = inwvdst.DataTable;
-    indata = {inwv{:,sel{1}},inwv{:,sel{2}},inwv{:,sel{3}}};
+    %handle unimodal and bimodal input data options
+    Ntype = 1; t_txt = {'Wave data'};
+    answer = questdlg('Type of data','Wave selection','unimodal','bimodal','unimodal');
+    if strcmp(answer,'bimodal')
+        Ntype = 2; t_txt = {'Wind-wave','Swell wave'}; 
+    end
+    vardesc = inwvdst.VariableDescriptions;
+
+    for i=1:Ntype
+        %call UI to select all required fields
+        sel = getInputUI(vardesc,t_txt{i});
+        if isempty(sel), wvdst = []; return; end
+
+        factor = 1;
+        if contains(vardesc{sel{2}},'mean')
+            factor = 1.2; %scale mean period to peak period. this value            
+        end               %is for Jonswap with gamma=3.3
     
-    wvtime = inwvdst.RowNames;
-    dsp = setDSproperties();
-    wvdst = dstable(indata{:},'RowNames',wvtime,'DSproperties',dsp);
+        inwv = inwvdst.DataTable;
+        indata = {inwv{:,sel{1}},inwv{:,sel{2}}*factor,inwv{:,sel{3}}};
+        
+        wvtime = inwvdst.RowNames;
+        dsp = setDSproperties();
+        wvdst(i) = dstable(indata{:},'RowNames',wvtime,'DSproperties',dsp);
+    end
 end
 
 
 %%
-function selection = getInputUI(vardesc)
+function selection = getInputUI(vardesc,titletxt)
     %define inputgui for the selection of variables
     % to see field defintions use >>help inputgui
     inp.fields = {'Sig. wave height','Peak period','Mean direction'};                              
     inp.style = {'popupmenu','popupmenu','popupmenu'};
     inp.defaults = {vardesc,vardesc,vardesc};
 
-    selection = inputgui('FigureTitle','Wind data',...
+    selection = inputgui('FigureTitle',titletxt,...
                          'InputFields',inp.fields,...
                          'Style',inp.style,...
                          'ActionButtons', {'Select','Cancel'},...

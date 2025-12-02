@@ -57,6 +57,7 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             %user selected plotting options
             listxt = {'Plot a spectrum using Case data',...
                       'Plot a spectrum using a model',...
+                      'Plot a bimodal model spectrum',...
                       'Plot a spectrum loaded from file',...
                       'Plot measured against modelled',...
                       'Timeseries animation',...
@@ -73,15 +74,17 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
                     ax = ctWaveSpectra.plotCaseSpectrum(mobj);
                 case 2                  %Plot a spectrum using a model
                     ax = ctWaveSpectra.plotModelSpectrum();
-                case 3                  %Plot a spectrum loaded from file
+                case 3                  %Plot a bimodal spectrum using a model
+                    ax = ctWaveSpectra.plotBimodalModelSpectrum();
+                case 4                  %Plot a spectrum loaded from file
                     ax = ctWaveSpectra.plotFileSpectrum();
-                case 4                  %Compare measured and modelled
+                case 5                  %Compare measured and modelled
                     ax = ctWaveSpectra.plotCFmodelSpectrum(mobj);
-                case 5                  %Timeseries animation
+                case 6                  %Timeseries animation
                     ctWaveSpectra.animateCaseSpectrum(mobj);
-                case 6
-                    ctWaveSpectra.fitModel2Measured(mobj);
                 case 7
+                    ctWaveSpectra.fitModel2Measured(mobj);
+                case 8
                     ctWaveSpectra.bimodalSpectrum(mobj);
             end
         end
@@ -94,36 +97,43 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             obj = ctWaveSpectra;            
             [obj,tsdst,plttxt] = getCaseInput(obj,mobj);
             if isempty(tsdst), ax = []; return; end
-            tsdst.DataTable = rmmissing(tsdst.DataTable);%remove nans
+            tsdst(1).DataTable = rmmissing(tsdst(1).DataTable);%remove nans
         
             %select from dates, check for NaNs, get spectrum and plot
-            dates = tsdst.DataTable.Properties.RowNames;
+            dates = tsdst(1).DataTable.Properties.RowNames;
             ok = 0; j = 0; ax = gobjects(0);
             while ok<1 
                 irow = listdlg("PromptString",'Select event to plot',...
                          'SelectionMode','single','ListSize',[160,300],...
                          'ListString',dates);
                 if isempty(irow), return; end
-                ts = getDSTable(tsdst,irow,[]);         %selected record
-                plttxt{4} = sprintf('%s (%s)',tsdst.Description,dates{irow});
+                w_dst = getDSTable(tsdst(1),irow,[]);         %selected record
+                plttxt{4} = sprintf('%s (%s)',tsdst(1).Description,dates{irow});
 
-                obj.inpData.tsdst = ts;                 %assign data to input
-
-                if strcmp(obj.inpData.source,'Spectrum')
-                    obj = getMeasuredSpectrum(obj);     %compute spectrum based on measured form
-                else     
-                    obj = setInputParams(obj,ts);       %add input needed to construct spectrum
-                    obj = getModelSpectrum(obj);        %compute spectrum for specified conditions
-                    if isempty(obj.Spectrum.SG), continue; end
-                    spm = obj.spModel;
-                    spmform = split(spm.form);
-                    plttxt{4} = sprintf('%s, gamma=%.2g, and %s, n=%d ',...
-                                spmform{1},spm.gamma,spm.spread,spm.nspread);
-                    if contains(spm.form,'TMA') && spm.depth>0
-                        plttxt{4} = sprintf('%s, d=%.1f',plttxt{4},spm.depth);
-                    end
-                    inputMessage(obj);                    
+                obj.inpData.tsdst = w_dst;                 %assign data to input
+                obj = getSpectrum(obj);
+                if isempty(obj.Spectrum.SG), continue; end
+                if ~strcmp(obj.inpData.source,'Spectrum')
+                    plttxt = setPlotText(obj,plttxt);
                 end
+                % if strcmp(obj.inpData.source,'Spectrum')
+                %     obj = getMeasuredSpectrum(obj);     %compute spectrum based on measured form
+                % elseif length(tsdst)>1
+                %     %ts defines wind-wave. get same record for swell
+                %     idx = find(tsdst(2).RowNames==w_dst.RowNames);
+                %     s_dst = getDSTable(tsdst(2),idx,[]); %selected record
+                %     obj.inpData.tsdst(2) = s_dst; 
+                %     ts(1) = w_dst; ts(2) = s_dst;
+                %     obj = setInputParams(obj,ts);        %add input needed to construct spectrum
+                %     obj = getBimodalModelSpectrum(obj); %compute spectrum for specified conditions                  
+                %     if isempty(obj.Spectrum.SG), continue; end
+                %     plttxt = setPlotText(obj,plttxt);
+                % else
+                %     obj = setInputParams(obj,w_dst);       %add input needed to construct spectrum
+                %     obj = getModelSpectrum(obj);        %compute spectrum for specified conditions
+                %     if isempty(obj.Spectrum.SG), continue; end
+                %     plttxt = setPlotText(obj,plttxt);                   
+                % end
                 
                 obj.Params = wave_spectrum_params(obj); %integral properties of spectrum
                 %option to return diagnostics struct to investigate
@@ -134,6 +144,34 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
                 %call plot function   
                 pax = getPlot(obj,plttxt,ptype);
                 ax(1,j+1) = pax;                        %returns array of plot axes
+            end
+
+            %-nested function----------------------------------------------
+            function plttxt = setPlotText(obj,plttxt)
+                spm = obj.spModel;
+                spmform = split(spm.form);
+
+                plttxt{4} = sprintf('%s, gamma=%.2g, and %s, n=%d ',...
+                            spmform{1},spm.gamma(1),spm.spread,spm.nspread(1));
+                %handle TMA depth limit
+                if contains(spm.form,'TMA') && spm.depth>0
+                    plttxt{4} = sprintf('%s, d=%.1f',plttxt{4},spm.depth);
+                end
+
+                %handle bimodal options
+                if length(spm.gamma)>1 ||length(spm.nspread)>1
+                    plttxt{4} = sprintf('%s\n',plttxt{4});
+                end
+
+                if length(spm.gamma)>1
+                    plttxt{4} = sprintf('%sswell gamma=%.2g',plttxt{4},spm.gamma(2));
+                end
+
+                if length(spm.nspread)>1
+                    plttxt{4} = sprintf('%s swell spread=%d',plttxt{4},spm.nspread(2));
+                end
+
+                inputMessage(obj);                 
             end
         end
         
@@ -177,7 +215,46 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
                 clear obj
             end
         end
-        
+
+%%
+        function ax = plotBimodalModelSpectrum(plttxt)
+            %Plot a bimodal spectrum using a model and user defined waved parameters
+            ptype = questdlg('What type of plot','O?I spectrum','XY','Polar','XY');
+            
+            if nargin<1
+                xtxt = 'Wave period (s)';
+                ytxt = 'Direction (degTN)';
+                plttxt = {'Modelled Spectral Energy (m^2s)',xtxt,ytxt,'model'};   
+            end
+            inptype = 'Wave';
+            ok = 0; j = 0; ax = gobjects(0);
+            while ok<1    
+                obj = ctWaveSpectra;
+                obj = setSpectrumModel(obj);             %define the model to be used (Jonswap etc)
+                if isempty(obj.spModel),return; end
+
+                obj = setForcingConditions(obj,inptype); %UI to input wave/wind conditions
+                if isempty(obj), return; end   
+                % w_params = obj.inpData;
+                % w_params.Hs(2) = []; w_params.Tp(2) = []; w_params.Dir(2) = [];
+                % s_params = obj.inpData;
+                % s_params.Hs(1) = []; s_params.Tp(1) = []; s_params.Dir(1) = [];
+                obj = getBimodalModelSpectrum(obj); %compute spectrum for specified conditions
+                if isempty(obj.Spectrum.SG), continue; end
+                obj.Params = wave_spectrum_params(obj);  %integral properties of spectrum
+                inp = obj.inpData;
+                fprintf('Wind wave: Hs=%.1f m, Tp=%.1f s, Dir=%.1f dTN\n',...
+                                           inp.Hs(1),inp.Tp(1),inp.Dir(1));
+                fprintf('Swell wave: Hs=%.1f m, Tp=%.1f s, Dir=%.1f dTN\n',...
+                                           inp.Hs(2),inp.Tp(2),inp.Dir(2));
+                %call plot function   
+                plttxt{4} = getModelInputText(obj,1);
+                pax = getPlot(obj,plttxt,ptype);
+                ax(1,j+1) = pax;                         %returns array of plot axes
+                clear obj
+            end           
+
+        end
 %%
         function ax = plotFileSpectrum(plttxt)
             %Plot a spectrum loaded from file
@@ -425,12 +502,30 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
 % Input functions
 %--------------------------------------------------------------------------
     methods
+        function obj = getSpectrum(obj)
+            if strcmp(obj.inpData.source,'Spectrum')
+                obj = getMeasuredSpectrum(obj);      %compute spectrum based on measured form
+            elseif length(tsdst)>1
+                %ts defines wind-wave. get same record for swell
+                idx = find(tsdst(2).RowNames==w_dst.RowNames);
+                s_dst = getDSTable(tsdst(2),idx,[]); %selected record
+                obj.inpData.tsdst(2) = s_dst; 
+                ts(1) = w_dst; ts(2) = s_dst;
+                obj = setInputParams(obj,ts);        %add input needed to construct spectrum
+                obj = getBimodalModelSpectrum(obj);  %compute spectrum for specified conditions                  
+            else
+                obj = setInputParams(obj,w_dst);     %add input needed to construct spectrum
+                obj = getModelSpectrum(obj);         %compute spectrum for specified conditions                  
+            end
+        end
+
+%%
         function obj = setSpectrumModel(obj)
             %set spectrum form, data source, and parameters for wave
             %spectrum and directions spreading functions
             %  Defined using varargin as in above function   
             %  source iswind is used to prioritise selection of wind            
-            sp = {'JONSWAP fetch limited','TMA shallow water','Bimodal sea (JONSWAP/TMA)'...
+            sp = {'JONSWAP fetch limited','TMA shallow water',...
                    'Pierson-Moskowitz fully developed','Bretschneider open ocean'};
             src = {'Wave','Wind'};
             if nargin>1 && strcmp(obj.inpData.source,'Wind')
@@ -501,9 +596,9 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
                     defaults = {'1.1','8.2','185'};
                     inpt = inputdlg(promptxt,'Input conditions',1,defaults);
                     if isempty(inpt), return; end  %user cancelled
-                    inp.Hs = str2double(inpt{1});
-                    inp.Tp = str2double(inpt{2});
-                    inp.Dir = str2double(inpt{3}); 
+                    inp.Hs = str2num(inpt{1}); %#ok<ST2NM>
+                    inp.Tp = str2num(inpt{2}); %#ok<ST2NM>
+                    inp.Dir = str2num(inpt{3}); %#ok<ST2NM>
                     inp.form = 'Model';
 
                 case 'Wind'           %define spectrum using wind parameters                     
@@ -612,7 +707,7 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             %check for valid variable names when timeseries wave or wind
             %data are used to define conditions
             if strcmp(obj.inpData.source,'Wave')
-                xtsdst = extract_wave_data(tsdst);
+                xtsdst = extract_wave_data(tsdst); %returns 1x2 array if bimodal
             elseif strcmp(obj.inpData.source,'Wind')
                 xtsdst = extract_wind_data(tsdst,1); %isfetch=true
             end
@@ -625,9 +720,11 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             sptype = obj.inpData.source;
             inp = obj.inpData;
             if strcmp(sptype,'Wave')
-                inp.Hs = tsdst.Hs;
-                inp.Tp = tsdst.Tp;
-                inp.Dir = tsdst.Dir;
+                for i=1:length(tsdst)
+                    inp.Hs(i) = tsdst(i).Hs;
+                    inp.Tp(i) = tsdst(i).Tp;
+                    inp.Dir(i) = tsdst(i).Dir;
+                end
             elseif strcmp(sptype,'Wind')
                 inp.Uw = tsdst.AvSpeed;
                 inp.Dir = tsdst.Dir;
@@ -642,8 +739,10 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             %write details of the input conditions to the command window
             inp = obj.inpData;
             if strcmp(inp.source,'Wave')
-                fprintf('Input parameters: Hs=%.1f m, Tp=%.1f s, Dir=%.1f dTN\n',...
-                                                    inp.Hs,inp.Tp,inp.Dir); 
+                for i=1:length(inp.Hs)
+                    fprintf('Input parameters: Hs=%.1f m, Tp=%.1f s, Dir=%.1f dTN\n',...
+                                           inp.Hs(i),inp.Tp(i),inp.Dir(i)); 
+                end
             else
                 fprintf('Input parameters: U=%.1f m/s, Dir=%.1f dTN, F=%.0f m\n',...
                                             inp.Uw,inp.Dir,inp.Fetch); 
@@ -658,16 +757,20 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             if contains(spm.form,{'Pierson-Moskowitz fully developed','Bretschneider open ocean'})
                 modeltxt = sprintf('%s and %s, n=%d ',...
                             spmform{1},spm.spread,spm.nspread);
+            elseif length(spm.gamma)>1
+                modeltxt = sprintf('%s, gamma=%.2g/%.2g, and %s, n=%d/%d',...
+                                spmform{1},spm.gamma(1),spm.gamma(2),...
+                                spm.spread,spm.nspread(1),spm.nspread(2));
             else
                 if isnan(spm.gamma) && isone, spm.gamma = spm.T_gamma; end
-                modeltxt = sprintf('%s, gamma=%.2g, and %s, n=%d ',...
+                modeltxt = sprintf('%s, gamma=%.2g, and %s, n=%d',...
                             spmform{1},spm.gamma,spm.spread,spm.nspread);
-                if contains(spm.form,'TMA') && spm.depth>0
-                    modeltxt = sprintf('%s, d=%.1f',modeltxt,spm.depth);
-                end
-            end      
-        end
+            end   
 
+            if contains(spm.form,'TMA') && spm.depth>0
+                modeltxt = sprintf('%s, d=%.1f',modeltxt,spm.depth);
+            end
+        end
 
 %%
         function dst = saveSpectrum(obj,mobj)
@@ -748,6 +851,42 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
                 phi = 0.5*omega.^2.*(omega<=1) + 1.*(omega>2); 
                 obj.Spectrum.SG = phi.*obj.Spectrum.SG;
             end
+        end
+
+%%
+        function obj = getBimodalModelSpectrum(obj)
+            %construct bimodal spectrum from input wave conditions 
+            w_params = obj.inpData;
+            w_params.Hs(2) = []; w_params.Tp(2) = []; w_params.Dir(2) = [];
+            s_params = obj.inpData;
+            s_params.Hs(1) = []; s_params.Tp(1) = []; s_params.Dir(1) = [];
+
+            windwave = copy(obj);
+            windwave.spModel.nspread = obj.spModel.nspread(1);
+            windwave.spModel.gamma = obj.spModel.gamma(1);
+            windwave = getWaveModel(windwave,w_params);  %compute spectrum and params for specified conditions
+            if isempty(windwave.Spectrum.SG), return; end   
+
+            swellwave = copy(obj);
+            
+            swellwave.spModel.nspread = obj.spModel.nspread(1);
+            swellwave.spModel.gamma = obj.spModel.gamma(1);
+            if length(obj.spModel.nspread)>1
+                swellwave.spModel.nspread = obj.spModel.nspread(2);
+            end
+            if length(obj.spModel.gamma)>1
+                swellwave.spModel.gamma = obj.spModel.gamma(2);
+            end
+            swellwave = getWaveModel(swellwave,s_params);  %compute spectrum and params for specified conditions
+            if isempty(swellwave.Spectrum.SG), return; end 
+
+            summary = [windwave.Params;swellwave.Params];
+            summary.Properties.RowNames = {'Wind-waves','Swell waves'};
+            display(summary)
+
+            obj.Spectrum.SG = windwave.Spectrum.SG+swellwave.Spectrum.SG;
+            obj.Spectrum.freq = windwave.Spectrum.freq;
+            obj.Spectrum.dir = windwave.Spectrum.dir;
         end
 
 %%
@@ -888,8 +1027,8 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
 
             title(plttxt{4})
             p = obj.Params;
-            subtitle(sprintf('Hs=%.2fm; Tp=%.1fs; T_2=%.1fs; Dir=%.3gdegTN',...
-                                        p.Hs,p.Tp,p.T2,p.Dir));
+            subtitle(sprintf('Hs=%.2f m; Tp=%.1f s; T_2=%.1f s; Dir=%.3g degTN',...
+                                                    p.Hs,p.Tp,p.T2,p.Dir));
         end
 
 %%
@@ -1090,77 +1229,6 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
 % Utility functions
 %--------------------------------------------------------------------------
     methods (Static, Access=private)
-
-
- %%
-        % function [s1,s2] = obs_mod_plot(T,dir,var0,varc,ptype,params,plttxt)
-        %     %plot offshore and inshore spectra  - similar to off_in_plot in SpecralTransfer
-        % 
-        %     hf = figure('Name','SpecTrans','Tag','PlotFig');
-        %     ax = axes(hf);
-        %     sel = params.modelsel;
-        %     obs = params.obstable;
-        %     mod = params.modtable;
-        % 
-        %     if strcmp(ptype,'XY')
-        %         s1 = subplot(3,1,1,ax);
-        %         ctWaveData.splot(T,dir,var0,plttxt,s1);  %method in SpectralTransfer
-        %         s1.Title.String = 'Measured';        
-        %         subtitle(s1,sprintf('Hs=%.2f m; Tp=%.1f s; T2=%.1f s; Dir=%.3g degTN',...
-        %                                 obs.Hs,obs.Tp,obs.T2,obs.Dir),'Margin',1);
-        % 
-        %         s2 = subplot(3,1,2);
-        %         plttxt{1} = 'Modelled Spectral Energy (m^2s)';
-        %         ctWaveData.splot(T,dir,varc,plttxt,s2);
-        %         s2.YLim = s1.YLim;
-        %         s2.Title.String = sprintf('%s, gamma=%.2g, and %s, n=%d ',sel.form,...
-        %                                         sel.gamma,sel.spread,sel.nspread);        
-        %         subtitle(s2,sprintf('Hs=%.2f m; Tp=%.1f s; T2=%.1f s; Dir=%.3g degTN',...
-        %                                 mod.Hs,mod.Tp,mod.T2,mod.Dir),'Margin',1);
-        % 
-        %         s3 = subplot(3,1,3);
-        %         plttxt{1} = 'Difference in Spectral Energy (m^2s)';  
-        %         spdiff = var0-varc;
-        %         spmax = max(spdiff,[],'all');
-        %         idx = spdiff<spmax/100 & spdiff>-spmax/100;
-        %         spdiff(idx) = 0; %remove small differences
-        %         ctWaveData.splot(T,dir,spdiff,plttxt,s3);
-        %         s3.YLim = s1.YLim;   
-        %         s3.Title.String = 'Difference [Meas-Model]';
-        % 
-        %         sgtitle(sprintf('Spectrum for: %s',plttxt{5}))
-        %     else
-        %         s1 = subplot(1,2,1,ax);
-        %         ctWaveData.polar_plot(T,dir,var0,plttxt,s1);
-        %         s1.Title.String = 'Measured';
-        %         subtitle(s1,sprintf('Hs=%.2f m; Tp=%.1f s; T2=%.1f s; Dir=%.3g degTN',...
-        %                                 obs.Hs,obs.Tp,obs.T2,obs.Dir),'Margin',1);
-        % 
-        %         s2 = subplot(1,2,2);
-        %         plttxt{1} = 'Modelled Spectral Energy (m^2s)';
-        %         ctWaveData.polar_plot(T,dir,varc,plttxt,s2);              
-        %         s2.YLim = s1.YLim;
-        %         s2.Title.String = sprintf('%s, gamma=%.2g, and %s, n=%d ',sel.form,...
-        %                                         sel.gamma,sel.spread,sel.nspread);
-        %         subtitle(s2,sprintf('Hs=%.2f m; Tp=%.1f s; T2=%.1f s; Dir=%.3g degTN',...
-        %                                 mod.Hs,mod.Tp,mod.T2,mod.Dir),'Margin',1);
-        % 
-        %         sgtitle(sprintf('Spectrum for: %s',plttxt{5}))
-        %     end
-        % end  
-        % function y = adapt_smooth_complex(x, rho, baseLen)
-        %     % x: [1 x J] complex series, rho: [1 x J], baseLen: min window
-        %     J = numel(x); y = zeros(1,J);
-        %     for j = 1:J
-        %         k = max(baseLen, round(baseLen + 10*(1 - rho(j))));
-        %         h = max(1, floor(k/2));
-        %         i0 = max(1, j-h); i1 = min(J, j+h);
-        %         w = ones(1, i1-i0+1);
-        %         y(j) = sum(x(i0:i1) .* w) / sum(w);
-        %     end
-        % end
-
-
 
     end
 end

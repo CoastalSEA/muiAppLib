@@ -34,46 +34,81 @@ end
 %--------------------------------------------------------------------------
 % getData
 %--------------------------------------------------------------------------
-function dst = getData(~,filename) 
+function dst = getData(obj,filename) 
     %read and load a data set from a file
-    [data,~] = readInputData(filename);             
+    data = readTSinputFile(obj,filename);              
     if isempty(data), dst = []; return; end
+    
+    %some locales mean that first column is loaded as a cell array of char
+    %hence 6 columns instead of 5
+    if width(data)==6 && iscell(data{1,1})
+        date = datetime(data.Var1,'InputFormat','dd-MMM-yyyy',...
+                                            'Locale','en_GB');  %reformat date
+        date = date+data.Var2;
+        data = removevars(data,'Var1');                         %remove extra column
+        data.Var2 = date;                                       %assign datetime
+    end    
     
     %set metadata
     dsp = setDSproperties;
 
-    % concatenate date and time
-    mdat = data{1};
-    mtim = data{2};
-    mdat.Format = dsp.Row.Format;
-    mtim.Format = dsp.Row.Format;
-    myDatetime = mdat + timeofday(mtim);
-
+    %extract required subset of data   
+    myDatetime = data{:,1};
+    myDatetime.Format = dsp.Row.Format;
+ 
     %check that datetime values are unique
     [UniqueTime,iu] = unique(myDatetime);
     if length(UniqueTime)~=length(myDatetime)
         myDatetime = UniqueTime;                
     end  
-    
-    % information on data location
-    % Latitude = [];
-    % Longitude = [];
-    % 
-    varData = table(data{1,3:end});
+
+    varData = data(:,2:end);
     varData = standardizeMissing(varData,[99,99.9,99.99,999,9999]);
     varData = varData(iu,:);
     
     %load the results into a dstable  
-    dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp); 
-    % dst.Dimensions.Position = [Latitude,Longitude];    
+    dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp);   
 end
+% function dst = getData(~,filename) 
+%     %read and load a data set from a file
+%     [data,~] = readInputData(filename);             
+%     if isempty(data), dst = []; return; end
+% 
+%     %set metadata
+%     dsp = setDSproperties;
+% 
+%     % concatenate date and time
+%     mdat = data{1};
+%     mtim = data{2};
+%     mdat.Format = dsp.Row.Format;
+%     mtim.Format = dsp.Row.Format;
+%     myDatetime = mdat + timeofday(mtim);
+% 
+%     %check that datetime values are unique
+%     [UniqueTime,iu] = unique(myDatetime);
+%     if length(UniqueTime)~=length(myDatetime)
+%         myDatetime = UniqueTime;                
+%     end  
+% 
+%     % information on data location
+%     % Latitude = [];
+%     % Longitude = [];
+%     % 
+%     varData = table(data{1,3:end});
+%     varData = standardizeMissing(varData,[99,99.9,99.99,999,9999]);
+%     varData = varData(iu,:);
+% 
+%     %load the results into a dstable  
+%     dst = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp); 
+%     % dst.Dimensions.Position = [Latitude,Longitude];    
+% end
 %%
-function [data,header] = readInputData(filename)
-    %read wind data (read format is file specific).
-    dataSpec = '%{dd-MMM-yyyy}D %{HH:mm:ss}D %f %f %f %u';
-    nhead = 1;     %number of header lines
-    [data,header] = readinputfile(filename,nhead,dataSpec); %see muifunctions
-end
+% function [data,header] = readInputData(filename)
+%     %read wind data (read format is file specific).
+%     dataSpec = '%{dd-MMM-yyyy}D %{HH:mm:ss}D %f %f %f %u';
+%     nhead = 1;     %number of header lines
+%     [data,header] = readinputfile(filename,nhead,dataSpec); %see muifunctions
+% end
 %%
 %--------------------------------------------------------------------------
 % dataDSproperties
