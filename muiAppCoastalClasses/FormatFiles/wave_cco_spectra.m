@@ -88,8 +88,8 @@ function dst = getData(~,filename)
     header = cellfun(@str2double,header,'UniformOutput',false);
     input = header([2,3,4,6]);    %extract required variables
     input{1} = input{1}/100;      %convert wave height from cm to m
-    dst.Properties =  dstable(input{:},'RowNames',myDatetime,'DSproperties',dsparams);
-    dst.Properties.Description = Location;
+    dst.sptProperties =  dstable(input{:},'RowNames',myDatetime,'DSproperties',dsparams);
+    dst.sptProperties.Description = Location;
 end
 
 %%

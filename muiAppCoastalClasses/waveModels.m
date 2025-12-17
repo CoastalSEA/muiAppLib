@@ -85,13 +85,13 @@ classdef (Abstract = true) waveModels < muiDataSet
         function [tsdst,meta] = getInputData(obj,mobj)
             %prompt user to select wave and water level data and return in
             %input dstable of data and metadata for inputs used
-            tsdst = []; meta.iselvar = false;
+            meta.iselvar = false;
             muicat = mobj.Cases;
             wvclassops = {'ctWaveData','muiUserModel'};
             promptxt = 'Select input wave data set:';           
             [wv_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
                            'CaseClass',wvclassops,'ListSize',[300,100]);                                    
-            if ok<1, return; end
+            if ok<1,tsdst = []; return; end
             wvdst = getDataset(muicat,wv_crec,1);    %1 selects first dataset in struct
                                                      %ie Dataset or Spectra in most cases
             inputxt = sprintf('%s used for offshore waves',wvdst.Description);
@@ -99,18 +99,20 @@ classdef (Abstract = true) waveModels < muiDataSet
             wvtime = wvdst.RowNames;               
             
             if isfield(wvdst.Dimensions,'freq')
+                %add the properties table asa a second dstable
                 meta.source = 'Measured spectra'; 
-                tsprops = getDataset(muicat,wv_caserec,2);  %2 selects Properties dataset from spectra input
+                tsprops = getDataset(muicat,wv_crec,2);  %2 selects Properties dataset from spectra input
                 tsprops = removerows(tsprops,find(~timerange));
-                wvdst = horzcat(wvdst,tsprops);               
-                wvdst = activatedynamicprops(wvdst);              
+                % wvdst = horzcat(wvdst,tsprops);               
+                % wvdst = activatedynamicprops(wvdst);     
+                wvdst(2) = tsprops;
             else
                 meta.source = 'Measured waves';
                 %check whether default variable names are not used and selection needed
                 varnames = wvdst.VariableNames;
                 if ~any(strcmp(varnames,'Hs'))
                     wvdst = extract_wave_data(wvdst);
-                    if isempty(wvdst), return; end
+                    if isempty(wvdst), tsdst = []; return; end
                     meta.iselvar = true;  %variables selected (non-standard names)
                 end
             end
@@ -127,7 +129,7 @@ classdef (Abstract = true) waveModels < muiDataSet
             else
                 wldst = getDataset(muicat,wl_crec,1); 
                 %check that there is water level data for period of interest
-                [idst,idnd] = ts2_endpoints_in_ts1(wvdst,wldst);
+                [idst,idnd] = ts2_endpoints_in_ts1(wvdst(1),wldst);
                 if isempty(idst)
                     getdialog('Data do not overlap. Using SWL=0');
                     inputxt = sprintf('%s, 0mOD used for water level',inputxt);
@@ -157,8 +159,14 @@ classdef (Abstract = true) waveModels < muiDataSet
             % 
             % [wvdst,timerange] = getSubSet(obj,wvdst);      %allow user to extract a subset 
             % swl = swl(timerange);
-
-            tsdst = addvars(wvdst,swl,'NewVariableNames','swl');
+            % for i=1:length(wvdst)
+            %     %when called using sea and swell wvdst is [1x2]
+            %     %when called using spectrum wvdst is [1x2] spectrum+properties
+            %     tsdst(i) = addvars(wvdst(i),swl,'NewVariableNames','swl');
+            % end
+            tsdst = wvdst;
+            tsdst(1) = addvars(wvdst(1),swl,'NewVariableNames','swl');
+            
             meta.inptxt = inputxt;
 
             %assign the run parameters to the model instance
