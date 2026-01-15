@@ -278,7 +278,9 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             for i=1:2
                 [obj(i),tsdst] = getCaseInput(obj(i),mobj);
                 if isempty(tsdst), sax = []; return; end
-                tsdst(1).DataTable = rmmissing(tsdst(1).DataTable);%remove nans
+                if ~isprop(tsdst,'So')
+                    tsdst(1).DataTable = rmmissing(tsdst(1).DataTable);%remove nans
+                end
                 dates = tsdst(1).DataTable.Properties.RowNames;
                 irow = listdlg("PromptString",'Select event to plot',...
                             'SelectionMode','single','ListSize',[160,300],...
@@ -797,14 +799,18 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             % input is obj.Spectrum with SG, dir and freq. 
             % saved in 64 frequency intervals
             flim = obj(1).Interp.flim;
-            obsfreq = [flim(1):0.005:0.1,0.11:0.01:flim(2)];
+            obsfreq = [flim(1):0.005:0.1,0.11:0.01:flim(2)];            
             nvar = length(obj);
+            hpw = PoolWaitbar(nvar, 'Saving spectra');
             for i=1:nvar
                 stats = setSpectrum(obj(i),obsfreq);    
                 varData(i,:) = varfun(@transpose,stats);
                 myDatetime(i,1) = obj(i).Spectrum.date;
                 input(i,:) = [obj(i).Params.Hs,obj(i).Params.T2,obj(i).Params.Sp,NaN];  %NaN is for SST
+                increment(hpw);
             end
+            delete(hpw) 
+
             varData.Properties.VariableNames = stats.Properties.VariableNames;
             input = array2table(input);
 
@@ -813,14 +819,14 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             Spectrum = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp.dspec); 
             Spectrum.Dimensions.freq = obsfreq;
             
-            %add properties to a dstable
-            
+            %add properties to a dstable            
             Properties =  dstable(input,'RowNames',myDatetime,'DSproperties',dsp.dsprop);
             
             if isfield(obj(1).inpData,'tsdst')
                 Spectrum.Description = obj(1).inpData.tsdst(1).Description;
                 Properties.Description = obj(1).inpData.tsdst(1).Description;
             end
+
             %save results
             if nargin>1
                 dst.Spectra = Spectrum;
@@ -870,7 +876,7 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
             obj.Spectrum.dir = dir;
             %handle depth saturation if TMA spectrum used            
             if strcmp(sp.form,'TMA shallow water') && sp.depth>0
-                obj.Spectrum.dir = sp.depth;
+                obj.Spectrum.depth = sp.depth;
             end
 
             if strcmp(obj.inpData.form,'SpectralTransfer')
@@ -1228,21 +1234,22 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
         end
 
 %%
-function getMultiPlot(~,sax)
-    %plot a set of axes in a single figure
-    hf = figure('Name','SpecTrans','Tag','PlotFig');
-    nplot = length(sax);
-    t = tiledlayout(hf, nplot, 1); % nplot rows, 1 column
-    hfigs = gobjects(0);
-    for i=1:nplot
-        % Move existing axes into tiles
-        hfigs(i) = sax(i).Parent;
-        nexttile(t, i);
-        sax(i).Parent = t;  % Reparent to tiledlayout in figure
-        sax(i).Layout.Tile = i;
-    end
-    delete(hfigs)
-end
+        function getMultiPlot(~,sax)
+            %plot a set of axes in a single figure
+            hf = figure('Name','SpecTrans','Tag','PlotFig');
+            nplot = length(sax);
+            t = tiledlayout(hf, nplot, 1); % nplot rows, 1 column
+            hfigs = gobjects(0);
+            for i=1:nplot
+                % Move existing axes into tiles
+                hfigs(i) = sax(i).Parent;
+                tt = nexttile(t, i);
+                delete(tt)           % removes the placeholder axes
+                sax(i).Parent = t;   % Reparent to tiledlayout in figure
+                sax(i).Layout.Tile = i;
+            end
+            delete(hfigs)
+        end
 
 %%
         function compareProperties(obj)
@@ -1323,22 +1330,27 @@ end
             %unpack the spectrum property as a set of arrays
             % 1 - input includes inobj and offobj: return spectra and params
             % 2 - input just inobj: returns params
+            nrec = length(inobj);
+            hpw = PoolWaitbar(nrec, 'Unpacking spectra');
             if nargin==2
-                parfor i=1:length(offobj)
+                parfor i=1:nrec
                     time(i,1) = offobj(i).Spectrum.date;    
                     swl(i,1) = offobj(i).inpData.tsdst(1).DataTable.swl;
                     Sot(i,:,:) = offobj(i).Spectrum.SG;
                     Sit(i,:,:) = inobj(i).Spectrum.SG;
                     depths(i,1) = inobj(i).Spectrum.depth;  
                     params(i,:) = inobj(i).Params;
+                    increment(hpw);
                 end   
                 spectra = struct('time',time,'swl',swl,'Sot',Sot,'Sit',Sit,'depths',depths);
             else
-                parfor i=1:length(inobj)
+                parfor i=1:nrec
                     params(i,:) = inobj(i).Params;
+                    increment(hpw);
                 end
                 spectra = [];
             end
+            delete(hpw)
         end
     end
 end

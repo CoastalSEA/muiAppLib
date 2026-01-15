@@ -80,9 +80,9 @@ function dst = getData(~,filename)
     varData = cellfun(@transpose,varData,'UniformOutput',false);
 
     %load the results into a dstable  
-    dst.Spectra = dstable(varData{:},'RowNames',myDatetime,'DSproperties',dspectra); 
-    dst.Spectra.Dimensions.freq = data{1};
-    dst.Spectra.Description = Location;
+    dst.sptSpectra = dstable(varData{:},'RowNames',myDatetime,'DSproperties',dspectra); 
+    dst.sptSpectra.Dimensions.freq = data{1};
+    dst.sptSpectra.Description = Location;
 
     %add header information to a dstable
     header = cellfun(@str2double,header,'UniformOutput',false);

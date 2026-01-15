@@ -14,7 +14,16 @@ function dst = tidalrange_nltc(var,dtime,issave,isplot,titletxt)
 %   isplot - true if plotting options are to be called (optional)
 %   titletxt - text to add to title (e.g. Case used) - optional
 % OUTPUT (optional)
-%   dst - dstable containing fit to var (m), 
+%   dst - dstable containing fit to var (m)
+% NOTES
+%   non-linear regression is used to explore combinations of a linear trend
+%   and 3 long-term cycles with periods of 8.85, 18.6 and 180 years and
+%   phases of 12.2, 128 and 0 years. In some options only the amplitude is
+%   a fit parameter and in others both amplitude and phase are fitted.
+%   The phases are labelled as 
+%   LPC - lunar perigee cycle
+%   NTC - lunar nodal cycle (18.6 yr)
+%   LTC - long-term cycle (180 yr)
 % SEE ALSO
 %  tidalrange.m
 %
