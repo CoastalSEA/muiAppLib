@@ -569,7 +569,7 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
 
 %%
         function obj = setDefaultSpectrumModel(obj)
-            %set spectrum form, data source, and parameters for wave
+            %set default values for spectrum form, data source, and parameters for wave
             %spectrum and directions spreading functions
             spectrum.form = 'JONSWAP fetch limited';
             spectrum.source = 'Wave';
@@ -761,7 +761,7 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
 
 %%
         function modeltxt = getModelInputText(obj)
-            %extract the model input to define a spectrum from spModel
+            %extract the model input to define a spectrum from spModel property
             spm = obj.spModel;
             spmform = split(spm.form);
             if contains(spm.form,{'Pierson-Moskowitz fully developed','Bretschneider open ocean'})
@@ -1015,7 +1015,7 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
 
 %%
         function phi = kit_limit(~,f,ds)
-            % Calculate the Kitaigorodskii limit to the spectrum at frquency f
+            % Calculate the Kitaigorodskii limit to the spectrum at frequency f
             % f - wave frequency (1/s)
             % ds - water depth at site (m)
             % phi - frquency dependent Kitaigorodskii adjustment to be applied to the 
@@ -1141,6 +1141,7 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
 
 %%
         function ax = omniSpectrumPlot(obj,ax)
+            %plot omni-direction wave spectrum
             if nargin<2 || isempty(ax)
                 hf = figure('Name','SpecTrans','Tag','PlotFig');
                 ax = axes(hf);
@@ -1267,12 +1268,9 @@ classdef ctWaveSpectra < matlab.mixin.Copyable
                                                  'Model spectrum'};
             display(out)
         end
-    end
-
 %% ------------------------------------------------------------------------
 % Skill functions - NB not wave spectra specific - should not be here???
 %--------------------------------------------------------------------------    
-    methods
         function skill = getSkillParameters(obj,mobj)
             %extract Skill parameters using MS_RunParams class for input
             x = obj(1).Spectrum.dir;              %direction
