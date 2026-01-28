@@ -69,6 +69,7 @@ function [Hsi,Diri,depS,bS] = hs_surf(dst,inp)
 
     if isnan(inp.zi)
         [depS,bS] = surfdepth(dst,inp,dep0);
+        if isempty(depS), Hsi = []; Diri = []; bS = []; return; end
     else
         depS = dst.swl-inp.zi; %water depth from swl to bed level        
         bS = profileslope(-inp.zi,0,inp.z1km,inp.ubs);
@@ -94,7 +95,8 @@ function Hsb = getHsb(Hsi,Tp,bs,depi,beta,g,hboption,hsbflag)
     switch hsbflag        
         case 0  %no wave breaking included
             Hsb = Hsi;
-        case 1  %SPM formulation
+        case 1  %selected wave breaking model (0-3) constant, SPM, and 
+                %SPM a plunge length in front of toe
             Hsb = hb_break(depi,bs,Tp,g,hboption);
         case 2  %la Roux formulation, 2007, eq.25
             alp = atan(1/bs)*180/pi;
@@ -102,8 +104,8 @@ function Hsb = getHsb(Hsi,Tp,bs,depi,beta,g,hboption,hsbflag)
         case 3  %SPM to define maximum and Holmes/TCP to get Hsb
             [hsb1,hsb2] = hs_break(Hsi,Tp,bs,depi,beta,g,hboption);
             %assign Hsb based on bed slope
-            bs1 = 100;
-            bs2 = 20;
+            bs1 = 200;
+            bs2 = 50;
             %transition values are estimates
             if bs>=bs1
                 Hsb = hsb1; %Holmes - energy redistributed (lower bound)
@@ -120,6 +122,14 @@ function [depS, mS] = surfdepth(dst,inp,dep0)
     %breaking commences using fzero. return depth and bed slope
     if isa(dst,'dstable')
         dst = dst.DataTable; %convert to a table for use in parfor
+    end
+    
+    if isnan(inp.zi) && inp.hsbflag==0
+        errordlg('Wave breaking model must be >0 to estimate the surf zone depth');
+        depS = []; mS = []; return        
+    elseif isnan(inp.zi) && inp.hboption>1
+        errordlg('Breaker height model must be 0 or 1 to estimate the surf zone depth');
+        depS = []; mS = []; return   
     end
 
     depS = zeros(size(dst.Hs)); mS = depS;
@@ -140,8 +150,10 @@ function [depS, mS] = surfdepth(dst,inp,dep0)
     %limit to Hsb in offshore depth 
     bsi = profileslope(depcl,0,inp.z1km,inp.ubs);
     idd = depi1>depcl;
-    [~,dst.Hs(idd)] = hs_break(dst.Hs(idd),dst.Tp(idd),bsi,depcl,beta,inp.g,inp.hboption);
-    depi1(idd) = depi2(idd);
+    if any(idd)
+        [~,dst.Hs(idd)] = hs_break(dst.Hs(idd),dst.Tp(idd),bsi,depcl,beta,inp.g,inp.hboption);
+    end
+    %depi1(idd) = depi2(idd);
     depi2(idd) = 1.3*dst.Hs(idd);
 
     %inshore wave and breaker height anonymous functions
@@ -156,55 +168,60 @@ function [depS, mS] = surfdepth(dst,inp,dep0)
     options.FunValCheck = 'on';
     nrec = length(dst.Hs);
     hpw = PoolWaitbar(nrec, 'Processing wave data');
-    parfor j=1:nrec                                        %parfor*********
+    parfor j=1:nrec                                     %parfor*********
         jfunc = @(depi) myfunc(depi,j);
-       % sprintf('%d: depi1 %.3f depi2 %0.3f\n',j,depi1(j),depi2(j))
-        if depi1(j)>0.2 && depi2(j)>depi1(j) && ~(idx(j))
-            depS(j) = findepth(jfunc,depi1(j),depi2(j),options);            
-            if isnan(depS(j)) || depS(j)<1 %depS can be negative if fzero does not find solution
-                mS(j) = NaN;
-            else
-                mS(j) = mbsfun(depS(j),j);
-            end
-        elseif idx(j)
+        if idx(j)                                       %nans in input data
             depS(j) = NaN;
             mS(j) = NaN;
-        elseif depi2(j)<depi1(j)
-            mS(j)=1;
-        else
-            depS(j) = 0.2; %default for small waves, Hs<0.154m
+        else                                            %valid input data
+            %depS returns positive depth or NaN is solution not found
+            depS(j) = findepth(jfunc,0,depi2(j),options);   
+            if isnan(depS(j)) || depS(j)<0.2 
+                depS(j) = 0.2; %default for small waves, Hs<0.154m
+            end
             mS(j) = mbsfun(depS(j),j);
         end
         increment(hpw);
     end
     delete(hpw)
 end
+
 %%
 function depS = findepth(afunc,depi1,depi2,options)
-    %use depi1 to find root. If this fails, iterate out to closure depth
-    try
-        [depS,~,exitflag] = fzero(afunc,depi1,options);
-    catch
-        exitflag = -3;	%NaN or Inf function value was encountered
+    %scan the range of solutions defined by depi1 and depi2 to find where
+    %solution changes sign
+    depS = NaN;
+
+    % coarse scan
+    nscan = 20;
+    deps = linspace(depi1,depi2,nscan);
+    fvals = NaN(size(deps));
+
+    for k = 1:nscan
+        try
+            fvals(k) = afunc(deps(k));
+        catch
+            fvals(k) = NaN;
+        end
     end
 
-    if exitflag<1 || ~isreal(depS) 
-        nint = 5;
-        dint = abs(depi2)/nint;
-        for ii=1:nint
-            depii = depi1+dint*ii;
-            try
-                [depS,~,exitflag] = fzero(afunc,depii,options);
-            catch
-                exitflag = -3;	%NaN or Inf function value was encountered
-            end
+    % find sign changes
+    s = sign(fvals);
+    idx = find(diff(s) ~= 0 & ~isnan(fvals(1:end-1)) & ~isnan(fvals(2:end)));
 
-            if exitflag>0
-                break
-            end
-        end
-        if exitflag<1
-                depS = exitflag; %errors are -1 to -6 or 0 if function returns NaN in fzero
-        end
+    if isempty(idx)
+        return              %no solution found - returns depS=NaN
+    elseif length(idx)>1
+        idx = idx(1);
+    end
+
+    % use first valid bracket
+    a = deps(idx(1));
+    b = deps(idx(1)+1);
+
+    try
+        depS = fzero(afunc,[a b],options);
+    catch
+        depS = NaN;
     end
 end

@@ -63,7 +63,7 @@ classdef ctWaveModel < waveModels
 %-------------------------------------------------------------------------- 
             %get the timeseries input data and site parameters
             [tsdst,meta] = getInputData(obj,mobj);            
-            if isempty(tsdst), return; end   %user cancelled data selection
+            if isempty(tsdst), obj = []; return; end   %user cancelled data selection
             setRunParam(obj,mobj,meta.caserecs{:}) %assign run parameters
             dsp = modelDSproperties(obj,isin,meta.iselvar);
 
@@ -74,7 +74,9 @@ classdef ctWaveModel < waveModels
                 inp = inputParameters(site_params); %convert class to struct
                 inp.g = mobj.Constants.Gravity;     %add gravity
                 [Hsi,Diri,depi,bs] = hs_surf(tsdst,inp);      
-                if meta.iselvar %variables selected (non-standard names) so include Tp
+                if isempty(Hsi)
+                    obj = []; return
+                elseif meta.iselvar %variables selected (non-standard names) so include Tp
                     results = {Hsi,tsdst.Tp,Diri,tsdst.swl,depi};
                 else    %default naming convention
                     results = {Hsi,Diri,tsdst.swl,depi};

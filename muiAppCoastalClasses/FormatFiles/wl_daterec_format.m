@@ -39,16 +39,16 @@ function dst = getData(obj,filename)
     data = readTSinputFile(obj,filename);   %data returned as a table
     if isempty(data), dst = []; return; end
 
-    if ischar(data{1,1}{1})
+    if isdatetime(data{1,1})
+        varData = data(:,2:end);    %format with datetime data
+        %extract datetime
+        myDatetime = data{:,1};        
+    elseif ischar(data{1,1}{1})
         varData = data(:,4:end);    %format with id) date time data
         % concatenate date and time
         mdat = datetime(data{:,2},'InputFormat','yyyy/MM/dd');
         mtim = data{:,3};
-        myDatetime = mdat + mtim;        
-    elseif isdatetime(data{1,1})
-        varData = data(:,2:end);    %format with datetime data
-        %extract datetime
-        myDatetime = data{:,1};
+        myDatetime = mdat + mtim;       
     else
         dst = [];
         warndlg('Unrecognised file format')

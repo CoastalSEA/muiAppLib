@@ -43,9 +43,11 @@ idx = Hs==0;
 % now find the upper and lower bound estimates of Hs
 HbHs2 = 2*(Hb./Hs).^2;
 fnHbHs = exp(-HbHs2);
+idy = fnHbHs==1;
 % redistribution over the whole of the pdf below Hb: Holmes - a lower bound
 Hsb1 = sqrt(beta^2*Hs.^2.*(1 - fnHbHs.*(1+HbHs2))./(1-fnHbHs));
-Hsb1(idx) = 0;
+Hsb1(idx) = 0;     %trap Hs=0
+Hsb1(idy) = 0;     %trap divide by zero
 % redistribution at Hb: Tucker, Carr & Pitt - an upper bound
 Hsb2 = sqrt(beta^2*Hs.^2.*(1-fnHbHs));
 Hsb2(idx) = 0;

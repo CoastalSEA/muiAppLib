@@ -42,5 +42,20 @@ classdef ctWaveData < muiDataSet
             %generate plot for display on Q-Plot tab
             tabDefaultPlot(obj,src);
         end 
+
+%%
+%%
+function  [tsdst,meta] = addWaveWLdataset(wvobj,mobj,caserec)
+            %add water levels to a selected wave data set and return a dstable
+            % muicat = mobj.Cases;
+            % wvobj = getCase(muicat,caserec);  %get the selected instance
+            wvdst = wvobj.Data.Dataset;       %get dstable assigned to Dataset
+             
+            meta.caserecs = {caserec};        %caserec id used in model run
+            meta.iselvar = false;             %extracted variables not used
+            meta.source = 'Measured waves';   
+            meta.inptxt = sprintf('%s used for waves',wvdst.Description);            
+            [tsdst,meta] = addwaterlevels2waves(wvdst,mobj,meta);
+        end
     end
 end
