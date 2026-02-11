@@ -9,7 +9,7 @@ function [Hsi,Diri,depS,bS] = hs_surf(dst,inp)
 %   [Hsi,Diri,depS,bS] = hs_surf(inp)
 % INPUTS 
 %   dst - dstable with variables:
-%       Hs  - offshoresignificant wave height (m)
+%       Hs  - offshore significant wave height (m)
 %       Tp   - peak wave period (s)
 %       Dir - wave direction (degrees TN)
 %       swl  - still water level (mOD)

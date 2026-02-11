@@ -14,7 +14,10 @@ function dst = tidalrange(wl,t,issave,isplot)
 %   isplot - true if plotting options are to be called (optional)
 % OUTPUT (optional)
 %   dst - dstable containing, tidal range (m),  high water levels (mAD), 
-%         low water levels (mAD).
+%         low water levels (mAD). Times are based on the central
+%         up/down-crossing of mean water level. ie NOT explicit HW and LW
+%         times. This provides the high and low water values associated
+%         with each value of tidal range.
 %
 % Author: Ian Townend
 % CoastalSEA (c)June 2018

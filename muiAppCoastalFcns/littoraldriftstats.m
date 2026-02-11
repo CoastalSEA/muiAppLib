@@ -13,8 +13,11 @@ function dst = littoraldriftstats(qs,tdt,varargin)
 %   varargin - period: optional variable to define annual or monthly output 
 %              to be returned in var. Use 'year' or 'month'. Default is
 %              'month'.
-%              isprompt: optional variable set to false to suppres prompts 
-%              for ouput. Default is true.
+%              isprompt: logical optional variable set to false to suppress 
+%              prompts for ouput. Default is true. NB must be logical input
+%              OR
+%              plotoption: numerical value - 0=default plot, 1-3 plot only
+%              subplot as numbered
 % OUTPUT
 %   Plot of gaps and monthly/annual drift plot
 %   Defintions: gap in record = difference between dt*ndt in year and nrecs in each year
@@ -44,13 +47,19 @@ function dst = littoraldriftstats(qs,tdt,varargin)
     calmsthreshold = str2double(answer{1})/31556952; %default y2s
     
     %check input
-    isprompt = true;
+    isprompt = true;                 %default is to prompt
+    plotoption = 0;                  %default is to plot all subplots
     if nargin<3
         period = 'month';        
     else
         period = varargin{1};
         if length(varargin)>1
-            isprompt = varargin{2};
+            inp = varargin{2};
+            if islogical(inp)
+                isprompt = inp;      %logical input used to set silent mode
+            else
+                plotoption = inp;    %numerical input used to select plot option
+            end
         end
     end
 
@@ -137,59 +146,76 @@ function dst = littoraldriftstats(qs,tdt,varargin)
     stdate = datetime(yearrecs(1),1,1);
     endate = datetime(yearrecs(end),12,31);
     
-    figure('Name','Drift statistics','Tag','PlotFig');
-    %plot gap statistics
-    subplot(3,1,1)
-    if length(yearrecs)>1
-        bar(yearrecs,[gapsinrecord,gapsindata,offshore,calms],'stacked')
+    hf = figure('Name','Drift statistics','Tag','PlotFig');
+    if plotoption<2
+        %plot gap statistics
+        s(1) = subplot(3,1,1);
+        if length(yearrecs)>1
+            bar(yearrecs,[gapsinrecord,gapsindata,offshore,calms],'stacked')
+        else
+            bar([yearrecs;NaN],[gapsinrecord,gapsindata,offshore,calms;0,0,0,0],'stacked')
+        end
+        xlim([yearrecs(1)-0.5,yearrecs(end)+0.5])
+        xlabel('Year');
+        ylabel(sprintf('Percentage gaps,\ncalms and offshore conditions'));
+        calmstxt = sprintf('Calms (qs<%g m^3/s)',calmsthreshold);
+        legend({'Gaps in record','Void/offshore (NaN input)','Offshore (qs=0)',calmstxt},'Location','best');
+    end
+
+    if plotoption==0 || plotoption==2
+        %plot annual and monthly drift volumes
+        s(2) = subplot(3,1,2);
+        yyaxis left
+        plot(mtime,mdrift);                                      %monthly drift
+        hold on
+        hp = plot([mtime(1),mtime(end)],[0,0],'--k');            %zero axis
+        excludefromlegend(hp);
+        plot(tdt,qsgaps,'-r','LineWidth',3);                     %gap line on zero axis
+        hp = plot([tdt(1),tdt(end)],[0,0],'dr','LineWidth',1.5); %start and end of record
+        excludefromlegend(hp);
+        hold off
+        xlim([stdate,endate])
+        xlabel('Time');
+        ylabel('Monthly drift volumes (m^3)');
+        yyaxis right
+        mver = version('-release');   %plotting datetime changes in v2017a
+        if str2double(mver(1:4))<2017
+            andtn = datenum(andtn); %#ok<DATNM> 
+        end
+        bar(andtn,andrift,'FaceColor','none','BarWidth',1);     %annual drift
+        ylabel('Annual drift volumes (m^3)');
+        legend({'Monthly drift','Gaps','Annual drift'},'Location','best');
+    end
+    
+    if plotoption==0 || plotoption==3
+        %plot annual positive and negative drift volumes
+        s(3) = subplot(3,1,3);
+        bar(andtn,anposdrift,'BarWidth',1);
+        hold on 
+        bar(andtn,annegdrift,'BarWidth',1);
+        plot(mtime,pdrift*2,'-y')  
+        plot(mtime,ndrift*2,'-g') 
+        hp = plot([tdt(1),tdt(end)],[0,0],'dr','LineWidth',1.5); %start and end of record
+        excludefromlegend(hp);
+        hold off
+        xlim([stdate,endate])
+        xlabel('Time');
+        ylabel('Drift volumes (m^3)');
+        legend({'+ve annual: left to right','-ve annual: right to left','+ve monthly x2','-ve monthly x2'},...
+            'Location','best');
+    end
+
+    if plotoption==0
+        sgtitle('Drift potential')
     else
-        bar([yearrecs;NaN],[gapsinrecord,gapsindata,offshore,calms;0,0,0,0],'stacked')
+        %NB this produces a plot with multiple coordinate systems and the
+        %axes cannot be copied so cannot be combined using compile_tiled_figure
+        ttxt = {'Gaps and Calms','Drift rates','Directional drift rates'};
+        allAxes = findall(gcf, 'type', 'axes'); % Get all axes in the figure
+        delete(setdiff(allAxes,s(plotoption))); % Delete all except selected
+        set(s(plotoption),'Position',[0.13 0.11 0.775 0.815]); % Default full-axes position
+        title(ttxt{plotoption})
     end
-    xlim([yearrecs(1)-0.5,yearrecs(end)+0.5])
-    xlabel('Year');
-    ylabel(sprintf('Percentage gaps,\ncalms and offshore conditions'));
-    calmstxt = sprintf('Calms (qs<%g m^3/s)',calmsthreshold);
-    legend({'Gaps in record','Void/offshore (NaN input)','Offshore (qs=0)',calmstxt},'Location','best');
-    
-    %plot annual and monthly drift volumes
-    subplot(3,1,2)
-    yyaxis left
-    plot(mtime,mdrift);                                      %monthly drift
-    hold on
-    hp = plot([mtime(1),mtime(end)],[0,0],'--k');            %zero axis
-    excludefromlegend(hp);
-    plot(tdt,qsgaps,'-r','LineWidth',3);                     %gap line on zero axis
-    hp = plot([tdt(1),tdt(end)],[0,0],'dr','LineWidth',1.5); %start and end of record
-    excludefromlegend(hp);
-    hold off
-    xlim([stdate,endate])
-    xlabel('Time');
-    ylabel('Monthly drift volumes (m^3)');
-    yyaxis right
-    mver = version('-release');   %plotting datetime changes in v2017a
-    if str2double(mver(1:4))<2017
-        andtn = datenum(andtn); %#ok<DATNM> 
-    end
-    bar(andtn,andrift,'FaceColor','none','BarWidth',1);     %annual drift
-    ylabel('Annual drift volumes (m^3)');
-    legend({'Monthly drift','Gaps','Annual drift'},'Location','best');
-    
-    %plot annual positive and negative drift volumes
-    subplot(3,1,3)
-    bar(andtn,anposdrift,'BarWidth',1);
-    hold on 
-    bar(andtn,annegdrift,'BarWidth',1);
-    plot(mtime,pdrift*2,'-y')  
-    plot(mtime,ndrift*2,'-g') 
-    hp = plot([tdt(1),tdt(end)],[0,0],'dr','LineWidth',1.5); %start and end of record
-    excludefromlegend(hp);
-    hold off
-    xlim([stdate,endate])
-    xlabel('Time');
-    ylabel('Drift volumes (m^3)');
-    legend({'+ve annual: left to right','-ve annual: right to left','+ve monthly x2','-ve monthly x2'},...
-        'Location','best');
-    sgtitle('Drift potential')
     
     if isprompt
         hqd = questdlg('Save results?','Drift','Defined','All','No','No');
@@ -217,6 +243,7 @@ function dst = littoraldriftstats(qs,tdt,varargin)
         end
     end
 end
+
 %%
 function excludefromlegend(hp)
     set(get(get(hp,'Annotation'),'LegendInformation'),...

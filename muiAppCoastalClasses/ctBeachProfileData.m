@@ -70,6 +70,7 @@ classdef ctBeachProfileData < muiDataSet
          
             funcname = 'getData';
             hw = waitbar(0, 'Loading data. Please wait');
+            isall = false; %logical falg to allow user to insert all
             %load file and create master collection which can
             %have multiple profiles (ie locations saved as id_rec)            
             for jf=1:nfiles
@@ -98,7 +99,7 @@ classdef ctBeachProfileData < muiDataSet
                         %profile exists - add data to existing record
                         classrec = find(strcmp(existprofs,profid{ip})); 
                         localObj = muicat.DataSets.(classname)(classrec);                        
-                        localObj = addBPdataFile(localObj,aprof);                       
+                        [localObj,isall] = addBPdataFile(localObj,aprof,isall);                       
                         updateCase(muicat,localObj,classrec,false);
                     end  
                 end
@@ -281,12 +282,15 @@ classdef ctBeachProfileData < muiDataSet
     end
 %%      
     methods (Access=private)
-        function obj = addBPdataFile(obj,addedprof)
+        function [obj,isall] = addBPdataFile(obj,addedprof,isall)
             %load data from a single data file (each file can have multiple 
             %profiles for a given date (CCO format)
             % localObj - instance of BeachProfileData class
             % classrec - id of the record for the profile to be used 
             % addedprof - the profile to be added to the record
+            % isall - logical flag to allow user to insert all records
+            if nargin<3, isall = false; end
+
             existprof = obj.Data.Dataset;
             %find the start and end of the new and existing data sets
             oldlen = length(existprof.DataTable{1,1});
@@ -309,7 +313,7 @@ classdef ctBeachProfileData < muiDataSet
                 end
             end
             
-            newprof = mergerows(existprof,addedprof); 
+            [newprof,isall] = mergerows(existprof,addedprof,isall); 
             obj.Data.Dataset= newprof;
         end
     end
