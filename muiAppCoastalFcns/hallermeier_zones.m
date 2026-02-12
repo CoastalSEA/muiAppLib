@@ -47,16 +47,49 @@ function [hc,hb,smp] = hallermeier_zones(H,T,stdH,d50,rhow,rhos)
     etac = asinh(sqrt(pi()^2*(H-0.3*stdH).^2./denom));
     hc = etac.*tanh(etac).*gTpi;
 
-    %landward surf zone limit, Table 1 eqns for dl
-    etab = zeros(size(H));
-    for i=1:length(H)
-        htprop = (H(i)+5.6*stdH(i)).^2./(0.03*gamma*4*gTpi(i).^2);
-        etafun = @(etb) etb.*sinh(etb).^2.*tanh(etb)-htprop;
-        etab(i) = fzero(etafun,etac(i)/4);
+    % % Landward surf‑zone limit (Table 1 equations for dl)
+    etab = NaN(size(H));    
+    for i = 1:numel(H)
+
+        % Skip invalid inputs early
+        if isnan(H(i)) || isnan(stdH(i)) || isnan(gTpi(i)) || isnan(etac(i))
+            continue
+        end
+
+        % Compute target value
+        htprop = (H(i) + 5.6*stdH(i)).^2 ./ (0.03 * gamma * 4 * gTpi(i).^2);
+
+        % Define function of etb only
+        etafun = @(etb) etb .* sinh(etb).^2 .* tanh(etb) - htprop;
+
+        % Bracket: use [0, etac(i)] instead of a single guess
+        a = 0;
+        b = max(etac(i), 1e-6);   % ensure positive upper bound
+
+        % Evaluate endpoints safely
+        fa = etafun(a);
+        fb = etafun(b);
+
+        if ~isfinite(fa) || ~isfinite(fb)
+            continue
+        end
+
+        % Require a sign change for robustness
+        if sign(fa) == sign(fb)
+            continue
+        end
+
+        % Solve
+        [root,~,exitflag] = fzero(etafun, [a b]);
+
+        if exitflag > 0 && isfinite(root)
+            etab(i) = root;
+        end
     end
+
     hb = etab.*tanh(etab).*gTpi;  
 
     %simplified equations
-    smp.hc1 = (H - 0.3*stdH)*T/sqrt(g/5000/d50); %Eq.7
-    smp.hc2 = 0.018*H*T*sqrt(g/(d50*gamma));     %Hallermeier, 1983
-    smp.hb = 2*H+11*stdH;                        %Eq.6
+    smp.hc1 = (H - 0.3*stdH).*T./sqrt(g/5000./d50); %Eq.7
+    smp.hc2 = 0.018.*H.*T.*sqrt(g./(d50*gamma));    %Hallermeier, 1983
+    smp.hb = 2*H+11.*stdH;                          %Eq.6
