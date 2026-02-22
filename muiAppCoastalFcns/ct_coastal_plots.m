@@ -23,7 +23,7 @@ function ct_coastal_plots(mobj)
 %--------------------------------------------------------------------------
 %
     listxt = {'Littoral Drift','Generic Scatter Plot','Wave Scatter Plot',...
-              'Frequency Analysis','Spectrum Plots','Pos-Neg Change Plot'};
+              'Frequency Analysis','Pos-Neg Change Plot'};
     % ok = 1;
     % while ok>0
         selection = listdlg("ListString",listxt,"PromptString",...
@@ -41,8 +41,6 @@ function ct_coastal_plots(mobj)
                 wave_scatter_plot(mobj);
             case 'Frequency Analysis'
                 frequency_analysis(mobj);
-            case 'Spectrum Plots'
-                ctWaveSpectra.getPlotOption(mobj);
             case 'Pos-Neg Change Plot'
                positive_negative_plot(mobj);
         end

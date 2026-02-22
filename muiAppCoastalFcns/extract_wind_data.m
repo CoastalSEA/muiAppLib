@@ -1,4 +1,4 @@
-function wndst = extract_wind_data(inwndst,isfetch)
+function [wndst,meta] = extract_wind_data(inwndst,isfetch)
 %
 %-------function help------------------------------------------------------
 % NAME
@@ -7,12 +7,13 @@ function wndst = extract_wind_data(inwndst,isfetch)
 %   Extract AvSpeed,MaxSpeed,Dir from a dataset that does not use default naming
 %   convention
 % USAGE
-%   wndst = extract_ind_data(inwndst)
+%   [wndst,meta] = extract_ind_data(inwndst)
 % INPUTS
 %   inwndst - dstable of data to use for data selection
 %   isfetch - true if fetch is also required
 % OUTPUT
-%   wvdst - dstable with default naming of AvSpeed, MaxSpeed, Dir
+%   wndst - dstable with default naming of AvSpeed, MaxSpeed, Dir
+%   meta -  array of variable names for slected variables
 % SEE ALSO
 %   used in ctWaveSpectra
 %   
@@ -20,16 +21,16 @@ function wndst = extract_wind_data(inwndst,isfetch)
 % CoastalSEA (c) Oct 2025
 %--------------------------------------------------------------------------
 %  
-    wndst = [];
+    wndst = []; meta = [];
     vardesc = inwndst.VariableDescriptions;
-    if isfield(inwndst.MetaData,'zW')
-        zW = num2str(inwndst.MetaData.zW);
+    if isfield(inwndst.MetaData,'zw')
+        zw = num2str(inwndst.MetaData.zw);
     else
-        zW = '10';
+        zw = '10';
     end
 
     %call UI to select all required fields
-    sel = getInputUI(vardesc,zW,isfetch);
+    sel = getInputUI(vardesc,zw,isfetch);
     if isempty(sel), return; end
 
     inwn = inwndst.DataTable;
@@ -37,18 +38,23 @@ function wndst = extract_wind_data(inwndst,isfetch)
     wntime = inwndst.RowNames;
     dsp = setDSproperties();
     wndst = dstable(indata{:},'RowNames',wntime,'DSproperties',dsp);
-    wndst.MetaData.zW = str2double(sel{4});
+    wndst.Description = inwndst.Description;
+    wndst.MetaData.zw = str2double(sel{4});
     wndst.MetaData.Fetch = str2double(sel{5});
+    %assign metadata of selection
+    meta.selection(1,:) = [sel{1:3}];
+    meta.inputs(1,:) = vardesc([sel{1:3}]);
 end
 
 
 %%
-function selection = getInputUI(vardesc,zW,isfetch)
+function selection = getInputUI(vardesc,zw,isfetch)
     %define inputgui for the selection of variables
     % to see field defintions use >>help inputgui
     inp.fields = {'Av. Speed','Direction','Max. Speed','Elevation aMSL'};                              
     inp.style = {'popupmenu','popupmenu','popupmenu','edit'};
-    inp.defaults = {vardesc,vardesc,vardesc,zW};
+    inp.defaults = {vardesc,vardesc,vardesc,zw};
+    defsel = {1,2,3,[],[]};
 
     if isfetch
         inp.fields = [inp.fields,{'Fetch (m)'}];
@@ -61,6 +67,7 @@ function selection = getInputUI(vardesc,zW,isfetch)
                          'Style',inp.style,...
                          'ActionButtons', {'Select','Cancel'},...
                          'DefaultInputs',inp.defaults,...
+                         'UserData',defsel,...
                          'PromptText','Select variables to use');
 end
 
