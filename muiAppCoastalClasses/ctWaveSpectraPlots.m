@@ -20,19 +20,14 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 %--------------------------------------------------------------------------
 %    
     properties 
-        % Interp         % rlim - radial limits for polar plot
-        %                % tlim - theta limits for polar plot
-        %MetaData       % additional variable selection details 
+        % inherits properties from ctWaveSpectrum
         hFig = gobjects(0)         % figure handle
-        %ModelMovie
     end
 
     methods
         function obj = ctWaveSpectraPlots
             %class constructor
-            %Interp property
-            % obj.Interp.rlim = {1,20,20};      %radial limits for polar plot
-            % obj.Interp.tlim = {0,2*pi,360};   %theta limits for polar plot
+            % default properties set in ctWaveSpectrum constructor
         end
     end
 
