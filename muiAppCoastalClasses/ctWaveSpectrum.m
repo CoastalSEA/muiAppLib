@@ -145,7 +145,7 @@ function obj = setSpectrumModel(obj)
                 txt2 = 'Selection: Spread exponent should be 0 if defined in data';
                 txt3 = 'Jonswap gamma only used in Jonswap and TMA models';
                 txt4 = 'Setting gamma>0 overrides built-in relationships';
-                txt5 = 'If input defines sea and swell, gamma and spread can accept 2 values';
+                txt5 = 'If input defines sea and swell, gamma and spread can accept multiple values';
                 txt6 = 'Set depth to apply saturation in TMA spectrum [0= no saturation]';
 
                 txt = sprintf('%s\n%s\n%s\n%s\n%s',txt2,txt3,txt4,txt5,txt6);
@@ -596,27 +596,30 @@ function obj = setSpectrumModel(obj)
             spmform = split(spm.form);
             if contains(spm.form,{'Pierson-Moskowitz fully developed','Bretschneider open ocean'})
                 ttxt = sprintf('%s and %s, spread=%d ',...
-                            spmform{1},spm.spread,spm.nspread);
+                                        spmform{1},spm.spread,spm.nspread);
             else
                 if spm.gamma(1)==0 && ~isempty(obj.inpData)
-                    spm.gamma = obj.inpData.gamma; 
+                    spm.gamma = obj.inpData.gamma;
                 end
                 ttxt = sprintf('%s, gamma=%.2g, and %s, spread=%d ',...
                         spmform{1},spm.gamma(1),spm.spread,spm.nspread(1));
             end
-
+        
             %handle TMA depth limit
             if contains(spm.form,'TMA') && spm.depth>0
                 ttxt = sprintf('%s, d=%.1f',ttxt,spm.depth);
             end
-            
+        
             stxt = '';
-            for i=2:numel(spm.gamma)
-                if i>2, stxt = sprintf('%s; ',stxt); end
-                stxt = sprintf('%sswell-%d: gamma=%.2g; spread=%d',...
-                          stxt,i-1,spm.gamma(i),spm.nspread(i));
+            ninp = numel(obj.inpData.Hs);
+            if strcmp(obj.inpData.input,'Wave') && ninp>1        
+                for i=2:ninp
+                    if i>2, stxt = sprintf('%s; ',stxt); end
+                    stxt = sprintf('%sswell-%d: gamma=%.2g; spread=%d',...
+                                    stxt,i-1,spm.gamma(i),spm.nspread(i));
+                end
             end
-            
+        
             if isempty(stxt)
                 obj.Plotxt.stxt = ttxt;
             else
