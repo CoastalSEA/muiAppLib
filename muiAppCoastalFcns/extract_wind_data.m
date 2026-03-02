@@ -23,14 +23,14 @@ function [wndst,meta] = extract_wind_data(inwndst,isfetch)
 %  
     wndst = []; meta = [];
     vardesc = inwndst.VariableDescriptions;
-    if isfield(inwndst.MetaData,'zw')
-        zw = num2str(inwndst.MetaData.zw);
+    if isfield(inwndst.MetaData,'zW')
+        zW = num2str(inwndst.MetaData.zW);
     else
-        zw = '10';
+        zW = '10';
     end
 
     %call UI to select all required fields
-    sel = getInputUI(vardesc,zw,isfetch);
+    sel = getInputUI(vardesc,zW,isfetch);
     if isempty(sel), return; end
 
     inwn = inwndst.DataTable;
@@ -39,7 +39,7 @@ function [wndst,meta] = extract_wind_data(inwndst,isfetch)
     dsp = setDSproperties();
     wndst = dstable(indata{:},'RowNames',wntime,'DSproperties',dsp);
     wndst.Description = inwndst.Description;
-    wndst.MetaData.zw = str2double(sel{4});
+    wndst.MetaData.zW = str2double(sel{4});
     wndst.MetaData.Fetch = str2double(sel{5});
     %assign metadata of selection
     meta.selection(1,:) = [sel{1:3}];

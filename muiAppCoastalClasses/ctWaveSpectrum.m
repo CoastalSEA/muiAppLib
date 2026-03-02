@@ -9,7 +9,7 @@ classdef ctWaveSpectrum < matlab.mixin.Copyable
 % NOTES
 %   Spectral data are imported to the ctWaveData class using functions
 %   such as wave_cco_spectrum. Spectrum records hold two datasets named as
-%   sptSpectra and sptProperties. Wave data can be simple unimodal or 
+%   sptSpectrum and sptProperties. Wave data can be simple unimodal or 
 %   multimodal descriptions of the sea state.
 % SEE ALSO
 %   see ct_costal_plots and SpectralTransfer for examples of use. used by
@@ -25,7 +25,7 @@ classdef ctWaveSpectrum < matlab.mixin.Copyable
         Params %table for integral properties of the spectrum
         %struct with details of input definition depending on source
         inpData        % Wave - Hs,Tp,Dir,ds
-                       % Wind  - Uw,zw,Dir,Fetch,df,ds
+                       % Wind  - Uw,zW,Dir,Fetch,df,ds
                        % Spectrum - S,Dir,Spr,Skew,Kurt,f,ds,issat
                        % - depth at site, ds, include any variation in swl
                        % - all include fields for input, output and source
@@ -46,7 +46,7 @@ classdef ctWaveSpectrum < matlab.mixin.Copyable
                        % flim - frequency limits
                        % rlim - radial limits for polar plot
                        % tlim - theta limits for polar plot
-        %struct for meta data and plotting of wave spectra
+        %struct for plotting text of wave spectra
         Plotxt         % xtxt - label for x-axis
                        % ytxt - label for y-axis
                        % vtxt - label for variable in surface plot
@@ -182,7 +182,7 @@ function obj = setSpectrumModel(obj)
             if isempty(inpt), return; end  %user cancelled
             inp.Uw = str2double(inpt{1});
             inp.Dir = str2double(inpt{2});
-            inp.zw = str2double(inpt{3});
+            inp.zW = str2double(inpt{3});
             inp.Fetch = str2double(inpt{4});
             inp.df = str2double(inpt{5});
             inp.input = 'Wind';
@@ -225,29 +225,27 @@ function obj = setSpectrumModel(obj)
             if filename==0, obj = []; return; end  %user cancelled
             varlist = {'',[path,filename]};
             specdst = wave_cco_spectra('getData',varlist{:});
-            inputs.spectrum = specdst.sptSpectra; %possibly just pass table?????
+            inputs.spectrum = specdst.sptSpectrum; %possibly just pass table?????
             inputs.properties = specdst.sptProperties;            
             inputs.input = 'Spectrum';
             inputs.output = 'Measured';
-            inputs.source = specdst.sptSpectra.Description;
-            inputs.date = specdst.sptSpectra.RowNames;
+            inputs.source = specdst.sptSpectrum.Description;
+            inputs.date = specdst.sptSpectrum.RowNames;
             obj.inpData = inputs;
             obj = setPlotText(obj);               
         end
 
 %%          
-        function obj = setInputParams(obj,tsdst)
+function obj = setInputParams(obj,tsdst,inptype)
             %extract input data from dstable and assign in format needed for
             %spectrum function
-            intype = tsdst(1).MetaData.sptype;
-
-            if strcmp(intype,'Spectrum')
+            if strcmp(inptype,'Spectrum')
                 inp.spectrum = tsdst; 
                 inp.input = 'Spectrum';
                 inp.output = 'Measured';
                 inp.date = inp.spectrum.RowNames;   
 
-            elseif strcmp(intype,'Wave')
+            elseif strcmp(inptype,'Wave')
                 for i=1:length(tsdst)
                     inp.Hs(i) = tsdst(i).Hs;
                     inp.Tp(i) = tsdst(i).Tp;
@@ -257,11 +255,11 @@ function obj = setSpectrumModel(obj)
                 inp.output = 'Modelled';
                 inp.date = tsdst(1).RowNames; 
 
-            elseif strcmp(intype,'Wind')
+            elseif strcmp(inptype,'Wind')
                 inp.Uw = tsdst.AvSpeed;
                 inp.Dir = tsdst.Dir;
-                inp.zw = tsdst.MetaData.dstmeta.zw;
-                inp.Fetch = tsdst.MetaData.dstmeta.Fetch;
+                inp.zW = tsdst.MetaData.zW;
+                inp.Fetch = tsdst.MetaData.Fetch;
                 inp.input = 'Wind';
                 inp.output = 'Modelled';
                 inp.date = tsdst.RowNames; 
@@ -276,12 +274,12 @@ function obj = setSpectrumModel(obj)
 % get functions
 %--------------------------------------------------------------------------
 
-        function obj = getSpectrumObject(obj,tsdst,irow)
+        function obj = getSpectrumObject(obj,inptype,tsdst,irow)
             %get the spectrum and wave properties for selected input
             tsdstrow = ctWaveSpectrum.getDatasetRow(tsdst,irow);
             
             %set input parameters for selected record
-            obj = setInputParams(obj,tsdstrow);
+            obj = setInputParams(obj,tsdstrow,inptype);
             %get the spectrum data for selected record
             obj = getSpectrum(obj);  
             if isempty(obj.Spectrum.SG), return; end
@@ -327,7 +325,7 @@ function obj = setSpectrumModel(obj)
             % f_int = obj.Interp.freq;   %interval used for frequecy (Hz)
             % f_lim = obj.Interp.flim;   %range of frequency bands (Hz)
 
-            inp =  obj.inpData.spectrum;
+            inp =  obj.inpData.spectrum(1); %waveModels.getInputParams loads sptSpectrum as first tsdst
             if ~(any(strcmp(inp.VariableNames,'S')))
                 warndlg('Invaldid input data type'); return; 
             end
@@ -448,7 +446,7 @@ function obj = setSpectrumModel(obj)
             parfor i=1:nrec                                   %parfor loop
                 anobj = copy(obj);                
                 itsdst = getDSTable(tsdst,i,[]);              %selected record
-                anobj = setInputParams(anobj,itsdst);
+                anobj = setInputParams(anobj,itsdst,'Spectrum');
                 anobj = getMeasuredSpectrum(anobj);           %compute spectrum based on measured form
                 anobj.Params = wave_spectrum_params(anobj);   %integral properties of spectrum
                 meas_obj(i,1) = anobj;
@@ -458,7 +456,7 @@ function obj = setSpectrumModel(obj)
         end
 
 %%
-        function mod_obj = getModelTS(obj,tsdst)
+function mod_obj = getModelTS(obj,tsdst,inptype)
             %use a timeseries of wave data to create a timeseries of spectra  
             obj = setSpectrumModel(obj);
             if isempty(obj.spModel), mod_obj = []; return; end
@@ -470,8 +468,8 @@ function obj = setSpectrumModel(obj)
             parfor i=1:nrec                                 %parfor loop
                 anobj = copy(obj);
                 itsdst = ctWaveSpectrum.getDatasetRow(tsdst,i); %selected record
-                anobj = setInputParams(anobj,itsdst);
-                if strcmp(anobj.inpData.input,'Wind')
+                anobj = setInputParams(anobj,itsdst,inptype);
+                if strcmp(inptype,'Wind')
                     anobj = getModelSpectrum(anobj);        %compute spectrum for specified conditions
                 else
                     anobj = getMultiModalSpectrum(anobj);   %compute spectrum for specified conditions
@@ -489,8 +487,9 @@ function obj = setSpectrumModel(obj)
         function obj = getWaveModel(obj,params)
             %construct a model wave spectrum and return with wave parameters
             obj.inpData = params;
-            obj.inpData.source = 'Wave';
-            obj.inpData.form = 'Model params table';
+            obj.inpData.input = 'Wave';
+            obj.inpData.output = 'Modelled';
+            % obj.inpData.date = inp.spectrum.RowNames;
             obj = getModelSpectrum(obj);            %compute spectrum for specified conditions
             if isempty(obj.Spectrum.SG), return; end
             obj.Params = wave_spectrum_params(obj); %integral properties of spectrum
@@ -523,6 +522,36 @@ function obj = setSpectrumModel(obj)
             phi = phi + (1 - 0.5*(2-omega).^2).*(omega>1 & omega<=2);
         end
 
+%%
+        function [idpks,idmn] = spectrumPeaks(obj)
+            %find the peaks in a unimodal spectrum and the minima between
+            %the peaks
+                Sf = getOmniDirSpectrum(obj);
+                [maxSf,~] = max(Sf);        %maximum spectral density
+
+                minpeakdist = 10;        %minimum no of points separating peaks **
+                minpeakht = maxSf*0.2;   %minimum height of peaks **
+                [mxlocs,~] = peakseek(Sf,minpeakdist,minpeakht); 
+                [mnlocs,~] = peakseek(-Sf,minpeakdist,-minpeakht); 
+
+                idmns = zeros(1,numel(mxlocs)-1);
+                for i=1:numel(mxlocs)-1
+                    idx = find(mnlocs>mxlocs(i)  & mnlocs<mxlocs(i+1)); 
+                    if ~isempty(idx)
+                        [~,idl] = min(Sf(mnlocs(idx)));
+                        idmns(i) = mnlocs(idx(idl));
+                    end
+                end
+                idmns = idmns(idmns>0);
+                [~,idd] = min(Sf(idmns));
+                idmn = idmns(idd);
+                if isempty(idmn)
+                    idpks = mxlocs;  %only a single peak
+                else
+                    idpks(1) = mxlocs(find(mxlocs<idmn,1));
+                    idpks(2) = mxlocs(find(mxlocs>idmn,1));
+                end
+        end
 %% ------------------------------------------------------------------------
 % Save spectrum
 %--------------------------------------------------------------------------
@@ -584,15 +613,16 @@ function obj = setSpectrumModel(obj)
                 obj.Plotxt.ttxt = sprintf('%s: %s',obj.inpData.source,...
                                                  string(obj.inpData.date));
             else
-                obj =  getModelInputText(obj); 
+                obj =  setModelInputText(obj); 
                 obj.Plotxt.vtxt = 'Modelled Spectral Energy (m^2s)';
             end
         end
 
 %%
-        function obj = getModelInputText(obj)
+        function obj = setModelInputText(obj)
             %extract the model input to define a spectrum from spModel property
             spm = obj.spModel;
+            if isempty(spm), return; end   %no Spectrum model defined
             spmform = split(spm.form);
             if contains(spm.form,{'Pierson-Moskowitz fully developed','Bretschneider open ocean'})
                 ttxt = sprintf('%s and %s, spread=%d ',...
@@ -610,9 +640,9 @@ function obj = setSpectrumModel(obj)
                 ttxt = sprintf('%s, d=%.1f',ttxt,spm.depth);
             end
         
-            stxt = '';
-            ninp = numel(obj.inpData.Hs);
-            if strcmp(obj.inpData.input,'Wave') && ninp>1        
+            stxt = '';            
+            if strcmp(obj.inpData.input,'Wave')
+                ninp = numel(obj.inpData.Hs);
                 for i=2:ninp
                     if i>2, stxt = sprintf('%s; ',stxt); end
                     stxt = sprintf('%sswell-%d: gamma=%.2g; spread=%d',...
@@ -630,6 +660,21 @@ function obj = setSpectrumModel(obj)
 %% ------------------------------------------------------------------------
 % Utility functions
 %--------------------------------------------------------------------------
+        function plotobj = Spectrum2SpectralPlots(obj)
+            %create ctWaveSpectralPlots instance from ctWaveSpectrum
+            nrec = numel(obj);
+            plotobj(nrec) = ctWaveSpectraPlots;
+            for i=1:nrec
+                plotobj(i) = ctWaveSpectraPlots;
+                plotobj(i).Spectrum = obj(i).Spectrum;     
+                plotobj(i).Params = obj(i).Params;
+                plotobj(i).inpData = obj(i).inpData;     
+                plotobj(i).spModel = obj(i).spModel;
+                plotobj(i).Interp = obj(i).Interp;
+                plotobj(i).Plotxt = obj(i).Plotxt; 
+            end
+        end
+
         function [dir,freq] = spectrumDimensions(obj)
             %return default direction and frequency intervals
             dir_int = obj.Interp.dir;  %interval used for directions (deg)
@@ -657,9 +702,9 @@ function obj = setSpectrumModel(obj)
             nrec = length(inobj);
             hpw = PoolWaitbar(nrec, 'Unpacking spectra');
             if nargin==2
-                parfor i=1:nrec
+                parfor i=1:nrec                               %parfor loop
                     time(i,1) = offobj(i).Spectrum.date;    
-                    swl(i,1) = offobj(i).inpData.tsdst(1).DataTable.swl;
+                    swl(i,1) = offobj(i).inpData.swl;
                     Sot(i,:,:) = offobj(i).Spectrum.SG;
                     Sit(i,:,:) = inobj(i).Spectrum.SG;
                     depths(i,1) = inobj(i).Spectrum.depth;  
@@ -668,7 +713,7 @@ function obj = setSpectrumModel(obj)
                 end   
                 spectra = struct('time',time,'swl',swl,'Sot',Sot,'Sit',Sit,'depths',depths);
             else
-                parfor i=1:nrec
+                parfor i=1:nrec                               %parfor loop
                     params(i,:) = inobj(i).Params;
                     increment(hpw);
                 end

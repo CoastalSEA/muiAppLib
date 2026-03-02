@@ -25,7 +25,7 @@ function [tsdst,meta] = addwaterlevels2waves(wvdst,mobj,meta)
 %
     %add water levels to a wave dataset - can be model or imported data
     muicat = mobj.Cases;
-    wvtime = wvdst.RowNames;      %timesteps in wave record
+    wvtime = wvdst(1).RowNames;      %timesteps in wave record
 
     wlclassprops = {'ctWaterLevelData','ctTidalAnalysis','muiUserModel'};                                              
     promptxt = 'Select input water level data set (Cancel to use SWL=0):';           
@@ -74,6 +74,6 @@ function [tsdst,meta] = addwaterlevels2waves(wvdst,mobj,meta)
 
     %assign the run parameters to the model instance
     if wl_crec~=0
-        meta.caserecs = [meta.caserecs,{wl_crec}];    
+        meta.caserecs = [meta.caserecs,wl_crec];    
     end
 end

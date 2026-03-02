@@ -90,7 +90,7 @@ function drift_plot(mobj)
     % if isfield(waves.Data,'Properties'), dset = 'Properties'; end
     % wv = waves.Data.(dset);
     bs = profileslope(wv.depi/2,wv.swl,z1km,ubs); %first argument is depth
-    Qall = littoraldrift(wv.Hsi,wv.Tp,wv.Diri,wv.depi,...
+    Qall = littoraldrift(wv.Hs,wv.Tp,wv.Dir,wv.depi,...
                                             theta,bs,d50,Kc,g,rhs,rhw,vsc);
     qs = Qall(:,h_dlg);
     dst = littoraldriftstats(qs,mtime,'month');

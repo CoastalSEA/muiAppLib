@@ -12,7 +12,8 @@ function output = wave_cco_spectra(funcall,varargin)
 %   funcall - function being called
 %   varargin - function specific input (filename,class instance,dsp,src, etc)
 % OUTPUT
-%   output - function specific output
+%   output - dstables for the sprectrum data and properties held in
+%            datasets named sptSpectrum and sptProperties
 % NOTES
 %   Channel Coastal Observatory (CCO) data
 %   https://www.channelcoast.org/
@@ -80,9 +81,9 @@ function dst = getData(~,filename)
     varData = cellfun(@transpose,varData,'UniformOutput',false);
 
     %load the results into a dstable  
-    dst.sptSpectra = dstable(varData{:},'RowNames',myDatetime,'DSproperties',dspectra); 
-    dst.sptSpectra.Dimensions.freq = data{1};
-    dst.sptSpectra.Description = Location;
+    dst.sptSpectrum = dstable(varData{:},'RowNames',myDatetime,'DSproperties',dspectra); 
+    dst.sptSpectrum.Dimensions.freq = data{1};
+    dst.sptSpectrum.Description = Location;
 
     %add header information to a dstable
     header = cellfun(@str2double,header,'UniformOutput',false);

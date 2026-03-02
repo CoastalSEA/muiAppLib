@@ -29,6 +29,7 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
         idel = ~ismatch(varnames,{'Hs','Tp','Dir'});
         wvdst = removevars(wvdst,varnames(idel));
         meta.inputs(1,:) = vardesc(ismatch(varnames,{'Hs','Tp','Dir'}));
+        meta.selection = [];
         return; 
     end 
 
