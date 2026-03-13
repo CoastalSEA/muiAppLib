@@ -207,48 +207,4 @@ function [xtsdst,meta] = getInputParams(cobj,tsdst,dsnames)
             timerange = ismember(times,subdst.RowNames);                      
         end
     end
-
-%     methods
-% 
-% %%
-%         % function [tsdst,meta] = getInputData(obj,mobj)
-%         %     %prompt user to select wave and water level data and return in
-%         %     %input dstable of data and metadata for inputs used
-%         %     meta.iselvar = false;
-%         %     muicat = mobj.Cases;
-%         %     wvclassops = {'ctWaveData','muiUserModel','ctWindData'}; 
-%         %     promptxt = 'Select input wave data set:';           
-%         %     [wv_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
-%         %                    'CaseClass',wvclassops,'ListSize',[300,100]);                                    
-%         %     if ok<1,tsdst = []; return; end
-%         %     wvdst = getDataset(muicat,wv_crec,1);    %1 selects first dataset in struct
-%         %                                              %ie Dataset or Spectra in most cases
-%         %     [wvdst,timerange] = waveModels.getSubSet(wvdst);%allow user to extract a subset                           
-%         % 
-%         %     if isfield(wvdst.Dimensions,'freq')
-%         %         %add the properties table as a second dstable
-%         %         meta.source = 'Measured spectra'; 
-%         %         tsprops = getDataset(muicat,wv_crec,2);  %2 selects Properties dataset from spectra input
-%         %         tsprops = removerows(tsprops,find(~timerange));
-%         %         % wvdst = horzcat(wvdst,tsprops);               
-%         %         % wvdst = activatedynamicprops(wvdst);     
-%         %         wvdst(2) = tsprops;
-%         %     elseif isfield(wvdst.MetaData,'zW')
-%         %         meta.source = 'Measured winds';
-%         %         [wvdst,meta.varsel] = extract_wind_data(wvdst,true);  %true - get fetch
-%         %         meta.iselvar = true;  %variables selected (non-standard names)
-%         %     else
-%         %         meta.source = 'Measured waves';
-%         %         %check whether default variable names are not used and selection needed
-%         %         [wvdst,meta.varsel] = extract_wave_data(wvdst);
-%         %         meta.iselvar = true;  %variables selected (non-standard names)
-%         %     end
-%         % 
-%         %     meta.caserecs = {wv_crec};        %caserec id used in model run           
-%         %     meta.inptxt = sprintf('%s used for offshore waves',wvdst.Description);            
-%         %     [tsdst,meta] = addwaterlevels2waves(wvdst,mobj,meta);
-%         % end
-% 
-% 
-%      end
 end

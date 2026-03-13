@@ -80,7 +80,7 @@ classdef ctWaveSpectrum < matlab.mixin.Copyable
             w_dst = getDSTable(tsdst(1),irow,[]);     %selected record
             tsdstrow(1) = w_dst;                      %assign data to input
             for j=2:numel(tsdst)
-                %tsdst(1) defines wind-wave. get same record for swell
+                %tsdst(1) defines wind-wave. get same record for swell(s)
                 idx = find(tsdst(j).RowNames==dates{irow});
                 s_dst = getDSTable(tsdst(j),idx,[]);  %selected record
                 tsdstrow(j) = s_dst; %#ok<AGROW>
@@ -250,6 +250,9 @@ function obj = setInputParams(obj,tsdst,inptype)
                     inp.Hs(i) = tsdst(i).Hs;
                     inp.Tp(i) = tsdst(i).Tp;
                     inp.Dir(i) = tsdst(i).Dir;
+                    if any(ismatch(tsdst(i).VariableNames,'T1'))
+                        inp.T1(i) = tsdst(i).T1;
+                    end
                 end
                 inp.input = 'Wave';
                 inp.output = 'Modelled';
@@ -266,6 +269,7 @@ function obj = setInputParams(obj,tsdst,inptype)
 
             end
             inp.source = tsdst.Description; 
+            inp.ds = [];
             
             obj.inpData = inp;           
         end
@@ -363,8 +367,9 @@ function obj = setInputParams(obj,tsdst,inptype)
             %add gamma and depth from obj.spModel
             obj.inpData.gamma = sp.gamma;
             %add depth if TMA depth saturation being used
+            obj.inpData.ds = []; 
             if contains(obj.spModel.form,'TMA')
-                obj.inpData.ds = sp.depth;
+                obj.inpData.ds = sp.depth; 
             end
 
             if istable(obj.inpData)
@@ -410,8 +415,21 @@ function obj = setInputParams(obj,tsdst,inptype)
                 compparams.Hs = obj.inpData.Hs(i);
                 compparams.Tp = obj.inpData.Tp(i);
                 compparams.Dir = obj.inpData.Dir(i);
-                wavecomp(i) =  getWaveModel(wavecomp(i),compparams);  %compute spectrum and params for specified conditions
-                if ~isempty(wavecomp(i).Params), idx = [idx,i+1]; end %#ok<AGROW>
+                if isfield(obj.inpData,'T1')
+                    compparams.T1 = obj.inpData.T1(i);
+                end
+
+                if compparams.Hs==0 || compparams.Tp==0 
+                    %create zero spectrum if no waves (can be wind or swell)
+                    wavecomp(i) = zeroSpectrum(wavecomp(i),compparams);
+                else
+                    % if i>1
+                    %     wavecomp(i).spModel.form = 'Bretschneider open ocean'; %'Pierson-Moskowitz fully developed','Bretschneider open ocean'
+                    % end
+                    wavecomp(i) =  getWaveModel(wavecomp(i),compparams);  %compute spectrum and params for specified conditions
+                end 
+
+                if ~isempty(wavecomp(i).Params), idx = [idx,i+1]; end %#ok<AGROW>                
             end
             spect = [wavecomp(:).Spectrum];
             obj.Spectrum.freq = wavecomp(1).Spectrum.freq;
@@ -420,7 +438,7 @@ function obj = setInputParams(obj,tsdst,inptype)
             nd = numel(obj.Spectrum.dir); 
             obj.Spectrum.SG = sum(reshape([spect.SG],nd,nf,[]),3);            
             inp = [wavecomp(:).inpData];
-            obj.inpData.gamma = [inp(:).gamma];
+            obj.inpData.gamma = [inp(:).gamma];% inp(1).gamma;   % for Jonswap swell [inp(:).gamma];
                
             rownames = {'Combined','Wind-waves','Primary swell waves','Secondary swell waves'};
 
@@ -465,7 +483,7 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
             nrec = length(dates);
             mod_obj(nrec,1) = obj;
             hpw = PoolWaitbar(nrec, 'Processing measured timeseries');  %and increment(hpw);
-            parfor i=1:nrec                                 %parfor loop
+            for i=1:nrec                                 %parfor loop
                 anobj = copy(obj);
                 itsdst = ctWaveSpectrum.getDatasetRow(tsdst,i); %selected record
                 anobj = setInputParams(anobj,itsdst,inptype);
@@ -644,9 +662,12 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
             if strcmp(obj.inpData.input,'Wave')
                 ninp = numel(obj.inpData.Hs);
                 for i=2:ninp
+                % for i=1
                     if i>2, stxt = sprintf('%s; ',stxt); end
-                    stxt = sprintf('%sswell-%d: gamma=%.2g; spread=%d',...
-                                    stxt,i-1,spm.gamma(i),spm.nspread(i));
+                    % stxt = sprintf('%sswell-%d: gamma=%.2g; spread=%d',...
+                    %                 stxt,i-1,spm.gamma(i),spm.nspread(i));
+                    stxt = sprintf('%sswell-%d: spread=%d',...
+                                    stxt,i-1,spm.nspread(i));
                 end
             end
         
@@ -692,6 +713,22 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
             [dir,freq] = spectrumDimensions(obj);
             ndir = length(dir);
             nfreq = length(freq);
+        end
+
+
+%%
+        function obj = zeroSpectrum(obj,params)
+            %spectrum object with zero energy density (eg for Hs=0)
+            [dir,freq] = spectrumDimensions(obj);
+            obj.Spectrum.freq = freq;
+            obj.Spectrum.dir = dir;
+            obj.Spectrum.SG = zeros(numel(dir),numel(freq));
+            obj.inpData = params;
+            obj.inpData.input = 'Wave';
+            obj.inpData.output = 'Modelled';
+            obj.inpData.gamma = 0.0;
+            obj.inpData.ds = [];
+            obj.Params = wave_spectrum_params(obj); %integral properties of spectrum
         end
 
 %%

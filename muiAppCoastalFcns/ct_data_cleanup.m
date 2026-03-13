@@ -34,12 +34,14 @@ function ct_data_cleanup(muicat,src)
             patch_ts(muicat);
         case 'Trim timeseries'
             trim_ts(muicat);
+        case 'Match timeseries'
+            match_ts(muicat);
         case 'Delete interval'
             del_interval(muicat);
         case 'Merge cases'
             merge_tables(muicat);
         case 'Subsample case'
-            subsample_case(muicat);
+            subsample_case_vars(muicat);
         case 'Scale variables'
             scale_vars(muicat)
         case 'Scale range'
@@ -50,6 +52,7 @@ function ct_data_cleanup(muicat,src)
             edit_delete_profile(muicat);
     end
 end
+
 %%
 function concatenate_ts(muicat)
     %concatenate two time series and write result as a new timeseries
@@ -141,6 +144,7 @@ function concatenate_ts(muicat)
     setCase(muicat,obj,type);
     getdialog(sprintf('Concatenated %s',newdst.Description));
 end
+
 %%
 function resample_ts(muicat)
     %resample a timeseries to a different time interval. 
@@ -214,6 +218,7 @@ function resample_ts(muicat)
     setCase(muicat,obj,type);
     getdialog(sprintf('Data resampled for: %s',catrec.CaseDescription));
 end
+
 %%
 function patch_ts(muicat)
     %replace NaN values in one timeseries with values from another ts
@@ -223,6 +228,7 @@ function patch_ts(muicat)
     [caserec1,isok] = selectRecord(muicat,'PromptText',promptxt1,...
                                                         'ListSize',[150,250]);
     if isok<1, return; end %user cancelled  
+    
     dst1 = getDataset(muicat,caserec1,1);
     [tint,dst1] = get_timeinterval(dst1,1);  %if resampled then dst1 is a new dstable
     if isempty(tint), return; end
@@ -298,6 +304,7 @@ function patch_ts(muicat)
     setCase(muicat,obj,type);
     getdialog(sprintf('Patched %s',newdst.Description));         
 end
+
 %%
 function trim_ts(muicat)
     %allow user to adjust the start and end data of a timeseries
@@ -335,6 +342,7 @@ function trim_ts(muicat)
         getdialog(sprintf('Data resampled for: %s',catrec.CaseDescription));
     end
 end
+
 %%
 function del_interval(muicat)
     %select start and end dates and delete record between these dates
@@ -375,6 +383,7 @@ function del_interval(muicat)
         getdialog(sprintf('Data resampled for: %s',catrec.CaseDescription));
     end
 end
+
 %%
 function merge_tables(muicat)
     %some cleanup functions only work on one variable at a time and the
@@ -413,23 +422,31 @@ function merge_tables(muicat)
     setCase(muicat,obj,type);
     getdialog(desc);
 end
+
 %%
-function subsample_case(muicat)
+function subsample_case_vars(muicat)
     %select variables from a case, rename variables and save as new case
     datasetname = 'Dataset';   %uses default dataset name
     
-    promptxt = 'Select cases to sample from'; 
+    promptxt = 'Select cases to select variables from'; 
     [caserec,isok] = selectCase(muicat,promptxt,'single',0,0);
     if isok<1, return; end %user cancelled  
     [cobj,~,catrec] = getCase(muicat,caserec); %use getCase because need classrec
+
+    dnames = fields(cobj.Data);
+    if numel(dnames)>1
+        [~,idd] = selectDataset(muicat,cobj);
+    else
+        idd = 1;
+    end
+    dst =  copy(cobj.Data.(dnames{idd}));  %copy to avoid overwriting existing table       
     
-    dst = copy(cobj.Data.(datasetname));  %copy to avoid overwriting existing table
     varnames = dst.VariableNames;
     vardescs = dst.VariableDescriptions;
     
     %select variables to use in the new case
     [idx,ok] = listdlg('Name','options','SelectionMode','multiple',...
-                            'PromptString','Select variables to use',...
+                            'PromptString','Select variables to include',...
                             'ListString',vardescs,'ListSize',[300,150]);
     if ok<1, return; end
     
@@ -439,7 +456,6 @@ function subsample_case(muicat)
     newdst = removevars(dst,varnames(isremove));    
 
     %rename variables and modify descriptions
-%     newdst.VariableRange = rmfield(newdst.VariableRange,newdst.VariableNames); 
     nvar = length(newdst.VariableNames);
     for i=1:nvar
         defaults = {newdst.VariableNames{i},newdst.VariableDescriptions{i}};
@@ -459,8 +475,8 @@ function subsample_case(muicat)
     obj.Data.(datasetname) = newdst;    
     setCase(muicat,obj,type);
     getdialog(sprintf('Data from %s subsampled',dst.Description));
-
 end
+
 %%
 function scale_vars(muicat)
     %set up call to scale_data to allow one or more variables in a
@@ -480,6 +496,7 @@ function scale_vars(muicat)
     setCase(muicat,obj,type);
     getdialog(sprintf('Data from %s rescaled',dst.Description));
 end
+
 %%
 function scale_wl_range(muicat)
     %set up call to scale_waterlevels to allow range of a water level
@@ -508,6 +525,7 @@ function scale_wl_range(muicat)
     setCase(muicat,obj,type);
     getdialog(sprintf('Data from %s rescaled',dst.Description));
 end
+
 %%
 function delete_profile_ts(muicat)
     %remove all profiles with fewer than N time steps available  
@@ -553,6 +571,7 @@ function delete_profile_ts(muicat)
     caserec = find(ismember(scenariolist,deleteID));
     deleteCases(muicat,caserec)  
 end
+
 %%
 function edit_delete_profile(muicat)
     %edit or delete a single profile for a timeseries record
@@ -666,6 +685,7 @@ function edit_delete_profile(muicat)
             end
         end
 end
+
 %%
 function [tint,newdst] = get_timeinterval(dst,isresample)
     %prompt user for the time interval to be used and return as a duration
@@ -724,6 +744,7 @@ function [tint,newdst] = get_timeinterval(dst,isresample)
         end
     end    
 end
+
 %%
 function [varname,vidx] = getVariable(dst)
     %prompt user to select a variables from the dataset
@@ -740,6 +761,7 @@ function [varname,vidx] = getVariable(dst)
     varname = vars{idx};
     vidx = (1:nrec)==idx;
 end
+
 %%
 function isok = checkdates(startime,endtime,RowRange)
     %check that start and end times not empty, are within range and in

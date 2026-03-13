@@ -57,28 +57,38 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
             meta = msgdlg('Invalid number of components'); return
     end
 
+
+    inwv = inwvdst.DataTable;
     for i=1:nvar
         %call UI to select all required fields
         sel = getInputUI(vardesc,t_txt,nvar,i);
         if isempty(sel), wvdst = []; return; end
-
-        factor = 1;
-        if contains(vardesc{sel{2}},'mean')
-            factor = 1.2; %scale mean period to peak period. this value            
-        end               %is for Jonswap with gamma=3.3
-        %extract data selected
-        inwv = inwvdst.DataTable;
-        indata = {inwv{:,sel{1}},inwv{:,sel{2}}*factor,inwv{:,sel{3}}};
+        
+        %factor = 1;
+        if contains(vardesc{sel{2}},'mean period') 
+            %indata = setWavePeriods(inwvdst,sel{2});
+            %Tp=var.no.17
+            indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},inwv{:,sel{2}}};
+            %factor = 1.2; %scale mean period to peak period. this value 
+            ismean = true;
+        elseif sel{2}==17 && nvar==1
+            T1 = getWavePeriod(inwvdst);
+            indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},T1};
+            ismean = true;
+        else   
+            %extract data selected            
+            indata = {inwv{:,sel{1}},inwv{:,sel{2}},inwv{:,sel{3}}};
+            ismean = false;
+        end
         wvtime = inwvdst.RowNames;
-        dsp = setDSproperties();
+        dsp = setDSproperties(ismean);
         wvdst(i) = dstable(indata{:},'RowNames',wvtime,'DSproperties',dsp); %#ok<AGROW>
         wvdst(i).Description = inwvdst.Description; %#ok<AGROW>
         %assign metadata of selection
-        meta.selection(1,:) = [sel{:}];
+        meta.selection(i,:) = [sel{:}];
         meta.inputs(i,:) = vardesc([sel{:}]);
     end
 end
-
 
 %%
 function selection = getInputUI(vardesc,titletxt,nvar,idx)
@@ -141,17 +151,117 @@ function defsel = getCopComponents(nvar,idx)
 end
 
 %%
-function dsp = setDSproperties()
+function T1= getWavePeriod(inwvdst)
+    %use mean and peak sea state values to estimate sea state component
+    %values of Tp and add T1 to output - bespoke for Copernicus wave data
+    inwv = inwvdst.DataTable;
+
+%     Tp = inwv{:,17};    %Tp; period at variance spectral density maximum
+%     T2 = inwv{:,15};    %Tm02 = sqrt(m0/m2); period from variance spectral density second frequency moment
+%     T10 = inwv{:,16};   %Tm-10 = m-1/m0; period from variance spectral density inverse frequency moment
+%                         %The period of an energy equivalent regular wave.ie
+%                         %period corresponding to the weighted average of the wave energy.   
+    T1s1 = inwv{:,12};  %primary swell mean period
+    T1s2 = inwv{:,13};  %primary swell mean period
+    T1w = inwv{:,14};   %wind wave mean period
+% 
+% 
+% 
+% 
+% 
+    Sps1 = inwv{:,2}.^2;
+    Sps2 = inwv{:,3}.^2;
+    Spw = inwv{:,4}.^2;
+    Spall = sum([Spw,Sps1,Sps2],2,'omitnan');
+
+    T1 = sum([T1w.*Spw./Spall,T1s1.*Sps1./Spall,T1s2.*Sps2./Spall],2,'omitnan');
+% 
+% gamma1 = getGamma(T1,Tp,1); 
+% gamma2 = getGamma(T2,Tp,2);
+% gamma10 = getGamma(T10,Tp,3);
+% gamma12 = getGamma(T2,T10,4);
+% 
+% Tp1 = getPeakPeriod(gamma12,T1,1);
+% figure; plot(Tp,Tp1,'.'); title('T1')
+% Tp2 = getPeakPeriod(gamma12,T2,2);
+% figure; plot(Tp,Tp2,'.'); title('T2')
+% 
+% Tpw = getPeakPeriod(gamma12,T1w,1);
+% figure; plot(Tp,Tpw,'.'); title('T1wind')
+% Tps1 = getPeakPeriod(gamma12,T1s1,1);
+% figure; plot(Tp,Tps1,'.'); title('T1swell 1')
+% Tps2 = getPeakPeriod(gamma12,T1s2,1);
+% figure; plot(Tp,Tps2,'.'); title('T1swell 2')
+% 
+% gammas1 = getGamma(T1s1,Tp,1);
+% gammas2 = getGamma(T1s2,Tp,1);
+% gammaw =  getGamma(T1w,Tp,1);
+
+
+% 
+% figure;
+% plot(gamma2,gamma1,'.')
+% figure;
+% plot(gamma10,gamma1,'.')
+% hold on
+% plot(gamma2,gammas1,'.')
+% plot(gamma2,gammas2,'.')
+% plot(gamma2,gammaw,'.')
+% hold off
+
+    % %-nested functions-----------------------------------------------------
+    % function gamma = getGamma(Tn,Td,option)
+    %     %functions as derived from MIAS Pub.No.4, Table 1
+    %     if option==1
+    %         gamma = 45.3*(Tn./Td).^14.59;   %T1/Tp 
+    %     elseif option==2
+    %         gamma = 69.7*(Tn./Td).^12.23;   %T2/Tp
+    %     elseif option==3
+    %         gamma = 34.4*(Tn./Td).^23.0;    %T-10/Tp
+    %     else
+    %         gamma = 146.2*(Tn./Td).^25.7;   %T2/T-10
+    %     end        
+    %     gamma(gamma<1) = 0.9999;
+    %     gamma(gamma>8) = 7.9999;
+    % end
+    % %----------------------------------------------------------------------
+    % function Tp = getPeakPeriod(gamma,T,option)
+    %     %recover peak period from gamma and T1, T2 or T-10 
+    %     %(inverse of gamma functions)
+    %     if option==1
+    %         Tp = T./(gamma/45.3).^(1/14.59);   %T1
+    %     elseif option==2
+    %         Tp = T./(gamma/69.7).^(1/12.23);   %T2
+    %     elseif option==3
+    %         Tp = T./(gamma/34.4).^(1/23);      %T-10
+    %     end   
+    % end
+end
+
+%%
+function dsp = setDSproperties(ismean)
     %define the metadata properties for the data set
     dsp = struct('Variables',[],'Row',[],'Dimensions',[]); 
     %struct entries are cell arrays and can be column or row vectors
-    dsp.Variables = struct(...
-        'Name',{'Hs','Tp','Dir'},...
-        'Description',{'Significant wave height',...
-                'Peak period','Wave direction'},...
-        'Unit',{'m','s','deg'},...
-        'Label',{'Wave height (m)','Wave period (s)','Wave direction (deg)'},...
-        'QCflag',repmat({'raw'},1,3)); 
+    if ismean
+        dsp.Variables = struct(...
+            'Name',{'Hs','Tp','Dir','T1'},...
+            'Description',{'Significant wave height',...
+                    'Peak period','Wave direction','Mean period'},...
+            'Unit',{'m','s','deg','s'},...
+            'Label',{'Wave height (m)','Wave period (s)',...
+                     'Wave direction (deg)','Wave period (s)'},...
+            'QCflag',repmat({'raw'},1,4)); 
+    else
+        dsp.Variables = struct(...
+            'Name',{'Hs','Tp','Dir'},...
+            'Description',{'Significant wave height',...
+                    'Peak period','Wave direction'},...
+            'Unit',{'m','s','deg'},...
+            'Label',{'Wave height (m)','Wave period (s)','Wave direction (deg)'},...
+            'QCflag',repmat({'raw'},1,3)); 
+    end
+
     dsp.Row = struct(...
         'Name',{'Time'},...
         'Description',{'Time'},...
