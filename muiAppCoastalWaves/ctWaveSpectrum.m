@@ -252,6 +252,8 @@ function obj = setInputParams(obj,tsdst,inptype)
                     inp.Dir(i) = tsdst(i).Dir;
                     if any(ismatch(tsdst(i).VariableNames,'T1'))
                         inp.T1(i) = tsdst(i).T1;
+                        inp.T2(i) = tsdst(i).T2;
+                        inp.T10(i) = tsdst(i).T10;
                     end
                 end
                 inp.input = 'Wave';
@@ -417,6 +419,8 @@ function obj = setInputParams(obj,tsdst,inptype)
                 compparams.Dir = obj.inpData.Dir(i);
                 if isfield(obj.inpData,'T1')
                     compparams.T1 = obj.inpData.T1(i);
+                    compparams.T2 = obj.inpData.T2(i);
+                    compparams.T10 = obj.inpData.T10(i);
                 end
 
                 if compparams.Hs==0 || compparams.Tp==0 

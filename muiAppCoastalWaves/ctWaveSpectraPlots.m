@@ -982,11 +982,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 tol = seconds(str2double(inp{1}));
             end
             [newtime,ids] = getMatchingTimes(obstime,seltime,tol);
-            % D = abs(obstime - seltime');      % duration matrix
-            % [minDiff, idx] = min(D, [], 2);
-            % tf = minDiff <= tol;
-            % ids = idx(tf);
-            % newtime = obstime(tf);
+
             if numel(newtime)~=numel(obstime)
                 %if there are records missing in newtime need to match up obstime
                 [~,ido] = getMatchingTimes(newtime,obstime,tol);

@@ -41,7 +41,7 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
                                                                      [],1);
     if isempty(nvar)
         wvdst = copy(inwvdst); 
-        meta = msgdlg('No selection made'); return
+        meta = msgbox('No selection made'); return
     else
         nvar = str2double(nvar{1});
     end
@@ -68,12 +68,13 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
         if contains(vardesc{sel{2}},'mean period') 
             %indata = setWavePeriods(inwvdst,sel{2});
             %Tp=var.no.17
-            indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},inwv{:,sel{2}}};
+            indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},...
+                inwv{:,sel{2}},inwv{:,15},inwv{:,16}};
             %factor = 1.2; %scale mean period to peak period. this value 
             ismean = true;
         elseif sel{2}==17 && nvar==1
             T1 = getWavePeriod(inwvdst);
-            indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},T1};
+            indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},T1,inwv{:,15},inwv{:,16}};
             ismean = true;
         else   
             %extract data selected            
@@ -157,7 +158,7 @@ function T1= getWavePeriod(inwvdst)
     inwv = inwvdst.DataTable;
 
 %     Tp = inwv{:,17};    %Tp; period at variance spectral density maximum
-%     T2 = inwv{:,15};    %Tm02 = sqrt(m0/m2); period from variance spectral density second frequency moment
+%     T2 = inwv{:,15};    %Tm02 = sqrt(m0/m2); ,'Wave period (s)'
 %     T10 = inwv{:,16};   %Tm-10 = m-1/m0; period from variance spectral density inverse frequency moment
 %                         %The period of an energy equivalent regular wave.ie
 %                         %period corresponding to the weighted average of the wave energy.   
@@ -245,13 +246,15 @@ function dsp = setDSproperties(ismean)
     %struct entries are cell arrays and can be column or row vectors
     if ismean
         dsp.Variables = struct(...
-            'Name',{'Hs','Tp','Dir','T1'},...
+            'Name',{'Hs','Tp','Dir','T1','T2','T10'},...
             'Description',{'Significant wave height',...
-                    'Peak period','Wave direction','Mean period'},...
-            'Unit',{'m','s','deg','s'},...
+                    'Peak period','Wave direction','Mean period',...
+                    'Second moment period','Inverse moment period'},...
+            'Unit',{'m','s','deg','s','s','s'},...
             'Label',{'Wave height (m)','Wave period (s)',...
-                     'Wave direction (deg)','Wave period (s)'},...
-            'QCflag',repmat({'raw'},1,4)); 
+                     'Wave direction (deg)','Wave period (s)',...
+                     'Wave period (s)','Wave period (s)'},...
+            'QCflag',repmat({'raw'},1,6)); 
     else
         dsp.Variables = struct(...
             'Name',{'Hs','Tp','Dir'},...
