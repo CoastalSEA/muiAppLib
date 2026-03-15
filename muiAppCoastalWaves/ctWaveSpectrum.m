@@ -20,7 +20,7 @@ classdef ctWaveSpectrum < matlab.mixin.Copyable
 %--------------------------------------------------------------------------
 %    
     properties 
-        %struct for Spectral density matrix and dimensions (freq and dir)
+        %struct for Spectral density matrix, S(dir,f) and dimensions (freq and dir)
         Spectrum = struct('SG',[],'freq',[],'dir',[],'date',[],'depth',[])          
         Params %table for integral properties of the spectrum
         %struct with details of input definition depending on source
@@ -37,9 +37,7 @@ classdef ctWaveSpectrum < matlab.mixin.Copyable
                        % gamma - peakiness exponent in JONSWAP spectrum
                        % depth - site depth for saturation limit
                        % inptxt - summary text for spectrum model
-                       % selection - last selections used
-                               % T_gamma - dynamically set in getModelSpectrum when
-                               %           T2 and Tp used to define gamma
+                       % selection - last model selections used
         %struct for interpolation settings (defaults set in constructor)
         Interp         % dir - interval used to interpolate directions (deg)
                        % freq - interval used to interpolate frequency (Hz)

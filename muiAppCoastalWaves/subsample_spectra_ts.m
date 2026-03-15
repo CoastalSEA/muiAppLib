@@ -35,7 +35,7 @@ function newdst = subsample_spectra_ts(dst,mobj,method,tol)
     promptxt = 'Select dataset to define sub-sample time intervals';
     [caserec,isok] = selectRecord(muicat,'PromptText',promptxt,...
                                                     'ListSize',[300,100]);    
-    if isok<1, return; end %user cancelled
+    if isok<1, newdst = []; return; end %user cancelled
     cobj = getCase(muicat,caserec);
     if isempty(cobj), return; end
 

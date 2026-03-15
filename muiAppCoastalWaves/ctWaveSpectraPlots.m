@@ -47,12 +47,13 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                       'Fit model to Measured spectra timeseries',...
                       'Bimodal analysis of Measured spectrum',...
                       'Compare Modelled and Measured timeseries',...
+                      'JONSWAP gamma from spectra timeseries',...
                       'Subsample SPT spectrum timeseries',...
                       };
 
             selection = listdlg("ListString",listxt,"PromptString",...
                             'Select option:','SelectionMode','single',...
-                            'ListSize',[240,160],'Name','Wave spectra');
+                            'ListSize',[260,180],'Name','Wave spectra');
             if isempty(selection), return; end
             switch selection
                 case 1                  %Plot a spectrum using case data
@@ -73,7 +74,9 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                     ctWaveSpectraPlots.bimodalSpectrum(mobj);
                 case 9                  %optimise fit of modelled wave data to measured spectra
                     ctWaveSpectraPlots.cfModelled2Measured_ts(mobj);
-                case 10                 %subsample SPT format spectrum timeseries
+                case 10                 %estimate JONSWAP gamma from spectra timeseries'
+                    ctWaveSpectraPlots.estimateSpectrumGamma(mobj);
+                case 11                 %subsample SPT format spectrum timeseries
                     ctWaveSpectraPlots.subsampleSpectrum(mobj);
             end
         end
@@ -101,6 +104,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                     ctWaveSpectraPlots.bimodalSpectrum(mobj);
                 case 'cfModel&&Measured'       %Model case timeseries and cf to measured spectra timesereis
                     ctWaveSpectraPlots.cfModelled2Measured_ts(mobj);
+                case 'Estimate JONSWAP gamma'  %estimate JONSWAP gamma from spectra timeseries'                    
+                    ctWaveSpectraPlots.estimateSpectrumGamma(mobj);
                 case 'Subsample timeseries'   %subsample SPT format spectrum timeseries
                     ctWaveSpectraPlots.subsampleSpectrum(mobj);
             end
@@ -518,6 +523,53 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
         end
 
 %%
+        function estimateSpectrumGamma(mobj)
+            %estimate JONSWAP gamma from spectra timeseries
+                        [~,tsdst,meta] = waveModels.getCaseInputParams(mobj,1);  %1 limits to ctWaveData class
+            if isempty(tsdst), return; end
+            if ~contains(meta.inptype,'Spectrum')
+                warndlg('Measured spectrum required for this option');
+                return;
+            else
+                spdst = tsdst(1);                %assign sptSpectrum as tsdst
+            end
+            spdst = getsampleusingrange(spdst);  
+
+            nrec = height(spdst);
+            gamma = zeros(nrec,1);
+            S = spdst.S;
+            f = spdst.Dimensions.freq;            
+            parfor i=1:nrec
+                gamma(i) = wave_spectrum_gamma(S(i,:),f); %#ok<PFOUS>
+            end
+
+            %get wave height threshold and create plot
+            answer = inputdlg({'Wave height threshold:'},'Gamma',1,{'0'});
+            if isempty(answer), answer = '0'; end
+            Hthr = str2double(answer);
+            Hs = tsdst(2).Hs;
+            idx = Hs<=Hthr;
+            Hs(idx) = NaN;
+            gamma(idx) = NaN;
+
+            mn_gamma = mean(gamma,'all','omitnan');
+            mn_Hs = mean(Hs,'all','omitnan');
+
+            hf = figure('Name','Gamma','Tag','PlotFig');
+            ax = axes(hf); 
+            yyaxis left
+            stem(ax,spdst.RowNames,gamma,'.','LineWidth',0.1)
+            ylabel('Gamma (-)')
+            xlabel('Time')
+            yyaxis right            
+            plot(ax,spdst.RowNames,Hs,'.')
+            ylabel('Wave height (m)')
+            glegtxt = sprintf('gamma with mean %.2f',mn_gamma);
+            hlegtxt = sprintf('Hs with mean %.2f',mn_Hs);
+            legend({glegtxt,hlegtxt})
+        end
+
+%%
         function subsampleSpectrum(mobj)
             %get Case dataset to be used
             [cobj,dst,~] = waveModels.getCaseInputParams(mobj);
@@ -529,6 +581,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             if isempty(inp), return; end
 
             newdst = subsample_spectra_ts(dst,mobj,inp{1},str2double(inp{2}));
+            if isempty(newdst), return; end
 
             %save sumsampled dataset
             classname = metaclass(cobj).Name;
