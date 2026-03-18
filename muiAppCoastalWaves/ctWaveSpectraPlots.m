@@ -1039,10 +1039,10 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 % Skill functions - not wave spectra specific - copied from ModelSkill
 %--------------------------------------------------------------------------    
         function skill = getSkillParameters(obj,mobj)
-            %extract Skill parameters using MS_RunParams class for input
+            %extract Skill parameters using muiSkill_RunParams class for input
             x = obj(1).Spectrum.dir;              %direction
             y = obj(1).Spectrum.freq;             %frequency
-            robj = MS_RunParams.setInput(mobj);   %default or current values if user cancels
+            robj = muiSkill_RunParams.setInput(mobj);   %default or current values if user cancels
 
             skill.Ro = robj.maxcorr;
             skill.n  = robj.skillexponent;
@@ -1063,7 +1063,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
         function plotSpectrumModelSkill(stats,skill,meta)
             %compute the skill of model v measured spectrum data and produce Taylor
             %plot of timeseries results
-            %calls MS_RunParams class and taylor_plot function    
+            %calls muiSkill_RunParams class and taylor_plot function    
             % skill = getSkillParameters(obsobj(1),mobj);    %get the parameters for skill model
             % 
             % %get the statistics for the Taylor plot

@@ -11,7 +11,7 @@ function stats = get_spectrum_skill_stats(obsobj,modobj,skill)
 % INPUTS
 %   obsobj - array of ctWaveSpectrum for observed spectra
 %   modobj - array of ctWaveSpectrum for measured spectra
-%   skill - instance of MS_RunParams defining skill input parameters
+%   skill - instance of muiSkill_RunParams defining skill input parameters
 % OUTPUT
 %   stats - struct array of statistical results
 % NOTES
