@@ -2,7 +2,7 @@ function gamma = wave_spectrum_gamma(SG,f,dir)
 %
 %-------function help------------------------------------------------------
 % NAME
-%   wave_spectrum_gamma
+%   wave_spectrum_gamma.m
 % PURPOSE
 %   Estiamte the JONSWAP gamma from a frequency spectrum, S(f), or a
 %   frequency–direction spectrum S(dir,f)

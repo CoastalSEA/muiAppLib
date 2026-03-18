@@ -223,7 +223,7 @@ function obj = setSpectrumModel(obj)
             if filename==0, obj = []; return; end  %user cancelled
             varlist = {'',[path,filename]};
             specdst = wave_cco_spectra('getData',varlist{:});
-            inputs.spectrum = specdst.sptSpectrum; %possibly just pass table?????
+            inputs.spectrum = specdst.sptSpectrum;
             inputs.properties = specdst.sptProperties;            
             inputs.input = 'Spectrum';
             inputs.output = 'Measured';
@@ -366,8 +366,7 @@ function obj = setInputParams(obj,tsdst,inptype)
 
             %add gamma and depth from obj.spModel
             obj.inpData.gamma = sp.gamma;
-            %add depth if TMA depth saturation being used
-            obj.inpData.ds = []; 
+            %add depth if TMA depth saturation being used            
             if contains(obj.spModel.form,'TMA')
                 obj.inpData.ds = sp.depth; 
             end
@@ -485,7 +484,7 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
             nrec = length(dates);
             mod_obj(nrec,1) = obj;
             hpw = PoolWaitbar(nrec, 'Processing measured timeseries');  %and increment(hpw);
-            for i=1:nrec                                 %parfor loop
+            parfor i=1:nrec                                 %parfor loop
                 anobj = copy(obj);
                 itsdst = ctWaveSpectrum.getDatasetRow(tsdst,i); %selected record
                 anobj = setInputParams(anobj,itsdst,inptype);
@@ -507,9 +506,9 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
         function obj = getWaveModel(obj,params)
             %construct a model wave spectrum and return with wave parameters
             obj.inpData = params;
+            obj.inpData.ds = [];
             obj.inpData.input = 'Wave';
-            obj.inpData.output = 'Modelled';
-            % obj.inpData.date = inp.spectrum.RowNames;
+            obj.inpData.output = 'Modelled';            
             obj = getModelSpectrum(obj);            %compute spectrum for specified conditions
             if isempty(obj.Spectrum.SG), return; end
             obj.Params = wave_spectrum_params(obj); %integral properties of spectrum
@@ -698,6 +697,7 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
             end
         end
 
+%%
         function [dir,freq] = spectrumDimensions(obj)
             %return default direction and frequency intervals
             dir_int = obj.Interp.dir;  %interval used for directions (deg)
@@ -717,7 +717,6 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
             nfreq = length(freq);
         end
 
-
 %%
         function obj = zeroSpectrum(obj,params)
             %spectrum object with zero energy density (eg for Hs=0)
@@ -726,10 +725,11 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
             obj.Spectrum.dir = dir;
             obj.Spectrum.SG = zeros(numel(dir),numel(freq));
             obj.inpData = params;
+            obj.inpData.ds = [];
             obj.inpData.input = 'Wave';
             obj.inpData.output = 'Modelled';
             obj.inpData.gamma = 0.0;
-            obj.inpData.ds = [];
+            
             obj.Params = wave_spectrum_params(obj); %integral properties of spectrum
         end
 

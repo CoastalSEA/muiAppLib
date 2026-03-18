@@ -90,17 +90,22 @@ classdef (Abstract = true) waveModels < muiDataSet
 
 %%
     methods (Static)
-        function [cobj,tsdst,meta] = getCaseInputParams(mobj,~)
+        function [cobj,tsdst,meta] = getCaseInputParams(mobj,dtype)
             %get the Case, Dataset and Input parameters
             %this combines calls to getCaseDataset and getInputParams
             %second input can be any value. If exists the limit classes to
             %select from to ctWaveData
+            meta = []; 
             if nargin==2
+                %limit the classes that can be selected and specify dataset
                 [cobj,tsdst,dsnames] = waveModels.getCaseDataset(mobj,{'ctWaveData'},1);
+                if ~contains(dsnames,dtype)
+                    cobj = []; tsdst = []; return; 
+                end
             else
                 [cobj,tsdst,dsnames] = waveModels.getCaseDataset(mobj);
             end
-            if isempty(tsdst), meta = []; return; end
+            if isempty(tsdst), return; end
             [tsdst,meta] = waveModels.getInputParams(cobj,tsdst,dsnames);  %extract required variables
             if isempty(tsdst), return; end
             tsdst(1).DataTable = rmmissing(tsdst(1).DataTable);%remove nans

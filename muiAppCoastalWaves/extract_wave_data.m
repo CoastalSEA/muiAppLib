@@ -157,26 +157,23 @@ function T1= getWavePeriod(inwvdst)
     %values of Tp and add T1 to output - bespoke for Copernicus wave data
     inwv = inwvdst.DataTable;
 
-%     Tp = inwv{:,17};    %Tp; period at variance spectral density maximum
-%     T2 = inwv{:,15};    %Tm02 = sqrt(m0/m2); ,'Wave period (s)'
-%     T10 = inwv{:,16};   %Tm-10 = m-1/m0; period from variance spectral density inverse frequency moment
-%                         %The period of an energy equivalent regular wave.ie
-%                         %period corresponding to the weighted average of the wave energy.   
     T1s1 = inwv{:,12};  %primary swell mean period
     T1s2 = inwv{:,13};  %primary swell mean period
     T1w = inwv{:,14};   %wind wave mean period
-% 
-% 
-% 
-% 
-% 
+
     Sps1 = inwv{:,2}.^2;
     Sps2 = inwv{:,3}.^2;
     Spw = inwv{:,4}.^2;
     Spall = sum([Spw,Sps1,Sps2],2,'omitnan');
 
     T1 = sum([T1w.*Spw./Spall,T1s1.*Sps1./Spall,T1s2.*Sps2./Spall],2,'omitnan');
-% 
+
+
+%     Tp = inwv{:,17};    %Tp; period at variance spectral density maximum
+%     T2 = inwv{:,15};    %Tm02 = sqrt(m0/m2); ,'Wave period (s)'
+%     T10 = inwv{:,16};   %Tm-10 = m-1/m0; period from variance spectral density inverse frequency moment
+%                         %The period of an energy equivalent regular wave.ie
+%                         %period corresponding to the weighted average of the wave energy.   
 % gamma1 = getGamma(T1,Tp,1); 
 % gamma2 = getGamma(T2,Tp,2);
 % gamma10 = getGamma(T10,Tp,3);
@@ -210,33 +207,33 @@ function T1= getWavePeriod(inwvdst)
 % plot(gamma2,gammaw,'.')
 % hold off
 
-    % %-nested functions-----------------------------------------------------
-    % function gamma = getGamma(Tn,Td,option)
-    %     %functions as derived from MIAS Pub.No.4, Table 1
-    %     if option==1
-    %         gamma = 45.3*(Tn./Td).^14.59;   %T1/Tp 
-    %     elseif option==2
-    %         gamma = 69.7*(Tn./Td).^12.23;   %T2/Tp
-    %     elseif option==3
-    %         gamma = 34.4*(Tn./Td).^23.0;    %T-10/Tp
-    %     else
-    %         gamma = 146.2*(Tn./Td).^25.7;   %T2/T-10
-    %     end        
-    %     gamma(gamma<1) = 0.9999;
-    %     gamma(gamma>8) = 7.9999;
-    % end
-    % %----------------------------------------------------------------------
-    % function Tp = getPeakPeriod(gamma,T,option)
-    %     %recover peak period from gamma and T1, T2 or T-10 
-    %     %(inverse of gamma functions)
-    %     if option==1
-    %         Tp = T./(gamma/45.3).^(1/14.59);   %T1
-    %     elseif option==2
-    %         Tp = T./(gamma/69.7).^(1/12.23);   %T2
-    %     elseif option==3
-    %         Tp = T./(gamma/34.4).^(1/23);      %T-10
-    %     end   
-    % end
+% %-nested functions-----------------------------------------------------
+% function gamma = getGamma(Tn,Td,option)
+%     %functions as derived from MIAS Pub.No.4, Table 1
+%     if option==1
+%         gamma = 45.3*(Tn./Td).^14.59;   %T1/Tp 
+%     elseif option==2
+%         gamma = 69.7*(Tn./Td).^12.23;   %T2/Tp
+%     elseif option==3
+%         gamma = 34.4*(Tn./Td).^23.0;    %T-10/Tp
+%     else
+%         gamma = 146.2*(Tn./Td).^25.7;   %T2/T-10
+%     end        
+%     gamma(gamma<1) = 0.9999;
+%     gamma(gamma>8) = 7.9999;
+% end
+% %----------------------------------------------------------------------
+% function Tp = getPeakPeriod(gamma,T,option)
+%     %recover peak period from gamma and T1, T2 or T-10 
+%     %(inverse of gamma functions)
+%     if option==1
+%         Tp = T./(gamma/45.3).^(1/14.59);   %T1
+%     elseif option==2
+%         Tp = T./(gamma/69.7).^(1/12.23);   %T2
+%     elseif option==3
+%         Tp = T./(gamma/34.4).^(1/23);      %T-10
+%     end   
+% end
 end
 
 %%

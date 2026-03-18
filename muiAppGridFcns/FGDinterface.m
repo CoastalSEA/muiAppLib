@@ -940,7 +940,7 @@ classdef (Abstract = true) FGDinterface < GDinterface
                 classrec = classRec(muicat,caseRec(muicat,caseid)); 
                 updateCase(muicat,cobj,classrec,false); %false=no message
             elseif strcmp(answer,'Update')       
-                %overwrite exisitng form data set with new form             
+                %overwrite existing form data set with new form             
                 obj.Data.Grid = formdst;  
                 obj = cf_offset_wls(obj,true);  %translate wls, true extends vector
                 classrec = classRec(muicat,caseRec(muicat,obj.CaseIndex)); 

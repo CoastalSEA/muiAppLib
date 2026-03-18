@@ -200,7 +200,7 @@ function [fp,alpha,gamma] = get_input(inp,f,istma)
             [Tp,Lp] = peak_period(inp);    fp = 1./Tp;
             sigma = [0.07,0.09];
             bnds = [1,7];
-            gamma0 = 2;
+            gamma0 = 1.3;
             lambda = 0.1;
 
             if istma

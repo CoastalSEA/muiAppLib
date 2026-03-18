@@ -1082,7 +1082,7 @@ function [grid,orient] = orientGrid(obj,grid0)
             title(casedesc,'FontWeight','normal','FontSize',10);
         end      
 %% ------------------------------------------------------------------------
-% Protected methods to Update existing gridsd that have been modified by
+% Protected methods to Update existing grids that have been modified by
 % one of the Grid Tools (rotate, sub-grid, etc)
 %--------------------------------------------------------------------------               
         function addORupdate(obj,muicat,newdata)
