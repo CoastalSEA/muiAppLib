@@ -134,7 +134,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 if isempty(irow), return; end
                 obj = ctWaveSpectraPlots;             %initialise class object
                 obj.spModel.selection = spselect;     %add any existing selection
-                obj = getSpectrumObject(obj,meta.inptype,tsdst,irow);
+                obj = getSpectrumObject(obj,meta,tsdst,irow);
                 if isempty(obj.Spectrum.SG), return; end
                 if ~isempty(obj.spModel)
                     spselect = obj.spModel.selection; %update model selection
@@ -157,7 +157,11 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 obj = setForcingConditions(obj); %UI to input wave/wind conditions
                 if isempty(obj.inpData), ok = 1; continue; end
 
-                obj = getSpectrum(obj);          %define the model to be used (Jonswap etc)
+                obj = setSpectrumModel(obj);            %define model if not measured spectrum
+                if isempty(obj.spModel), return; end    %user cancelled
+
+                obj.inpData.gamma = obj.spModel.gamma;
+                obj = getSpectrum(obj,[]);        %define the model to be used (Jonswap etc)
                 if isempty(obj.Spectrum.SG), ok = 1; continue; end
 
                 inputMessage(obj);                %display inputs in command window   
@@ -211,7 +215,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 
             %get the measured wave spectrum to be modelled
             [~,tsdst,meta] = waveModels.getCaseInputParams(mobj,'sptSpectrum'); 
-            if isempty(tdst), getdialog('Select wave spectra data'); return; end
+            if isempty(tsdst), getdialog('Select wave spectra data'); return; end
             if ~contains(meta.inptype,'Spectrum')
                 warndlg('Measured spectrum required for this option');
                 obj = []; return;
@@ -229,13 +233,15 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 if isempty(irow), return; end
                 %construct measured spectrum
                 obj = ctWaveSpectraPlots;     %initialise class object
-                obj = getSpectrumObject(obj,meta.inptype,tsdst,irow);
+                obj = getSpectrumObject(obj,meta,tsdst,irow);
 
                 %add spectrum input properties
                 obj.inpData.properties = propstable(irow,:);                
                 %construct model spectrum
                 obj(2) = setSpectrumModel(ctWaveSpectraPlots); %define the model to be used (Jonswap etc)
-                obj(2) = getWaveModel(obj(2),obj(1).Params);
+                indst = dstable(obj(1).Params,'RowNames',dates(irow));
+                obj(2) = setInputParams(obj(2),indst,'Wave');
+                obj(2) = getMultiModalSpectrum(obj(2),indst);
                 if isempty(obj(2).Spectrum.SG), return; end
 
                 %plot results
@@ -271,14 +277,14 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             if isempty(tsdst), return; end
 
             tsdst(1) = getsampleusingrange(tsdst(1));  
-            if isempty(tsdst(1)), return; end         %invalid selection
+            if isempty(tsdst(1)), return; end           %invalid selection
 
             anobj = ctWaveSpectraPlots();
             if strcmp(meta.inptype,'Spectrum')
                 obj = getMeasuredTS(anobj,tsdst(1));    %compute spectrum based on measured form
                 obj(1).Plotxt.ttxt = tsdst(1).Description;
             else  
-                obj = getModelTS(anobj,tsdst,meta.inptype); %compute spectrum for specified conditions
+                obj = getModelTS(anobj,tsdst,meta);  %compute spectrum for specified conditions
                 if isempty(obj), return; end
                 obj(1) = setModelInputText(obj(1));
                 obj(1).Plotxt.ttxt = sprintf('%s\n%s',tsdst.Description,...
@@ -292,89 +298,6 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
         end
 
 %%
-        % function fitModel2Measured_ts(mobj)
-        %     %create a measured timeseries of spectra and use the measured
-        %     %properties to create a model spectrum to assess model skill
-        %     [~,tsdst,meta] = waveModels.getCaseInputParams(mobj,'sptSpectrum'); 
-        %     if isempty(obsdst), getdialog('Select wave spectra data'); return; end
-        %     if isempty(tsdst), return; end
-        %     if ~contains(meta.inptype,'Spectrum')
-        %         warndlg('Measured spectrum required for this option');
-        %         return;
-        %     else
-        %         tsdst = tsdst(1);                %assign sptSpectrum as tsdst
-        %     end
-        % 
-        %     ok = 0;                              %with current workflow need to 
-        %     while ok<1                           %limit size of timeseries
-        %         tsdst = getsampleusingrange(tsdst);  
-        %         if isempty(tsdst), return; end       %invalid selection
-        %         nrec = height(tsdst);
-        %         if nrec>10000
-        %             qtxt = sprintf('Timeseries has %d records. Do you want to use shorter record?',nrec);
-        %             answer = questdlg({qtxt},'Spectrum','Yes','No','Yes');
-        %             if strcmp(answer,'No'), ok = 1; end                         
-        %         else
-        %             ok = 1;
-        %         end
-        %     end
-        % 
-        %     %running long timeseries of measured spectra can be limited by
-        %     %memory so run inidividually in loop
-        %     obj = ctWaveSpectraPlots;
-        %     obj = setSpectrumModel(obj);
-        %     [dir,freq] = spectrumDimensions(obj);
-        %     obj.Spectrum.freq = freq;
-        %     obj.Spectrum.dir = dir;
-        %     skill = getSkillParameters(obj,mobj);    %get the parameters for skill model
-        %     mtime = tsdst.RowNames;
-        %     meta.source{1} = tsdst.Description;
-        %     meta.source{2} = obj.spModel.form;
-        % 
-        %     hpw = PoolWaitbar(nrec, 'Processing skill statistics');  %and increment(hpw);
-        %     parfor i=1:height(tsdst)                          %parfor loop
-        %         itsdst = getDSTable(tsdst,i,[]);              %selected record
-        %         obsobj = copy(obj);
-        %         obsobj = setInputParams(obsobj,itsdst,'Spectrum');
-        %         obsobj = getMeasuredSpectrum(obsobj);         %compute spectrum based on measured form
-        %         params = wave_spectrum_params(obsobj);        %integral properties of spectrum    
-        %         indst = dstable(params,'RowNames',mtime(i));
-        %         modobj = copy(obj);
-        %         modobj = setInputParams(modobj,indst,'Wave');
-        %         modobj = getModelSpectrum(modobj);                
-        %         stats(i) = get_spectrum_skill_stats(obsobj,modobj,skill);
-        %         obsprops(i,:) = params;
-        %         modprops(i,:) = wave_spectrum_params(modobj);
-        %         increment(hpw);
-        %     end
-        %     delete(hpw)
-            %code to run measured and model as complete arrays
-            % anobj = ctWaveSpectraPlots;
-            % %get timeseries of measured spectra
-            % obsobj = getMeasuredTS(anobj,tsdst); 
-            % 
-            % spectra = [obsobj(:).Spectrum]; 
-            % dates = [spectra(:).date];
-            % intable = vertcat(obsobj(:).Params); %concatenate tables
-            % indst = dstable(intable,'RowNames',dates);
-            % indst.Description = sprintf('Parameters from %s',tsdst.Description);
-            % modobj = getModelTS(anobj,indst,'Wave');
-            % if isempty(modobj), return; end   %user cancelled
-            % %check on gamma values
-            % if anobj.spModel.gamma==0
-            %     hf = figure('Tag','PlotFig'); ax = axes(hf);
-            %     spec = vertcat(obsobj(:).Spectrum);
-            %     % spgm = vertcat(modobj(:).spModel);
-            %     % plot(ax,[spec(:).date],[spgm(:).T_gamma],'x')
-            %     inpd = vertcat(modobj(:).inpData);
-            %     plot(ax,[spec(:).date],[inpd(:).gamma],'x')
-            % end
-
-        %     %plot model skill and allow user to examine individual parameters
-        %     ctWaveSpectraPlots.plotSpectrumModelSkill(stats,skill,meta)
-        %     ctWaveSpectraPlots.parameterPlots(obsprops,modprops);
-        % end
-%%
         function bimodalSpectrum(mobj)
             %analyse measured spectrum for bi-modality and explore
             %representing this in a model
@@ -382,12 +305,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             [~,obsdst,meta] = waveModels.getCaseInputParams(mobj,'sptSpectrum');
             if isempty(obsdst), getdialog('Select wave spectra data'); return; end
             obsdst = obsdst(1);                %assign sptSpectrum as tsdst
-            % if ~contains(meta.inptype,'Spectrum')
-            %     warndlg('Measured spectrum required for this option');
-            %     return;
-            % else
-            %     tsdst = tsdst(1);
-            % end
+
             %select record from dateset get spectrum and plot
             dates = obsdst.DataTable.Properties.RowNames;
             obj = ctWaveSpectraPlots;             %initialise class object
@@ -436,13 +354,16 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 params(2) = dstable(s_params,'RowNames',obj(1).inpData.date);
 
                 anobj = ctWaveSpectraPlots;
+                anobj = setSpectrumModel(anobj);
+                if isempty(anobj.spModel), return; end    %user cancelled
+
                 anobj = setInputParams(anobj,params,'Wave');
-                anobj = getSpectrum(anobj); 
+                anobj = getSpectrum(anobj,[]); 
                 if isempty(anobj.Spectrum.SG), return; end
                 obj(2) = anobj;
 
                 if isempty(idmn)
-                    summary = [w_params;obj(2).Params];
+                    summary = [w_params;obj(2).Params(2,:)];
                     summary.Properties.RowNames = {'Wind-waves','Model W-W'};
                 else
                     summary = [obj(1).Params;obj(2).Params(1,:);w_params;...
@@ -487,15 +408,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             if isempty(obsdst), getdialog('Select wave spectra data'); return; end
             obsdst = obsdst(1);                %assign sptSpectrum as tsdst
 
-            % if ~contains(meta.inptype,'Spectrum')
-            %     warndlg('Measured spectrum required for this option');
-            %     return;
-            % else
-            % 
-            % end
-
-            ok = 0;                              %with current workflow need to 
-            while ok<1                           %limit size of timeseries
+            ok = 0;  
+            while ok<1                         %option to limit record length             
                 obsdst = getsampleusingrange(obsdst);  
                 if isempty(obsdst), return; end       %invalid selection
                 nrec = height(obsdst);
@@ -540,33 +454,40 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             [dir,freq] = spectrumDimensions(obj);
             obj.Spectrum.freq = freq;
             obj.Spectrum.dir = dir;
-            skill = getSkillParameters(obj,mobj);    %get the parameters for skill model
+            skill = getSkillParameters(obj,mobj);         %get the parameters for skill model
             mtime = obsdst.RowNames;
             meta.source{1} = obsdst.Description;
             meta.source{2} = obj.spModel.form;
+
+            nrec = numel(mtime);
+            seas = zeros(nrec,1);                         %needed in parfor to match loop size
+            if ~isempty(meta.variables)
+                seas = meta.variables.seastate.DataTable; %required for parfor loop
+            end
             
-            hpw = PoolWaitbar(nrec, 'Processing skill statistics');  %and increment(hpw);
-            parfor i=1:height(obsdst)                          %parfor loop
-                itsdst = getDSTable(obsdst,i,[]);              %selected record
+            hpw = PoolWaitbar(nrec, 'Processing skill statistics');
+            parfor i=1:nrec                                   %parfor loop
+                itsdst = getDSTable(obsdst,i,[]);             %selected record
                 obsobj = copy(obj);
                 obsobj = setInputParams(obsobj,itsdst,'Spectrum');
                 obsobj = getMeasuredSpectrum(obsobj);         %compute spectrum based on measured form
-                obsprops(i,:) = wave_spectrum_params(obsobj);        %integral properties of spectrum  
+                obsprops(i,:) = wave_spectrum_params(obsobj); %integral properties of spectrum  
 
                 modobj = copy(obj);
                 if iscase
-                    itsdst = ctWaveSpectrum.getDatasetRow(moddst,i); %selected record
-                    modobj = setInputParams(modobj,itsdst,'Wave');
-                    modobj = getMultiModalSpectrum(modobj);   %compute spectrum for specified conditions
-                    params = modobj.Params(1,:);    
-                    params.Properties.RowNames = {};
+                    indst = ctWaveSpectrum.getDatasetRow(moddst,i); %selected record
+                    seastate = seas(i,:);    
                 else
                     indst = dstable(obsprops(i,:),'RowNames',mtime(i));
+                    seastate = indst; %contains T1,T2 etc used to estimate gamma
+                end 
                     modobj = setInputParams(modobj,indst,'Wave');
-                    modobj = getModelSpectrum(modobj); 
-                    params = wave_spectrum_params(modobj);
-                end  
+                    modobj = getMultiModalSpectrum(modobj,seastate);                  
+                    params = modobj.Params(1,:);    
+                    params.Properties.RowNames = {};
+
                 modprops(i,:) = params;
+                gamma(i) = modobj.inpData.gamma(1);
                 stats(i) = get_spectrum_skill_stats(obsobj,modobj,skill);                
                 increment(hpw);
             end
@@ -575,71 +496,17 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             ctWaveSpectraPlots.plotSpectrumModelSkill(stats,skill,meta)
             ctWaveSpectraPlots.parameterPlots(obsprops,modprops);
 
-            % ok = 0;                              %with current workflow need to 
-            % while ok<1                           %limit size of timeseries
-            %     obsdst = getsampleusingrange(obsdst);  
-            %     if isempty(obsdst), return; end       %invalid selection
-            %     nrec = height(obsdst);
-            %     if nrec<10000
-            %         ok = 1; 
-            %     else
-            %         getdialog(sprintf('Timeseries has %d records\nReduce to <10,000',nrec))
-            %     end
-            % end
-            % 
-            % anobj = ctWaveSpectraPlots;
-            % %get timeseries of measured spectra
-            % obsobj = getMeasuredTS(anobj,obsdst);   
-            % 
-            % %get Case dataset to be used
-            % [~,seldst,meta] = waveModels.getCaseInputParams(mobj);
-            % if isempty(seldst), return; end
-            % 
-            % %match record to measured dataset
-            % [newtime,ids,ido] = ctWaveSpectraPlots.subSampleTime(seldst,obsdst);
-            % 
-            % if ~isempty(ido)
-            %     obsobj = obsobj(ido);
-            % end
-            % 
-            % moddst = copy(seldst);
-            % for j=1:numel(moddst)
-            %     subtable = seldst(j).DataTable(ids,:);  
-            %     moddst(j).DataTable = subtable;
-            %     moddst(j).RowNames = newtime; %update times in case there is an offset
-            % end
-            
-            % modobj = getModelTS(anobj,moddst,meta.inptype); %compute spectrum for specified conditions
-            % if isempty(modobj), return; end
-            % modobj(1) = setModelInputText(modobj(1));
-            % modobj(1).Plotxt.ttxt = sprintf('%s\n%s',moddst.Description,...
-            %                                      modobj(1).Plotxt.stxt);
-            % %check on gamma values
-            % if (contains(anobj.spModel.form,'JONSWAP') || ...
-            %     contains(anobj.spModel.form,'TMA')) && anobj.spModel.gamma==0                
-            %     spec = vertcat(obsobj(:).Spectrum);
-            %     % spgm = vertcat(modobj(:).spModel);
-            %     % plot(ax,[spec(:).date],[spgm(:).T_gamma],'x')
-            %     inpd = vertcat(modobj(:).inpData);
-            %     nspec = numel(inpd(1).gamma);
-            %     gam = reshape([inpd(:).gamma],nspec,[]);
-            %     if ~all(gam==3.3,'all')
-            %         hf = figure('Tag','PlotFig'); ax = axes(hf);
-            %         plot(ax,[spec(:).date],gam(1,:),'x')
-            %         for j=2:nspec
-            %             hold on
-            %             plot(ax,[spec(:).date],gam(j,:),'.')
-            %             hold off
-            %         end
-            %         xlabel('gamma')
-            %         ltxt = {'Wind','Swell 1','Swell 2'};
-            %         legend(ltxt(1:nspec))
-            %     end
-            % end
-            % 
-            % %plot model skill and allow user to examine individual parameters
-            % plotSpectrumModelSkill(obsobj,modobj,mobj,meta)
-            % parameterPlots(obsobj,modobj);
+            if (contains(obj.spModel.form,'JONSWAP') || ...
+                        contains(obj.spModel.form,'TMA')) && ...
+                                obj.spModel.gamma<=0   
+                if ~all(gamma==gamma(1),'all') %don't plot if constant
+                    hf = figure('Tag','PlotFig'); ax = axes(hf);
+                    plot(ax,mtime,gamma,'x')
+                    xlabel('Time')
+                    ylabel('Gamma')
+                    title('Gamma values used for model')
+                end
+            end
         end
 
 %%
@@ -649,20 +516,18 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             if isempty(obsdst), getdialog('Select wave spectra data'); return; end
             spdst = obsdst(1);                %assign sptSpectrum as tsdst
 
-            % if ~contains(meta.inptype,'Spectrum')
-            %     warndlg('Measured spectrum required for this option');
-            %     return;
-            % else
-            % 
-            % end
             spdst = getsampleusingrange(spdst);  
 
             nrec = height(spdst);
             gamma = zeros(nrec,1);
+            gammalog = gamma; 
+            g_bnd = [0.1,5];                       %bounds used for gamma search
             S = spdst.S;
             f = spdst.Dimensions.freq;            
-            parfor i=1:nrec
-                gamma(i) = wave_spectrum_gamma(S(i,:),f); %#ok<PFOUS>
+            parfor i=1:nrec                        %parfor loop
+                %compute gamma using linear (false) and log (true) misfit
+                gamma(i) = wave_spectrum_gamma(S(i,:),f,g_bnd,[],false); %#ok<PFOUS>
+                gammalog(i) = wave_spectrum_gamma(S(i,:),f,g_bnd,[],true); %#ok<PFOUS>
             end
 
             %get wave height threshold and create plot
@@ -676,8 +541,15 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             idx = Hs<=Hthr;
             Hs(idx) = NaN;
             gamma(idx) = NaN;
+            gammalog(idx) = NaN;
+
+            %gammalog out of bounds assigned NaN 
+            idl = gammalog>g_bnd(2)-0.05;
+            gammalog(idl) = NaN;
+            % gammalog(idl) = gamma(idl); %alternative to assign gamma values
 
             mn_gamma = mean(gamma,'all','omitnan');
+            mn_gammalog = mean(gammalog,'all','omitnan');
             mn_Hs = mean(Hs,'all','omitnan');
 
             hf = figure('Name','Gamma','Tag','PlotFig');
@@ -692,6 +564,28 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             glegtxt = sprintf('gamma with mean %.2f',mn_gamma);
             hlegtxt = sprintf('Hs with mean %.2f',mn_Hs);
             legend({glegtxt,hlegtxt})
+            title('Gamma and wave height')
+
+            hf = figure('Name','Gamma','Tag','PlotFig');
+            ax = axes(hf); 
+            stem(ax,spdst.RowNames,gamma,'.','LineWidth',0.1)
+            ylabel('Gamma (-)')
+            xlabel('Time')     
+            hold on
+            plot(ax,spdst.RowNames,gammalog,'.')
+            hold off
+            glegtxt = sprintf('gamma with mean %.2f',mn_gamma);
+            hlegtxt = sprintf('gamma log(S) with mean %.2f',mn_gammalog);
+            legend({glegtxt,hlegtxt})
+            title('Linear and Log gamma estimates')
+
+
+            hf = figure('Name','Gamma','Tag','PlotFig');
+            ax = axes(hf);
+            plot(ax,gamma,gammalog,'.')
+            xlabel('gamma using S')
+            ylabel('gamma using log(S)')
+            title('Log gamma(Linear gamma)')
 
             if issave
                 meta.source = sprintf('Gamma using %s',spdst.Description);
@@ -979,9 +873,9 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             [~,idx] = max(obj(1).inpData.spectrum.S);        
             inp.Dp = obj(1).inpData.spectrum.Dir(idx);
             inp.Tp = 1/obj(1).inpData.spectrum.Dimensions.freq(idx);
-            source = table(inp.Hs,m0,NaN,inp.Sp,inp.Tp,inp.Dp,NaN,NaN,NaN,inp.Tz); 
+            source = table(inp.Hs,m0,NaN,inp.Sp,inp.Tp,inp.Dp,NaN,NaN,NaN,NaN,inp.Tz,NaN); 
             source.Properties.VariableNames = {'Hs','m0','Dir','Sp','Tp','Dp',...
-                                                    'Sfdpk','Dfdpk','Tfdpk','T2'};
+                              'Sfdpk','Tfdpk','Dfdpk','T1','T2','T10'};
             out = [source;obj(1).Params;obj(2).Params];
             out.Properties.RowNames = {'Source properties','Source spectrum',...
                                                  'Model spectrum'};
@@ -1061,15 +955,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
     methods (Static, Access=private)
 %%
         function plotSpectrumModelSkill(stats,skill,meta)
-            %compute the skill of model v measured spectrum data and produce Taylor
-            %plot of timeseries results
-            %calls muiSkill_RunParams class and taylor_plot function    
-            % skill = getSkillParameters(obsobj(1),mobj);    %get the parameters for skill model
-            % 
-            % %get the statistics for the Taylor plot
-            % stats = get_spectrum_skill_stats(obsobj,modobj,skill);
-        
-            %add the timeseries results to the Taylor plot
+            %compute the skill of model v measured spectrum data and produce 
+            %Taylor plot of timeseries results
             hw = waitbar(0,'Preparing plot please wait');
             ndteststd = [stats(:).teststd]./[stats(:).refstd]; %normalised std
             rLim = ceil(max(ndteststd));                       %radial limit for the plot
@@ -1091,11 +978,6 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
         end 
 
 %%
-        % function parameterPlots(obsobj,modobj)
-        %     %allow user to select from the parameters table and plot
-        %     %measured against model
-        %     obsprop = vertcat(obsobj(:).Params);
-        %     modprop = vertcat(modobj(:).Params);
         function parameterPlots(obsprop,modprop)
             %allow user to select from the parameters table and plot
             %measured against model
@@ -1119,8 +1001,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                     plot(ax,[0,xylim],[0,xylim],'--k')
                 hold(ax,'off')
             end
-        end 
-   
+        end   
 
 %%   
         function ptype = plotType()

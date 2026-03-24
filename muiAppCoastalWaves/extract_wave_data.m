@@ -30,6 +30,7 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
         wvdst = removevars(wvdst,varnames(idel));
         meta.inputs(1,:) = vardesc(ismatch(varnames,{'Hs','Tp','Dir'}));
         meta.selection = [];
+        meta.seastate = [];
         return; 
     end 
 
@@ -65,29 +66,39 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
         if isempty(sel), wvdst = []; return; end
         
         %factor = 1;
-        if contains(vardesc{sel{2}},'mean period') 
-            %indata = setWavePeriods(inwvdst,sel{2});
-            %Tp=var.no.17
-            indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},...
-                inwv{:,sel{2}},inwv{:,15},inwv{:,16}};
-            %factor = 1.2; %scale mean period to peak period. this value 
-            ismean = true;
-        elseif sel{2}==17 && nvar==1
-            T1 = getWavePeriod(inwvdst);
-            indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},T1,inwv{:,15},inwv{:,16}};
-            ismean = true;
-        else   
+        % if contains(vardesc{sel{2}},'mean period') 
+        %     %indata = setWavePeriods(inwvdst,sel{2});
+        %     %Tp=var.no.17
+        %     indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},...
+        %         inwv{:,sel{2}},inwv{:,15},inwv{:,16}};
+        %     ismean = true;
+            
+        % elseif sel{2}==17 && nvar==1
+        %     T1 = getWavePeriod(inwvdst);
+        %     indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},T1,inwv{:,15},inwv{:,16}};
+        %     ismean = true;
+        % else   
             %extract data selected            
             indata = {inwv{:,sel{1}},inwv{:,sel{2}},inwv{:,sel{3}}};
             ismean = false;
-        end
+        % end
         wvtime = inwvdst.RowNames;
         dsp = setDSproperties(ismean);
         wvdst(i) = dstable(indata{:},'RowNames',wvtime,'DSproperties',dsp); %#ok<AGROW>
         wvdst(i).Description = inwvdst.Description; %#ok<AGROW>
         %assign metadata of selection
         meta.selection(i,:) = [sel{:}];
-        meta.inputs(i,:) = vardesc([sel{:}]);
+        meta.inputs(i,:) = vardesc([sel{:}]);        
+    end
+    
+    if strcmp(varnames{1},'VHM0') &&strcmp(varnames{17},'VTPK') %test for Copernicus data!
+        dsp = setDSproperties(true);
+        T1 = getWavePeriod(inwvdst);
+        %table of total sea state parameters Hs,Tp,Dir,T1(est),T2,T10
+        indata = {inwv{:,1},inwv{:,17},inwv{:,5},T1,inwv{:,15},inwv{:,16}};                
+        meta.seastate = dstable(indata{:},'RowNames',wvtime,'DSproperties',dsp);
+    else
+        meta.seastate = [];
     end
 end
 
@@ -152,88 +163,37 @@ function defsel = getCopComponents(nvar,idx)
 end
 
 %%
-function T1= getWavePeriod(inwvdst)
-    %use mean and peak sea state values to estimate sea state component
-    %values of Tp and add T1 to output - bespoke for Copernicus wave data
+function T1_tot = getWavePeriod(inwvdst)
+    %use energy‑weighted harmonic mean of the sea state components to estimate 
+    %the value of T1 for the totla sea state - bespoke for Copernicus wave data
     inwv = inwvdst.DataTable;
 
-    T1s1 = inwv{:,12};  %primary swell mean period
-    T1s2 = inwv{:,13};  %primary swell mean period
-    T1w = inwv{:,14};   %wind wave mean period
+    T1(:,1) = inwv{:,12};  %primary swell mean period
+    T1(:,2) = inwv{:,13};  %primary swell mean period
+    T1(:,3) = inwv{:,14};  %wind wave mean period
 
-    Sps1 = inwv{:,2}.^2;
-    Sps2 = inwv{:,3}.^2;
-    Spw = inwv{:,4}.^2;
-    Spall = sum([Spw,Sps1,Sps2],2,'omitnan');
+    Hs(:,1) = inwv{:,2};
+    Hs(:,2) = inwv{:,3};
+    Hs(:,3)= inwv{:,4};
 
-    T1 = sum([T1w.*Spw./Spall,T1s1.*Sps1./Spall,T1s2.*Sps2./Spall],2,'omitnan');
+    % Valid components: both Hs>0 and T1>0
+    valid = (Hs > 0) & (T1 > 0);
 
+    % Preallocate numerator and denominator
+    num = sum(Hs.^2 .* valid, 2);   % Σ Hs_i^2 over valid components
 
-%     Tp = inwv{:,17};    %Tp; period at variance spectral density maximum
-%     T2 = inwv{:,15};    %Tm02 = sqrt(m0/m2); ,'Wave period (s)'
-%     T10 = inwv{:,16};   %Tm-10 = m-1/m0; period from variance spectral density inverse frequency moment
-%                         %The period of an energy equivalent regular wave.ie
-%                         %period corresponding to the weighted average of the wave energy.   
-% gamma1 = getGamma(T1,Tp,1); 
-% gamma2 = getGamma(T2,Tp,2);
-% gamma10 = getGamma(T10,Tp,3);
-% gamma12 = getGamma(T2,T10,4);
-% 
-% Tp1 = getPeakPeriod(gamma12,T1,1);
-% figure; plot(Tp,Tp1,'.'); title('T1')
-% Tp2 = getPeakPeriod(gamma12,T2,2);
-% figure; plot(Tp,Tp2,'.'); title('T2')
-% 
-% Tpw = getPeakPeriod(gamma12,T1w,1);
-% figure; plot(Tp,Tpw,'.'); title('T1wind')
-% Tps1 = getPeakPeriod(gamma12,T1s1,1);
-% figure; plot(Tp,Tps1,'.'); title('T1swell 1')
-% Tps2 = getPeakPeriod(gamma12,T1s2,1);
-% figure; plot(Tp,Tps2,'.'); title('T1swell 2')
-% 
-% gammas1 = getGamma(T1s1,Tp,1);
-% gammas2 = getGamma(T1s2,Tp,1);
-% gammaw =  getGamma(T1w,Tp,1);
+    % Compute denominator safely: only divide where valid
+    den = zeros(size(num));
+    for j = 1:size(Hs,2)
+        idx = valid(:,j);           % rows where component j is valid
+        den(idx) = den(idx) + (Hs(idx,j).^2 ./ T1(idx,j));
+    end
 
+    % Final total T1
+    T1_tot = num ./ den;
 
-% 
-% figure;
-% plot(gamma2,gamma1,'.')
-% figure;
-% plot(gamma10,gamma1,'.')
-% hold on
-% plot(gamma2,gammas1,'.')
-% plot(gamma2,gammas2,'.')
-% plot(gamma2,gammaw,'.')
-% hold off
-
-% %-nested functions-----------------------------------------------------
-% function gamma = getGamma(Tn,Td,option)
-%     %functions as derived from MIAS Pub.No.4, Table 1
-%     if option==1
-%         gamma = 45.3*(Tn./Td).^14.59;   %T1/Tp 
-%     elseif option==2
-%         gamma = 69.7*(Tn./Td).^12.23;   %T2/Tp
-%     elseif option==3
-%         gamma = 34.4*(Tn./Td).^23.0;    %T-10/Tp
-%     else
-%         gamma = 146.2*(Tn./Td).^25.7;   %T2/T-10
-%     end        
-%     gamma(gamma<1) = 0.9999;
-%     gamma(gamma>8) = 7.9999;
-% end
-% %----------------------------------------------------------------------
-% function Tp = getPeakPeriod(gamma,T,option)
-%     %recover peak period from gamma and T1, T2 or T-10 
-%     %(inverse of gamma functions)
-%     if option==1
-%         Tp = T./(gamma/45.3).^(1/14.59);   %T1
-%     elseif option==2
-%         Tp = T./(gamma/69.7).^(1/12.23);   %T2
-%     elseif option==3
-%         Tp = T./(gamma/34.4).^(1/23);      %T-10
-%     end   
-% end
+    % Handle rows where no components are valid
+    T1_tot(den == 0) = 0;           % or NaN if preferred
 end
 
 %%

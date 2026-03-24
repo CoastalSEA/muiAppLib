@@ -27,14 +27,15 @@ classdef ctWaveSpectrum < matlab.mixin.Copyable
         inpData        % Wave - Hs,Tp,Dir,ds
                        % Wind  - Uw,zW,Dir,Fetch,df,ds
                        % Spectrum - S,Dir,Spr,Skew,Kurt,f,ds,issat
-                       % - depth at site, ds, include any variation in swl
+                       % depth at site - ds, includes any variation in swl
+                       % gamma - wave record specific gamma value
                        % - all include fields for input, output and source
         %struct with specification for spectrum model to use               
         spModel        % form - wave spectrum model
                        % source - wind or wave data
                        % spread - relationship to define directional spreading
                        % nspread - exponent for directional spreading
-                       % gamma - peakiness exponent in JONSWAP spectrum
+                       % gamma - model peakiness exponent in JONSWAP spectrum
                        % depth - site depth for saturation limit
                        % inptxt - summary text for spectrum model
                        % selection - last model selections used
@@ -144,7 +145,7 @@ function obj = setSpectrumModel(obj)
                 txt3 = 'Jonswap gamma only used in Jonswap and TMA models';
                 txt4 = 'Setting gamma>0 overrides built-in relationships';
                 txt5 = 'If input defines sea and swell, gamma and spread can accept multiple values';
-                txt6 = 'Set depth to apply saturation in TMA spectrum [0= no saturation]';
+                txt6 = 'Set depth to apply saturation in TMA spectrum [0 = no saturation]';
 
                 txt = sprintf('%s\n%s\n%s\n%s\n%s',txt2,txt3,txt4,txt5,txt6);
             end
@@ -244,16 +245,13 @@ function obj = setInputParams(obj,tsdst,inptype)
                 inp.date = inp.spectrum.RowNames;   
 
             elseif strcmp(inptype,'Wave')
-                for i=1:length(tsdst)
+
+                for i=1:numel(tsdst)
                     inp.Hs(i) = tsdst(i).Hs;
                     inp.Tp(i) = tsdst(i).Tp;
                     inp.Dir(i) = tsdst(i).Dir;
-                    if any(ismatch(tsdst(i).VariableNames,'T1'))
-                        inp.T1(i) = tsdst(i).T1;
-                        inp.T2(i) = tsdst(i).T2;
-                        inp.T10(i) = tsdst(i).T10;
-                    end
                 end
+                inp.gamma = obj.spModel.gamma;
                 inp.input = 'Wave';
                 inp.output = 'Modelled';
                 inp.date = tsdst(1).RowNames; 
@@ -263,6 +261,7 @@ function obj = setInputParams(obj,tsdst,inptype)
                 inp.Dir = tsdst.Dir;
                 inp.zW = tsdst.MetaData.zW;
                 inp.Fetch = tsdst.MetaData.Fetch;
+                inp.gamma = obj.spModel.gamma;
                 inp.input = 'Wind';
                 inp.output = 'Modelled';
                 inp.date = tsdst.RowNames; 
@@ -274,18 +273,46 @@ function obj = setInputParams(obj,tsdst,inptype)
             obj.inpData = inp;           
         end
 
+%%
+        function gamma = setGamma(obj,seastate)
+            %replicate gamma if single valued and set values if <=0
+            ncomp = numel(obj.inpData.Hs);   %number of sea state components
+
+            if obj.spModel.gamma(1)<=0
+                %estimate the value of gamma for the total sea state
+                istma = contains(obj.spModel.form,'TMA');
+                [~,f] = spectrumDimensions(obj);                
+                gamma0 = obj.spModel.gamma(1);
+                gamma = estimate_jonswap_gamma(seastate,f,gamma0,istma);
+                if ncomp>1
+                    gamma = repmat(gamma,1,ncomp);
+                end                
+            else
+                gamma = obj.spModel.gamma;
+            end
+        end
 %% ------------------------------------------------------------------------
 % get functions
 %--------------------------------------------------------------------------
 
-        function obj = getSpectrumObject(obj,inptype,tsdst,irow)
+        function obj = getSpectrumObject(obj,meta,tsdst,irow)
             %get the spectrum and wave properties for selected input
             tsdstrow = ctWaveSpectrum.getDatasetRow(tsdst,irow);
-            
+     
+            if ~strcmp(meta.inptype,'Spectrum')        
+                obj = setSpectrumModel(obj);            %define model if not measured spectrum
+                if isempty(obj.spModel), return; end    %user cancelled
+            end
+
             %set input parameters for selected record
-            obj = setInputParams(obj,tsdstrow,inptype);
+            obj = setInputParams(obj,tsdstrow,meta.inptype);
             %get the spectrum data for selected record
-            obj = getSpectrum(obj);  
+            if isempty(meta.variables) || isempty(meta.variables.seastate)
+                seastate = [];
+            else
+                seastate = meta.variables.seastate.DataTable(irow,:);
+            end
+            obj = getSpectrum(obj,seastate);  
             if isempty(obj.Spectrum.SG), return; end
             inputMessage(obj);
 
@@ -296,27 +323,21 @@ function obj = setInputParams(obj,tsdst,inptype)
         end
 
 %%
-        function obj = getSpectrum(obj)
+        function obj = getSpectrum(obj,meta)
            %return measured or model spectrum depending on data inputs in
-           %calling instance of ctWaveSpectrum. Pass selected datetime row 
-           %as a dstable or 2 x dstables if swell is included, with spectrum 
-           %model already set if wave data rather than spectrum           
+           %calling instance of ctWaveSpectrum.        
             if strcmp(obj.inpData.input,'Spectrum') 
                 obj = getMeasuredSpectrum(obj);         %compute spectrum based on measured form
                 obj.Params = wave_spectrum_params(obj); %integral properties of spectrum
                 obj.Params.Properties.RowNames = {'Properties'};
 
             elseif strcmp(obj.inpData.input,'Wind') 
-                obj = setSpectrumModel(obj);
-                if isempty(obj.spModel), return; end    %user cancelled
                 obj = getModelSpectrum(obj);            %compute spectrum for specified conditions
                 obj.Params = wave_spectrum_params(obj); %integral properties of spectrum
                 obj.Params.Properties.RowNames = {'Properties'};
 
             else
-                obj = setSpectrumModel(obj);
-                if isempty(obj.spModel), return; end    %user cancelled
-                obj = getMultiModalSpectrum(obj);       %compute spectrum for specified conditions                  
+                obj = getMultiModalSpectrum(obj,meta);    %compute spectrum for specified conditions                  
             end
             obj = setPlotText(obj);   
         end
@@ -364,8 +385,6 @@ function obj = setInputParams(obj,tsdst,inptype)
             dir0 = obj.inpData.Dir;                   %mean wave direction 
             G = directional_spreading(dir0,dir,sp.nspread(1),sp.spread);
 
-            %add gamma and depth from obj.spModel
-            obj.inpData.gamma = sp.gamma;
             %add depth if TMA depth saturation being used            
             if contains(obj.spModel.form,'TMA')
                 obj.inpData.ds = sp.depth; 
@@ -378,10 +397,10 @@ function obj = setInputParams(obj,tsdst,inptype)
             end
 
             %spectral energy for selected wave spectrum
-            [S,gam] = wave_spectrum(sp.form,freq,params);
+            [S,gamma] = wave_spectrum(sp.form,freq,params);
             if isempty(S), obj.Spectrum.SG = []; return; end
 
-            obj.inpData.gamma = gam;  %update gamma if modified in wave_spectrum
+            obj.inpData.gamma = gamma;  %update gamma if modified in wave_spectrum
             obj.Spectrum.SG = G*S;
             obj.Spectrum.freq = freq;
             obj.Spectrum.dir = dir;
@@ -392,7 +411,7 @@ function obj = setInputParams(obj,tsdst,inptype)
         end
 
 %%
-        function obj = getMultiModalSpectrum(obj)
+        function obj = getMultiModalSpectrum(obj,seastate)
             %construct spectrum from input wave conditions 
             ncomp = numel(obj.inpData.Hs);   %number of sea state components
             %pad input variables if required - assumes either scalar or correct number           
@@ -400,8 +419,12 @@ function obj = setInputParams(obj,tsdst,inptype)
                 obj.spModel.nspread = repmat(obj.spModel.nspread,1,ncomp);
             end
             
-            if numel(obj.spModel.gamma)~=ncomp
-                obj.spModel.gamma = repmat(obj.spModel.gamma,1,ncomp);
+            if ~isempty(seastate)
+                gamma = setGamma(obj,seastate);
+            else
+                %if negative input gamma and no seastate set as +ve value
+                if obj.spModel.gamma(1)<0, fact = -1; else, fact = 1; end
+                gamma = repmat(obj.spModel.gamma(1),1,ncomp)*fact;
             end
 
             %loop over each component to get component spectrum
@@ -410,23 +433,16 @@ function obj = setInputParams(obj,tsdst,inptype)
             for i=1:ncomp 
                 wavecomp(i) = copy(obj);
                 wavecomp(i).spModel.nspread = obj.spModel.nspread(i);
-                wavecomp(i).spModel.gamma = obj.spModel.gamma(i);
+                % wavecomp(i).spModel.gamma = gamma(i);
                 compparams.Hs = obj.inpData.Hs(i);
                 compparams.Tp = obj.inpData.Tp(i);
                 compparams.Dir = obj.inpData.Dir(i);
-                if isfield(obj.inpData,'T1')
-                    compparams.T1 = obj.inpData.T1(i);
-                    compparams.T2 = obj.inpData.T2(i);
-                    compparams.T10 = obj.inpData.T10(i);
-                end
+                compparams.gamma = gamma(i);
 
                 if compparams.Hs==0 || compparams.Tp==0 
                     %create zero spectrum if no waves (can be wind or swell)
                     wavecomp(i) = zeroSpectrum(wavecomp(i),compparams);
                 else
-                    % if i>1
-                    %     wavecomp(i).spModel.form = 'Bretschneider open ocean'; %'Pierson-Moskowitz fully developed','Bretschneider open ocean'
-                    % end
                     wavecomp(i) =  getWaveModel(wavecomp(i),compparams);  %compute spectrum and params for specified conditions
                 end 
 
@@ -475,7 +491,7 @@ function obj = setInputParams(obj,tsdst,inptype)
         end
 
 %%
-function mod_obj = getModelTS(obj,tsdst,inptype)
+function mod_obj = getModelTS(obj,tsdst,meta)
             %use a timeseries of wave data to create a timeseries of spectra  
             obj = setSpectrumModel(obj);
             if isempty(obj.spModel), mod_obj = []; return; end
@@ -487,11 +503,16 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
             parfor i=1:nrec                                 %parfor loop
                 anobj = copy(obj);
                 itsdst = ctWaveSpectrum.getDatasetRow(tsdst,i); %selected record
-                anobj = setInputParams(anobj,itsdst,inptype);
-                if strcmp(inptype,'Wind')
+                anobj = setInputParams(anobj,itsdst,meta.inptype);
+                if strcmp(meta.inptype,'Wind')
                     anobj = getModelSpectrum(anobj);        %compute spectrum for specified conditions
                 else
-                    anobj = getMultiModalSpectrum(anobj);   %compute spectrum for specified conditions
+                    if isempty(meta.variables) || isempty(meta.variables.seastate)
+                        seastate = [];
+                    else
+                        seastate = meta.variables.seastate.DataTable(i,:);
+                    end
+                    anobj = getMultiModalSpectrum(anobj,seastate);%compute spectrum for specified conditions
                 end
                 anobj.Spectrum.date = dates(i);             %date as text string
                 if isempty(anobj.Spectrum.SG), continue; end
@@ -505,8 +526,9 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
 %%
         function obj = getWaveModel(obj,params)
             %construct a model wave spectrum and return with wave parameters
+            %only used in getMultiModalSpectrum
             obj.inpData = params;
-            obj.inpData.ds = [];
+            obj.inpData.ds = 0;
             obj.inpData.input = 'Wave';
             obj.inpData.output = 'Modelled';            
             obj = getModelSpectrum(obj);            %compute spectrum for specified conditions
@@ -561,14 +583,19 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
                         idmns(i) = mnlocs(idx(idl));
                     end
                 end
-                idmns = idmns(idmns>0);
-                [~,idd] = min(Sf(idmns));
-                idmn = idmns(idd);
-                if isempty(idmn)
-                    idpks = mxlocs;  %only a single peak
+
+                if sum(idmns)==0
+                     idpks = mxlocs(1); idmn = [];
                 else
-                    idpks(1) = mxlocs(find(mxlocs<idmn,1));
-                    idpks(2) = mxlocs(find(mxlocs>idmn,1));
+                    idmns = idmns(idmns>0);
+                    [~,idd] = min(Sf(idmns));
+                    idmn = idmns(idd);
+                    if isempty(idmn)
+                        idpks = mxlocs(1);  %only a single separated peak
+                    else
+                        idpks(1) = mxlocs(find(mxlocs<idmn,1));
+                        idpks(2) = mxlocs(find(mxlocs>idmn,1));
+                    end
                 end
         end
 %% ------------------------------------------------------------------------
@@ -647,7 +674,7 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
                 ttxt = sprintf('%s and %s, spread=%d ',...
                                         spmform{1},spm.spread,spm.nspread);
             else
-                if spm.gamma(1)==0 && ~isempty(obj.inpData)
+                if spm.gamma(1)<=0 && ~isempty(obj.inpData)
                     spm.gamma = obj.inpData.gamma;
                 end
                 ttxt = sprintf('%s, gamma=%.2g, and %s, spread=%d ',...
@@ -665,10 +692,10 @@ function mod_obj = getModelTS(obj,tsdst,inptype)
                 for i=2:ninp
                 % for i=1
                     if i>2, stxt = sprintf('%s; ',stxt); end
-                    % stxt = sprintf('%sswell-%d: gamma=%.2g; spread=%d',...
-                    %                 stxt,i-1,spm.gamma(i),spm.nspread(i));
-                    stxt = sprintf('%sswell-%d: spread=%d',...
-                                    stxt,i-1,spm.nspread(i));
+                    stxt = sprintf('%sswell-%d: gamma=%.2g; spread=%d',...
+                                    stxt,i-1,spm.gamma(i),spm.nspread(i));
+                    % stxt = sprintf('%sswell-%d: spread=%d',...
+                    %                 stxt,i-1,spm.nspread(i));
                 end
             end
         

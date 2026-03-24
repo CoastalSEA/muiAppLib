@@ -99,7 +99,7 @@ classdef (Abstract = true) waveModels < muiDataSet
             if nargin==2
                 %limit the classes that can be selected and specify dataset
                 [cobj,tsdst,dsnames] = waveModels.getCaseDataset(mobj,{'ctWaveData'},1);
-                if ~contains(dsnames,dtype)
+                if isempty(dsnames) || ~any(contains(dsnames,dtype))
                     cobj = []; tsdst = []; return; 
                 end
             else
