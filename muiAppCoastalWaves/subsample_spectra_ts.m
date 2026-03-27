@@ -33,22 +33,11 @@ function newdst = subsample_spectra_ts(dst,mobj,method,tol)
 
     %get the dataset used for the subsample time intervals
     promptxt = 'Select dataset to define sub-sample time intervals';
-    [caserec,isok] = selectRecord(muicat,'PromptText',promptxt,...
-                                                    'ListSize',[300,100]);    
-    if isok<1, newdst = []; return; end %user cancelled
-    cobj = getCase(muicat,caserec);
+    [cobj,~,dnames,idd] = selectCaseDataset(muicat,[],[],promptxt);
     if isempty(cobj), return; end
-
-    dnames = fields(cobj.Data);
-    if numel(dnames)>1
-        [~,idd] = selectDataset(muicat,cobj);
-    else
-        idd = 1;
-    end
-    timedst =  cobj.Data.(dnames{idd});          
+    timedst =  cobj.Data.(dnames{idd});             
     
-
-    [newtime,idt] = getTimes2Use(dst,    timedst,method,tol);
+    [newtime,idt] = getTimes2Use(dst,timedst,method,tol);
     clear cobj timedst
     
     adst = copy(dst);
@@ -81,13 +70,30 @@ function [newtime,idt] = getTimes2Use(dst,timedst,method,tol)
         %
         if isempty(tol)
             [idn,idv] = ismember(newtime, vartime);
-            idt = find(idv(idv>0));%??????
+            idt = find(idv(idv>0));
             newtime = newtime(idn);
         else
-            D = abs(newtime - vartime');      % duration matrix
-            [minDiff, idx] = min(D, [], 2);
+            %original code runs out of memory with long timeseries vectors
+            % D = abs(newtime - vartime');      % duration matrix
+            % [minDiff, idx] = min(D, [], 2);
+            % tf = minDiff <= tol;
+            % idt = idx(tf);
+            % newtime = newtime(tf);
+
+            % Ensure vartime is sorted
+            [vartimeSorted, ~] = sort(vartime);
+            
+            % Find nearest neighbour index for each newtime
+            idx = interp1(vartimeSorted, 1:numel(vartimeSorted), newtime, 'nearest', 'extrap');
+            
+            % Compute actual time difference
+            minDiff = abs(newtime - vartimeSorted(idx));
+            
+            % Apply tolerance
             tf = minDiff <= tol;
             idt = idx(tf);
+            
+            % Filter
             newtime = newtime(tf);
         end
 

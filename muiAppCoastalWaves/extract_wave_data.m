@@ -65,23 +65,9 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
         sel = getInputUI(vardesc,t_txt,nvar,i);
         if isempty(sel), wvdst = []; return; end
         
-        %factor = 1;
-        % if contains(vardesc{sel{2}},'mean period') 
-        %     %indata = setWavePeriods(inwvdst,sel{2});
-        %     %Tp=var.no.17
-        %     indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},...
-        %         inwv{:,sel{2}},inwv{:,15},inwv{:,16}};
-        %     ismean = true;
-            
-        % elseif sel{2}==17 && nvar==1
-        %     T1 = getWavePeriod(inwvdst);
-        %     indata = {inwv{:,sel{1}},inwv{:,17},inwv{:,sel{3}},T1,inwv{:,15},inwv{:,16}};
-        %     ismean = true;
-        % else   
-            %extract data selected            
-            indata = {inwv{:,sel{1}},inwv{:,sel{2}},inwv{:,sel{3}}};
-            ismean = false;
-        % end
+        %extract data selected            
+        indata = {inwv{:,sel{1}},inwv{:,sel{2}},inwv{:,sel{3}}};
+        ismean = false;
         wvtime = inwvdst.RowNames;
         dsp = setDSproperties(ismean);
         wvdst(i) = dstable(indata{:},'RowNames',wvtime,'DSproperties',dsp); %#ok<AGROW>

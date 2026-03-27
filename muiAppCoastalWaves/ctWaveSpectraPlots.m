@@ -464,7 +464,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             if ~isempty(meta.variables)
                 seas = meta.variables.seastate.DataTable; %required for parfor loop
             end
-            
+            gamma = [];
+
             hpw = PoolWaitbar(nrec, 'Processing skill statistics');
             parfor i=1:nrec                                   %parfor loop
                 itsdst = getDSTable(obsdst,i,[]);             %selected record
@@ -487,7 +488,10 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                     params.Properties.RowNames = {};
 
                 modprops(i,:) = params;
-                gamma(i) = modobj.inpData.gamma(1);
+                if contains(modobj.spModel.form,'JONSWAP') || ...
+                                        contains(modobj.spModel.form,'TMA')
+                    gamma(i) = modobj.inpData.gamma(1);                
+                end
                 stats(i) = get_spectrum_skill_stats(obsobj,modobj,skill);                
                 increment(hpw);
             end
@@ -514,34 +518,62 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             %estimate JONSWAP gamma from spectra timeseries
             [cobj,obsdst,meta] = waveModels.getCaseInputParams(mobj,'sptSpectrum');
             if isempty(obsdst), getdialog('Select wave spectra data'); return; end
-            spdst = obsdst(1);                %assign sptSpectrum as tsdst
+            specdst = obsdst(1);                %assign sptSpectrum as tsdst
 
-            spdst = getsampleusingrange(spdst);  
-
-            nrec = height(spdst);
+            specdst = getsampleusingrange(specdst); 
+            mtime = specdst.RowNames;
+            propdst = getsampleusingtime(obsdst(2),mtime);
+            
+            nrec = height(specdst);
             gamma = zeros(nrec,1);
             gammalog = gamma; 
             g_bnd = [0.1,5];                       %bounds used for gamma search
-            S = spdst.S;
-            f = spdst.Dimensions.freq;            
+            S = specdst.S;
+            f = specdst.Dimensions.freq;  
+            [~,idx] = max(S,[],2);  
+            fp = f(idx); %peak frequency   
+
             parfor i=1:nrec                        %parfor loop
-                %compute gamma using linear (false) and log (true) misfit
-                gamma(i) = wave_spectrum_gamma(S(i,:),f,g_bnd,[],false); %#ok<PFOUS>
-                gammalog(i) = wave_spectrum_gamma(S(i,:),f,g_bnd,[],true); %#ok<PFOUS>
+                %compute gamma using linear (false) and log (true) misfit                              
+                gamma(i) = wave_spectrum_gamma(S(i,:),f,g_bnd,[],false);
+                gammalog(i) = wave_spectrum_gamma(S(i,:),f,g_bnd,[],true);
             end
 
-            %get wave height threshold and create plot
-            defaults = {'0','1'};
-            answer = inputdlg({'Wave height threshold:','Save results (0/1)'},'Gamma',1,defaults);
-            if isempty(answer), answer = defaults; end
-            Hthr = str2double(answer{1});
-            issave = logical(str2double(answer{2}));
+            %save results if required
+            answer = questdlg('Save results?','Gamma','Yes','No','No');
+            if strcmp(answer,'Yes')
+                meta.source = sprintf('Gamma using %s',specdst.Description);
+                meta.data = sprintf('Peak period = %.1fs',1/fp);
+                dsp = ctWaveSpectraPlots.setDSroperties('gamma');
+                ctWaveSpectraPlots.addORupdate(mobj,cobj,dsp,{gamma},meta);
+            end
 
-            Hs = obsdst(2).Hs;
+            ok = 0;
+            while ok<1
+                %get wave height threshold and create plot
+                defaults = {'0','0'};
+                answer = inputdlg({'Wave height threshold:','Plot Log gamma (0/1)'},...
+                                                   'Gamma',1,defaults);
+                if isempty(answer), answer = defaults; end
+                Hthr = str2double(answer{1});
+                isplt = logical(str2double(answer{2}));
+                ctWaveSpectraPlots.getGammaPlots(propdst,gamma,gammalog,fp,Hthr,g_bnd,isplt)
+                answer = questdlg('Plot again?','Gamma','Yes','No','No');
+                if strcmp(answer,'No'), ok = 1; end
+            end
+        end
+%%
+        function getGammaPlots(propdst,gamma,gammalog,fp,Hthr,g_bnd,isplt)
+            %various plots of the fitted gamma
+            Hs = propdst.Hs;
             idx = Hs<=Hthr;
             Hs(idx) = NaN;
             gamma(idx) = NaN;
             gammalog(idx) = NaN;
+            nrec = sum(~isnan(gamma));
+            % T = propdst.Tz;  %mean zero-crossing period
+            T = (1./fp);         %peak period
+            steep = 2*pi*Hs./(9.81*T.^2);
 
             %gammalog out of bounds assigned NaN 
             idl = gammalog>g_bnd(2)-0.05;
@@ -552,46 +584,60 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             mn_gammalog = mean(gammalog,'all','omitnan');
             mn_Hs = mean(Hs,'all','omitnan');
 
+            if nrec<1000; msz = 6; elseif nrec<10000, msz = 4; else, msz = 2; end
+            %plot of gamma and Hs as timeseries
             hf = figure('Name','Gamma','Tag','PlotFig');
             ax = axes(hf); 
             yyaxis left
-            stem(ax,spdst.RowNames,gamma,'.','LineWidth',0.1)
+            stem(ax,propdst.RowNames,gamma,'.','Color',[0.8,0.8,0.8],...
+                'MarkerEdgeColor',[0,0.45,0.74],'MarkerSize',msz,'LineWidth',msz/5) %note smallest line width is ~0.5 = 1 pixel
             ylabel('Gamma (-)')
             xlabel('Time')
             yyaxis right            
-            plot(ax,spdst.RowNames,Hs,'.')
+            plot(ax,propdst.RowNames,Hs,'.','MarkerSize',msz)
             ylabel('Wave height (m)')
             glegtxt = sprintf('gamma with mean %.2f',mn_gamma);
             hlegtxt = sprintf('Hs with mean %.2f',mn_Hs);
             legend({glegtxt,hlegtxt})
-            title('Gamma and wave height')
+            title(propdst.Description)
+            subtitle(sprintf('Gamma and wave height (Hthr=%.2fm; N=%d)',Hthr,nrec));
+       
+            %plot gamma against wave steepness
+            model = regression_selection();
+            if isempty(model), model = 'Linear'; end
+            ttxt = sprintf('%s for\ngamma and wave steepness (Hthr=%.2fm; N=%d)',...
+                            propdst.Description,Hthr,nrec);
+            metatxt = {'Wave steepness','Gamma',ttxt};
+            ax = regression_plot(steep,gamma,metatxt,model);
+            hs = findobj(ax.Children,'Tag','DataPoints');            
+            hs.Marker = '.'; hs.MarkerSize = msz;
 
-            hf = figure('Name','Gamma','Tag','PlotFig');
-            ax = axes(hf); 
-            stem(ax,spdst.RowNames,gamma,'.','LineWidth',0.1)
-            ylabel('Gamma (-)')
-            xlabel('Time')     
-            hold on
-            plot(ax,spdst.RowNames,gammalog,'.')
-            hold off
-            glegtxt = sprintf('gamma with mean %.2f',mn_gamma);
-            hlegtxt = sprintf('gamma log(S) with mean %.2f',mn_gammalog);
-            legend({glegtxt,hlegtxt})
-            title('Linear and Log gamma estimates')
-
-
-            hf = figure('Name','Gamma','Tag','PlotFig');
-            ax = axes(hf);
-            plot(ax,gamma,gammalog,'.')
-            xlabel('gamma using S')
-            ylabel('gamma using log(S)')
-            title('Log gamma(Linear gamma)')
-
-            if issave
-                meta.source = sprintf('Gamma using %s',spdst.Description);
-                meta.data = sprintf('Wave height threshold %.2f',Hthr);
-                dsp = ctWaveSpectraPlots.setDSroperties('gamma');
-                ctWaveSpectraPlots.addORupdate(mobj,cobj,dsp,{gamma},meta);
+            if isplt
+                %plot linear gamma & log gamma (estimated using log(S)) v time
+                hf = figure('Name','Gamma','Tag','PlotFig');
+                ax = axes(hf); 
+                stem(ax,propdst.RowNames,gamma,'.','Color',[0.8,0.8,0.8],...
+                    'MarkerEdgeColor',[0,0.45,0.74],'MarkerSize',msz,'LineWidth',msz/5) %note smallest line width is ~0.5 = 1 pixel
+                ylabel('Gamma (-)')
+                xlabel('Time')     
+                hold on
+                plot(ax,propdst.RowNames,gammalog,'.','MarkerSize',msz)
+                hold off
+                glegtxt = sprintf('gamma with mean %.2f',mn_gamma);
+                hlegtxt = sprintf('gamma log(S) with mean %.2f',mn_gammalog);
+                legend({glegtxt,hlegtxt})
+                title(propdst.Description)
+                subtitle('Linear and Log gamma estimates')
+    
+                %plot of log gamma as a function of linear gamma
+                % hf = figure('Name','Gamma','Tag','PlotFig');
+                % ax = axes(hf);
+                % plot(ax,gamma,gammalog,'.')
+                txt.xlabel = 'gamma using S';
+                txt.ylabel = 'gamma using log(S)';
+                txt.title = propdst.Description;
+                txt.subtitle = 'Log gamma(Linear gamma)';
+                histogram_plot(gamma,gammalog,txt);   
             end
         end
 
@@ -615,7 +661,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             obj = heq();  %new instance of class object
             obj.Data = newdst;    %newdst is a struct
             setCase(mobj.Cases,obj,'data');
-            getdialog(sprintf('Resampled dataset saved as %s',classname));
+            getdialog(sprintf('Subsampled dataset saved as %s',classname));
         end
     end
 %% ------------------------------------------------------------------------
@@ -1076,7 +1122,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 %%
         function addORupdate(mobj,cobj,dsp,newdata,meta)
             %prompt user to add or update existing record and save newdata
-            % cobj - instance of class to be added to new class
+            % cobj - instance of class to be added to or used to defined
+            %        time for new instance
             % dsp - DSproperties struct for the new variables
             % newdata - cell array of variables to be added
             % meta - struct for source and metadata

@@ -4,7 +4,7 @@ function gamma = estimate_jonswap_gamma(inp,f,gamma_0,istma)
 % NAME
 %   estimate_jonswap_gamma.m
 % PURPOSE
-%   estimate the value of the JOONSWAP peakiness parameter from the wave 
+%   estimate the value of the JONSWAP peakiness parameter from the wave 
 %   parameters provided by model hindcasts such as the Copernicus reanalysis
 % USAGE
 %   gamma = estimate_jonswap_gamma(inp,f,istma);

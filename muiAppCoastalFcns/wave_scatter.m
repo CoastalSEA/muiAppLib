@@ -17,6 +17,8 @@ function res = wave_scatter(dst)
 %         dst(3) - water depth (m)
 % OUTPUTS 
 %   varioius plots of H-T scatter format contoured histograms
+% NOTES
+%   can use Derive Output UI to select the input variables
 %
 % Author: Ian Townend
 % CoastalSEA (c) March 2023
@@ -56,15 +58,16 @@ function basic_scatter_plot(dst)
     H = dst(1).data.DataTable{:,1};
     T = dst(2).data.DataTable{:,1};
     %create plot
-    hf = figure('Name','Rates of change','Units','normalized',...
+    hf = figure('Name','ScatterPlot','Units','normalized',...
                 'Tag','PlotFig');
     ax = axes(hf);
 
     plot(ax,T,H,'.k','MarkerSize',0.1);
     hold on
-    nbins = [20,20];
+    nint = round(log10(numel(H)))*10;
+    nbins = [nint,nint];
     X = [T,H];
-    [Z,XY] = hist3(X,nbins);
+    [Z,XY] = hist3(X,'Nbins',nbins);
     htrec = max(length(find(~isnan(T))),length(find(~isnan(H))));
     Z = Z/htrec*100;                %percentage occurrence
     zmx = max(max(Z));
@@ -72,10 +75,7 @@ function basic_scatter_plot(dst)
     ci = [0.02,0.05,0.1,0.2,0.5,0.8]*zmx;
     contourf(ax,XY{1},XY{2},Z',ci,'FaceAlpha',0.8);
     hold off
-    colormap('bone')
-    cmap=colormap;
-    cmap=flipud(cmap);
-    colormap(cmap);
+    colormap(flipud(colormap('bone')));
     cb  = colorbar;
     cb.Label.String = 'Frequency (%)';
     
@@ -102,7 +102,7 @@ function scatter_plot(dst)
     [Hmn,Hmx] = wave_steepness_heights(Steep,Tr,H,d,[10,15,20]);
 
     %create plot
-    hf = figure('Name','Rates of change','Units','normalized',...
+    hf = figure('Name','ScatterPlot','Units','normalized',...
                 'Tag','PlotFig');
     ax = axes(hf);
     scatter(ax,T,H,[],d,'fill')
@@ -154,7 +154,7 @@ function scatter_histogram(dst)
 
 
     %create plot
-    hf = figure('Name','Rates of change','Units','normalized',...
+    hf = figure('Name','ScatterPlot','Units','normalized',...
                 'Tag','PlotFig');
     ax = axes(hf);
     h = histogram2(ax,v1,v2,'Normalization','probability','FaceColor','flat',...
@@ -188,7 +188,7 @@ function steepness_plot(dst)
                                                       'T-H (S)','T-H (S)');
 
     %create plot
-    hf = figure('Name','Rates of change','Units','normalized',...
+    hf = figure('Name','SteepnessPlot','Units','normalized',...
                 'Tag','PlotFig');
     ax = axes(hf);
     switch answer

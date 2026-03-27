@@ -40,12 +40,14 @@ function ct_data_cleanup(muicat,src)
             del_interval(muicat);
         case 'Merge cases'
             merge_tables(muicat);
-        case 'Subsample case'
+        case 'Subsample case timeseries'
+            subsample_dst(muicat);
+        case 'Subsample case variables'
             subsample_case_vars(muicat);
         case 'Scale variables'
-            scale_vars(muicat)
+            scale_vars(muicat);
         case 'Scale range'
-            scale_wl_range(muicat)
+            scale_wl_range(muicat);
         case 'Delete multiple profiles'
             delete_profile_ts(muicat);
         case 'Edit or Delete profile in timeseries'
