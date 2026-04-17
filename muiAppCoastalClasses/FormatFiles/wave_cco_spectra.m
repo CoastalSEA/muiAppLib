@@ -29,6 +29,8 @@ function output = wave_cco_spectra(funcall,varargin)
         %define plot function in the class file, or call getPlot
         case 'getData'
             output = getData(varargin{:});
+        case 'addData'
+            output = addData(varargin{:});
         case 'dataQC'
             output = dataQC(varargin{1});
         case 'getPlot'
@@ -47,37 +49,61 @@ function dst = getData(~,filename)
     [data,header] = readInputData(filename);             
     if isempty(data), dst = []; return; end
 
-    if length(data{1})~=64
-        getdialog(sprintf('Incorrect record length in file:\n%s',filename))
+    flim = [0.025,0.58]; %frequency limits
+    f = [flim(1):0.005:0.1,0.11:0.01:flim(2)];     
+    
+    if numel(data{1})>64   %some files have more than 64 frequencies
+        nvar = numel(data);
+        % Compute pairwise absolute differences
+        [~, idf] = min(abs(data{1}(:)' - f(:)), [], 2);
+        d = cell(1,nvar);
+        for j=1:nvar
+            d{j} =data{j}(idf);
+        end
+        data = d;
+    elseif numel(data{1})<64 %some have less
+        msgbox(sprintf('Incorrect record length in file:\n%s',filename))
         dst = []; return;
     end
 
     %set metadata
     [dspectra,dsparams] = setDSproperties;
-    
-    % concatenate date and time from filename
-    ids = regexp(filename,'}');
-    idm = regexp(filename,'T');
-    idm = idm(idm>ids);
-    ide = regexp(filename,'Z.');
-    mdat = datetime(filename(ids+1:idm-1));
-    mdat.Format = dspectra.Row.Format;
-    mtim = filename(idm+1:ide-1);
-    mtim(3) = ':';
-    mtim = datetime(mtim,'InputFormat','HH:mm');
-    myDatetime = mdat + timeofday(mtim);
+    [~, name, ext] = fileparts(filename);
+    full = [name'.', ext];
 
-    idp = regexp(filename,'/');
-    if isempty(idp)
-        idp = regexp(filename,'\');
+    % concatenate date and time from filename
+    % Regex for timestamps like "2004-01-01T00h22"    
+    expr = '(\d{4}-\d{2}-\d{2})[T](\d{2})h(\d{2})';
+    tokens = regexp(full, expr, 'tokens', 'once');
+    if ~isempty(tokens)
+        dateStr = tokens{1};
+        hh = str2double(tokens{2});
+        mm = str2double(tokens{3});
+        myDatetime = datetime(dateStr + " " + sprintf('%02d:%02d', hh, mm), ...
+                      'InputFormat','yyyy-MM-dd HH:mm');
+        myDatetime.Format = 'dd-MM-yyyy HH:mm:ss';
+    else
+        dst = []; return;
     end
-    Location = filename(idp(end)+1:ids-1);
+
+    %check and cleanup frequencies if duplicated
+    ide = find(data{1}==flim(1));
+    if numel(ide)>1
+        data{1}(ide) = f(ide);
+    end
+    
+    %get location
+    idp = regexp(name,'}');
+    Location = name(1:idp-1);
 
     %extract spectral data
     varData = data(2:end);    
     Smax = str2double(header{4});
-
-    varData{1} = varData{1}*Smax;  %convert relative to absolute spectral energy
+    Sin = max(varData{1});
+    if Sin<=1
+        %some files have relative data others absolute values. If relative:
+        varData{1} = varData{1}*Smax;  %convert relative to absolute spectral energy
+    end
     varData = cellfun(@transpose,varData,'UniformOutput',false);
 
     %load the results into a dstable  
@@ -88,7 +114,7 @@ function dst = getData(~,filename)
     %add header information to a dstable
     header = cellfun(@str2double,header,'UniformOutput',false);
     input = header([2,3,4,6]);    %extract required variables
-    input{1} = input{1}/100;      %convert wave height from cm to m
+    input{1} = input{1}/100;      %convert wave height from cm to m    
     dst.sptProperties =  dstable(input{:},'RowNames',myDatetime,'DSproperties',dsparams);
     dst.sptProperties.Description = Location;
 end
@@ -105,14 +131,45 @@ end
 %--------------------------------------------------------------------------
 % dataQC
 %--------------------------------------------------------------------------
-function output = dataQC(obj) %#ok<INUSD> 
+function output = dataQC(obj)
     %quality control a dataset
-    % datasetname = getDataSetName(obj); %prompts user to select dataset if more than one
-    % dst = obj.Data.(datasetname);      %selected dstable
-    warndlg('No quality control defined for this format');
-    output = [];    %if no QC implemented in dataQC
+    inp = inputdlg({'Limit for peak spectral density (m^2/Hz)'},'QC',1,{'100'});
+    if isempty(inp); inp = {'100'}; end
+    threshold = str2double(inp{1});
+
+    hw = waitbar(0, 'Loading data. Please wait');
+    dstspec = obj.Data.sptSpectrum;      %selected dstables
+    dstprop = obj.Data.sptProperties;    
+    
+    %run checks based on wave steepness and peak spectral density
+    Steep = 2*pi*dstprop.Hs./(9.81*dstprop.Tz.^2);  %Tz deep water wave steepness
+    for i=1:numel(Steep)
+        if Steep(i)>0.1 || dstprop.Sp(i)>threshold || dstprop.Tz(i)>30
+            dstprop.Hs(i) = NaN;
+            dstprop.Sp(i) = NaN;
+            dstprop.Tz(i) = NaN;
+            dstspec = removeRecord(dstspec,i);
+        end
+    end
+    dstspec.VariableQCflags(1:5) = repmat({'qc'},1,5);
+    dstprop.VariableQCflags(1:4) = repmat({'qc'},1,4);
+
+    dst.sptSpectrum = dstspec;
+    dst.sptProperties = dstprop;
+    output = {dst};
+    waitbar(1); 
+    close(hw);
 end
 
+%%
+function dst = removeRecord(dst,idx)
+    %remove record for all variables
+    dst.S(idx,:) = NaN;
+    dst.Dir(idx,:) = NaN;
+    dst.Spr(idx,:) = NaN;
+    dst.Skew(idx,:) = NaN;
+    dst.Kurt(idx,:) = NaN;
+end
 %%
 %--------------------------------------------------------------------------
 % dataDSproperties

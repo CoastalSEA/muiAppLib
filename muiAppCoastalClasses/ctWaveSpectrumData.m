@@ -1,18 +1,19 @@
-classdef ctWaveData < muiDataSet                    
+classdef ctWaveSpectrumData < muiDataSet                    
 %
 %-------class help------------------------------------------------------===
 % NAME
-%   ctWaveData.m
+%   ctWaveSpectrumData.m
 % PURPOSE
-%   Class to hold wave data
+%   Class to hold wave spectrum data as two tables, the frequency data and
+%   the properties
 % USAGE
-%   obj = ctWaveData() 
+%   obj = ctWaveSpectrumData() 
 % SEE ALSO
 %   inherits muiDataSet and uses dstable and dscatalogue
 %   format files used to load data of varying formats (variables and file format)
 %
 % Author: Ian Townend
-% CoastalSEA (c) Jan 2021
+% CoastalSEA (c) April 2026
 %--------------------------------------------------------------------------
 %    
     properties  
@@ -23,17 +24,13 @@ classdef ctWaveData < muiDataSet
     end
     
     methods 
-        function obj = ctWaveData()              
+        function obj = ctWaveSpectrumData()              
             %class constructor
             %initialise list of available input file formats. Format is:
             %{'label 1','function name 1';'label 2','function name 2'; etc}
-            obj.DataFormats = {'Date-Record format','wave_daterec_format';...
-                               'Channel Coastal Observatory format','wave_cco_format';...
-                               'Cefas Wavenet format','wavenet_format';...                               
-                               'ShoreCast data format','wave_scast_format';...
-                               'Copernicus wave physics reanalysis','copernicus_wave_format'};
+            obj.DataFormats = {'CCO directional wave spectra','wave_cco_spectra'};
             %define file specification, format is: {multiselect,file extension types}
-            obj.FileSpec = {'on','*.txt; *.csv; *.nc'};
+            obj.FileSpec = {'on','*.spt;'};
         end
 
 %%
@@ -48,12 +45,12 @@ function  [tsdst,meta] = addWaveWLdataset(wvobj,mobj,caserec)
             %add water levels to a selected wave data set and return a dstable
             % muicat = mobj.Cases;
             % wvobj = getCase(muicat,caserec);  %get the selected instance
-            wvdst = wvobj.Data.Dataset;       %get dstable assigned to Dataset
+            wvdst = wvobj.Data.sptProperties;       %get dstable assigned to Dataset
              
             meta.caserecs = {caserec};        %caserec id used in model run
             meta.iselvar = false;             %extracted variables not used
-            meta.source = 'Measured waves';   
-            meta.inptxt = sprintf('%s used for waves',wvdst.Description);            
+            meta.source = 'Spectrum properties';   
+            meta.inptxt = sprintf('%s used for wave properties',wvdst.Description);            
             [tsdst,meta] = addwaterlevels2waves(wvdst,mobj,meta);
         end
     end

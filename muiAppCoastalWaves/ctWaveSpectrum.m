@@ -288,7 +288,7 @@ function obj = setInputParams(obj,tsdst,inptype)
                     gamma = repmat(gamma,1,ncomp);
                 end                
             else
-                gamma = obj.spModel.gamma;
+                gamma = obj.spModel.gamma; 
             end
         end
 %% ------------------------------------------------------------------------

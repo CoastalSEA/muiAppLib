@@ -90,18 +90,21 @@ classdef (Abstract = true) waveModels < muiDataSet
 
 %%
     methods (Static)
-        function [cobj,tsdst,meta] = getCaseInputParams(mobj,dtype)
+        function [cobj,tsdst,meta] = getCaseInputParams(mobj,varargin)
             %get the Case, Dataset and Input parameters
             %this combines calls to getCaseDataset and getInputParams
             %second input can be any value. If exists the limit classes to
             %select from to ctWaveData
+            % varargin can include class selection optionss and dataset index
+            % eg: {'ctWaveSpectrumData'},1
             meta = []; 
-            if nargin==2
+            if nargin>1
                 %limit the classes that can be selected and specify dataset
-                [cobj,tsdst,dsnames] = waveModels.getCaseDataset(mobj,{'ctWaveData'},1);
-                if isempty(dsnames) || ~any(contains(dsnames,dtype))
-                    cobj = []; tsdst = []; return; 
-                end
+                %as first one
+                [cobj,tsdst,dsnames] = waveModels.getCaseDataset(mobj,varargin{:});
+                % if isempty(dsnames) || ~any(contains(dsnames,dtype))
+                %     cobj = []; tsdst = []; return; 
+                % end
             else
                 [cobj,tsdst,dsnames] = waveModels.getCaseDataset(mobj);
             end
@@ -118,11 +121,12 @@ classdef (Abstract = true) waveModels < muiDataSet
             %to be selected in the call
             if nargin<2
                 idd = [];
-                classops = {'ctWaveData','ctWindData','WRM_WaveModel','muiUserModel'};
+                classops = {'ctWaveData','ctWaveSpectrumData','ctWindData',...
+                                          'WRM_WaveModel','muiUserModel'};
             elseif nargin<3
                 idd = [];                
             end
-            promptxt = 'Select Input case to use:';
+            promptxt = 'Select input data to use:';
             [cobj,~,dsnames,idd] = selectCaseDataset(mobj.Cases,...
                                           [],classops,promptxt,idd);
             if isempty(cobj) || isempty(idd)
@@ -171,7 +175,7 @@ function [xtsdst,meta] = getInputParams(cobj,tsdst,dsnames)
                     warndlg('Selection not yet handled in waveModels.getInputParams')
                     return
                 end 
-                if isempty(xmeta.selection), iselvar = false; end
+                if isempty(xmeta) || isempty(xmeta.selection), iselvar = false; end
             end
             if isempty(xtsdst), return; end
 

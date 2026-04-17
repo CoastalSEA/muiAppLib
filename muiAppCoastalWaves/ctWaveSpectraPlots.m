@@ -212,13 +212,14 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
         function obj = cfSpectrum2Model(mobj)
             %plot a comparison of measured and modelled spectra
             ptype = ctWaveSpectraPlots.plotType();
-
+            obj = []; 
             %get the measured wave spectrum to be modelled
-            [~,tsdst,meta] = waveModels.getCaseInputParams(mobj,'sptSpectrum'); 
+            getdialog('Select wave spectra data'); 
+            [~,tsdst,meta] = waveModels.getCaseInputParams(mobj,{'ctWaveSpectrumData'},1); 
             if isempty(tsdst), getdialog('Select wave spectra data'); return; end
             if ~contains(meta.inptype,'Spectrum')
                 warndlg('Measured spectrum required for this option');
-                obj = []; return;
+                return;
             end
             propstable = tsdst(2).DataTable;  %extract sptProperties
             tsdst = tsdst(1);                 %assign sptSpectrum as tsdst
@@ -302,7 +303,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             %analyse measured spectrum for bi-modality and explore
             %representing this in a model
             %get the measured wave spectrum to be modelled
-            [~,obsdst,meta] = waveModels.getCaseInputParams(mobj,'sptSpectrum');
+            getdialog('Select wave spectra data'); 
+            [~,obsdst,meta] = waveModels.getCaseInputParams(mobj,{'ctWaveSpectrumData'},1);
             if isempty(obsdst), getdialog('Select wave spectra data'); return; end
             obsdst = obsdst(1);                %assign sptSpectrum as tsdst
 
@@ -404,8 +406,9 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             %   examine spectrum model fit parameters for given sea location
             % iscase=false: use the measured properties to create a model 
             %   spectrum to assess model skill
-            [~,obsdst,meta] = waveModels.getCaseInputParams(mobj,'sptSpectrum');
-            if isempty(obsdst), getdialog('Select wave spectra data'); return; end
+            getdialog('Select wave spectra data'); 
+            [~,obsdst,meta] = waveModels.getCaseInputParams(mobj,{'ctWaveSpectrumData'},1);
+            if isempty(obsdst), getdialog('No wave spectra data selected'); return; end
             obsdst = obsdst(1);                %assign sptSpectrum as tsdst
 
             ok = 0;  
@@ -424,9 +427,10 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             
             if iscase           %cf measured and model from case
                 %get Case dataset to be used
+                getdialog('Select wave data to compare with spectra'); 
                 [~,seldst,meta] = waveModels.getCaseInputParams(mobj);
                 if isempty(seldst), return; end
-    
+                hwb = waitbar(0,'Loading data');
                 %match record to measured dataset
                 [newtime,ids,ido] = ctWaveSpectraPlots.subSampleTime(seldst,obsdst);
                 if ~isempty(ido)
@@ -434,16 +438,21 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                     obsdst.DataTable = subtable;
                     obsdst.RowNames = newtime;
                 end
-    
+                waitbar(1,hwb)
                 moddst = copy(seldst);
                 for j=1:numel(moddst)
                     subtable = seldst(j).DataTable(ids,:);  
                     moddst(j).DataTable = subtable;
                     moddst(j).RowNames = newtime; %update times in case there is an offset
                 end
+                meta.model{1} = moddst(1).Description;
+                delete(hwb)
             else
                 moddst = [];   %needed for parfor loop
-            end
+                meta.model{1} = 'Model using spectrum properties';
+                meta.variables.inputs = {'spectrum Hs','spectrum Tp','spectrum Dir'};
+                meta.variables.seastate = [];
+            end            
 
             %running long timeseries of spectra using getMeasuredTS and 
             %getModelTS to create ctWaveSpectrum objects and then computing 
@@ -451,26 +460,34 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             %To avoid this compute statistics for one spectrum at a time.
             obj = ctWaveSpectraPlots;
             obj = setSpectrumModel(obj);
+            if isempty(obj.spModel), return; end % user cancelled
             [dir,freq] = spectrumDimensions(obj);
             obj.Spectrum.freq = freq;
             obj.Spectrum.dir = dir;
-            skill = getSkillParameters(obj,mobj);         %get the parameters for skill model
+
+            %get the parameters for skill model - cancel uses default values
+            skill = getSkillParameters(obj,mobj);        
+            %get time and source meta data
             mtime = obsdst.RowNames;
             meta.source{1} = obsdst.Description;
-            meta.source{2} = obj.spModel.form;
+            meta.source{2} = var2range(obsdst.RowRange);
+            meta.model{2} = obj.spModel.form;
+            meta.model{3} = {obj.spModel.gamma,obj.spModel.nspread};
 
             nrec = numel(mtime);
             seas = zeros(nrec,1);                         %needed in parfor to match loop size
-            if ~isempty(meta.variables)
+            if ~isempty(meta.variables) && ~isempty(meta.variables.seastate)...
+                                   && isa(meta.variables.seastate,'dstable')
                 seas = meta.variables.seastate.DataTable; %required for parfor loop
             end
             gamma = [];
 
             hpw = PoolWaitbar(nrec, 'Processing skill statistics');
+            tic
             parfor i=1:nrec                                   %parfor loop
                 itsdst = getDSTable(obsdst,i,[]);             %selected record
                 obsobj = copy(obj);
-                obsobj = setInputParams(obsobj,itsdst,'Spectrum');
+                obsobj = setInputParams(obsobj,itsdst,'Spectrum');            
                 obsobj = getMeasuredSpectrum(obsobj);         %compute spectrum based on measured form
                 obsprops(i,:) = wave_spectrum_params(obsobj); %integral properties of spectrum  
 
@@ -480,12 +497,12 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                     seastate = seas(i,:);    
                 else
                     indst = dstable(obsprops(i,:),'RowNames',mtime(i));
-                    seastate = indst; %contains T1,T2 etc used to estimate gamma
+                    seastate = indst.DataTable; %contains T1,T2 etc used to estimate gamma
                 end 
-                    modobj = setInputParams(modobj,indst,'Wave');
-                    modobj = getMultiModalSpectrum(modobj,seastate);                  
-                    params = modobj.Params(1,:);    
-                    params.Properties.RowNames = {};
+                modobj = setInputParams(modobj,indst,'Wave');
+                modobj = getMultiModalSpectrum(modobj,seastate);                  
+                params = modobj.Params(1,:);    
+                params.Properties.RowNames = {};
 
                 modprops(i,:) = params;
                 if contains(modobj.spModel.form,'JONSWAP') || ...
@@ -495,7 +512,9 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 stats(i) = get_spectrum_skill_stats(obsobj,modobj,skill);                
                 increment(hpw);
             end
-
+            delete(hpw)
+elapsedTime = toc;  % Stop timer
+fprintf('Elapsed time for %d steps: %.6f seconds\n',nrec,elapsedTime);
             %plot model skill and allow user to examine individual parameters
             ctWaveSpectraPlots.plotSpectrumModelSkill(stats,skill,meta)
             ctWaveSpectraPlots.parameterPlots(obsprops,modprops);
@@ -505,7 +524,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                                 obj.spModel.gamma<=0   
                 if ~all(gamma==gamma(1),'all') %don't plot if constant
                     hf = figure('Tag','PlotFig'); ax = axes(hf);
-                    plot(ax,mtime,gamma,'x')
+                    plot(ax,mtime,gamma,'.')
                     xlabel('Time')
                     ylabel('Gamma')
                     title('Gamma values used for model')
@@ -516,7 +535,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 %%
         function estimateSpectrumGamma(mobj)
             %estimate JONSWAP gamma from spectra timeseries
-            [cobj,obsdst,meta] = waveModels.getCaseInputParams(mobj,'sptSpectrum');
+            getdialog('Select wave spectra data'); 
+            [cobj,obsdst,meta] = waveModels.getCaseInputParams(mobj,{'ctWaveSpectrumData'},1);
             if isempty(obsdst), getdialog('Select wave spectra data'); return; end
             specdst = obsdst(1);                %assign sptSpectrum as tsdst
 
@@ -533,11 +553,14 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             [~,idx] = max(S,[],2);  
             fp = f(idx); %peak frequency   
 
+            hpw = PoolWaitbar(nrec, 'Processing timeseries');  %and increment(hpw);
             parfor i=1:nrec                        %parfor loop
                 %compute gamma using linear (false) and log (true) misfit                              
                 gamma(i) = wave_spectrum_gamma(S(i,:),f,g_bnd,[],false);
                 gammalog(i) = wave_spectrum_gamma(S(i,:),f,g_bnd,[],true);
+                increment(hpw);
             end
+            delete(hpw)
 
             %save results if required
             answer = questdlg('Save results?','Gamma','Yes','No','No');
@@ -581,8 +604,10 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             % gammalog(idl) = gamma(idl); %alternative to assign gamma values
 
             mn_gamma = mean(gamma,'all','omitnan');
+            sd_gamma = std(gamma,'all','omitnan');
             mn_gammalog = mean(gammalog,'all','omitnan');
             mn_Hs = mean(Hs,'all','omitnan');
+            sd_Hs = std(Hs,'all','omitnan');
 
             if nrec<1000; msz = 6; elseif nrec<10000, msz = 4; else, msz = 2; end
             %plot of gamma and Hs as timeseries
@@ -596,8 +621,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             yyaxis right            
             plot(ax,propdst.RowNames,Hs,'.','MarkerSize',msz)
             ylabel('Wave height (m)')
-            glegtxt = sprintf('gamma with mean %.2f',mn_gamma);
-            hlegtxt = sprintf('Hs with mean %.2f',mn_Hs);
+            glegtxt = sprintf('gamma with mean %.2f, std %.2f',mn_gamma,sd_gamma);
+            hlegtxt = sprintf('Hs with mean %.2f, std %.2f',mn_Hs,sd_Hs);
             legend({glegtxt,hlegtxt})
             title(propdst.Description)
             subtitle(sprintf('Gamma and wave height (Hthr=%.2fm; N=%d)',Hthr,nrec));
@@ -643,11 +668,12 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 
 %%
         function subsampleSpectrum(mobj)
-            %get Case dataset to be used
-            [cobj,dst,~] = waveModels.getCaseInputParams(mobj);
+            %get spectra Case dataset to be used
+            getdialog('Select wave spectra data'); 
+            [cobj,dst,~] = waveModels.getCaseInputParams(mobj,{'ctWaveSpectrumData'},1);            
             if isempty(dst), return; end
-            %method can interp1 method or none. 'none' finds exact match 
-            %with a tolerance if tolerance>0 seconds. 
+            %method can be interp1 method or none. 'none' finds exact match 
+            %or match with a tolerance if tolerance>0 seconds. 
             inp = inputdlg({'Method (none, linear, etc)','Tolerance (s)'},...
                                             'Subsample',1,{'none','900'});
             if isempty(inp), return; end
@@ -930,7 +956,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 
 %%
         function addDataButton(obj,hf,outtable)
-            %add button to allow user to summary statistics
+            %add button to allow user to view summary statistics
             if nargin<3
                 nvar = 3;                         %number of variables in table
                 outtable = [];
@@ -1011,17 +1037,54 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             metatxt = {'Measured','Model'};
             %local skill is not plotted even if computed but is reported in
             %the table of results on the Case list button
+            waitbar(0.1,hw)
             ax = taylor_plot_ts(ax,stats,skill,metatxt); 
-            waitbar(1,hw)
-            ttxt = meta.source{2};
+            waitbar(0.9,hw)
+            ttxt = meta.model{1};
             if meta.iselvar
                 nvar = size(meta.variables.selection,1);
                 ttxt = sprintf('%s using %d sea states',ttxt,nvar);
             end
+            waitbar(1,hw)
             ax.Title.String = ttxt;
             ax.Subtitle.String = sprintf('Using %s as reference',meta.source{1});
+
+            %add button to display plot metadata
+            uicontrol('Parent',ax.Parent,'Style','pushbutton',...
+                'String','Sources','Tag','FigButton',...
+                'TooltipString','Access selection meta data',...
+                'Units','normalized','Position',[0.88 0.96 0.10 0.04],...
+                'UserData',meta,...
+                'Callback',@(src,evdat)ctWaveSpectraPlots.metaFigure(src,evdat)); 
+
             delete(hw)
         end 
+
+%%
+        function metaFigure(src,~)
+            %add button to display plot meta data
+            % hf = figure('Name','Data selection','Tag','PlotFig','Visible','off');
+            meta = src.UserData;
+
+            colnames = {'Selection'};
+            rownames = {'Spectrum Case';'Range';'Model Case';'Model Form';...
+                'Model Variables 1';'Model Variables 2';'Model Variables 3'};
+            nvar = size(meta.variables.inputs,1);
+            vartxt = cell(nvar+1,1);
+            for i=1:nvar
+                vartxt{i} = sprintf('%s, %s, %s',meta.variables.inputs{i,:});
+            end
+            vartxt{end} = '-';
+            
+            modelform = sprintf('%s (gamm0=%.2f, N=%d)',meta.model{2},...
+                                                        meta.model{3}{:});
+            values = {meta.source{1};meta.source{2};meta.model{1};modelform};
+            values = [values;vartxt];
+            rownames = [rownames(1:numel(values)-1,1);{' - '}];
+            figtitle = sprintf('Data selection for Figure %d',src.Parent.Number);
+            [~,~,ht] = tablefigure(figtitle,[],rownames,colnames,values);
+             ht.ColumnWidth{1} = 3*ht.ColumnWidth{1};
+        end
 
 %%
         function parameterPlots(obsprop,modprop)
@@ -1057,7 +1120,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 
 %%
         function dataFigure(src,~)
-            %generate data table for data button used in bioInfluencePlot
+            %generate data table for data button used in Spectrum cf plots
             hf = figure('Name','Wave parameters','Tag','PlotFig');
             colnames = src.UserData.Properties.VariableNames;
             rownames = src.UserData.Properties.RowNames;
@@ -1135,9 +1198,10 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 return;
             elseif strcmp(answer,'Add')                %add to existing
                 caserec = caseRec(muicat,cobj.CaseIndex);
-                addVariable2CaseDS(muicat,caserec,newdata,dsp);
+                dsprop = dsproperties(dsp);
+                addVariable2CaseDS(muicat,caserec,newdata,dsprop);
             else                                       %new record
-                datasetname = getDataSetName(cobj);
+                datasetname = 'sptSpectrum';
                 mtime = cobj.Data.(datasetname).RowNames;
                 newdst = dstable(newdata{:},'RowNames',mtime,'DSproperties',dsp);
                 newdst.Source = meta.source;

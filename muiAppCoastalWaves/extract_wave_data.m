@@ -28,15 +28,22 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
         wvdst = copy(inwvdst);
         idel = ~ismatch(varnames,{'Hs','Tp','Dir'});
         wvdst = removevars(wvdst,varnames(idel));
-        meta.inputs(1,:) = vardesc(ismatch(varnames,{'Hs','Tp','Dir'}));
-        meta.selection = [];
-        meta.seastate = [];
+        meta.selection = find(ismatch(varnames,{'Hs','Tp','Dir'}));
+        meta.inputs(1,:) = vardesc(meta.selection); 
+        if any(ismatch(varnames,'Tz'))
+            seadel = ~ismatch(varnames,{'Hs','Tp','Tz'});
+            seadst = copy(inwvdst);
+            meta.seastate =  removevars(seadst,varnames(seadel));            
+        else
+            meta.seastate = [];
+        end
         return; 
     end 
 
     %handle unimodal and multimodal input data options 
     if nargin<2
         nvar = inputdlg({'Number of components, 1-3'},'Multimodal',1,{'1'});
+        if isempty(nvar), wvdst = []; meta = []; return; end
     end
     getdialog('Default selection for Copernicus data is the combined sea state',...
                                                                      [],1);
@@ -67,9 +74,8 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
         
         %extract data selected            
         indata = {inwv{:,sel{1}},inwv{:,sel{2}},inwv{:,sel{3}}};
-        ismean = false;
         wvtime = inwvdst.RowNames;
-        dsp = setDSproperties(ismean);
+        dsp = setDSproperties(false);  %Hs,Tp,Dir
         wvdst(i) = dstable(indata{:},'RowNames',wvtime,'DSproperties',dsp); %#ok<AGROW>
         wvdst(i).Description = inwvdst.Description; %#ok<AGROW>
         %assign metadata of selection
@@ -78,7 +84,7 @@ function [wvdst,meta] = extract_wave_data(inwvdst,nvar)
     end
     
     if strcmp(varnames{1},'VHM0') &&strcmp(varnames{17},'VTPK') %test for Copernicus data!
-        dsp = setDSproperties(true);
+        dsp = setDSproperties(true);  %Hs,Tp,Dir,T1,T2,T10
         T1 = getWavePeriod(inwvdst);
         %table of total sea state parameters Hs,Tp,Dir,T1(est),T2,T10
         indata = {inwv{:,1},inwv{:,17},inwv{:,5},T1,inwv{:,15},inwv{:,16}};                
@@ -151,7 +157,7 @@ end
 %%
 function T1_tot = getWavePeriod(inwvdst)
     %use energy‑weighted harmonic mean of the sea state components to estimate 
-    %the value of T1 for the totla sea state - bespoke for Copernicus wave data
+    %the value of T1 for the total sea state - bespoke for Copernicus wave data
     inwv = inwvdst.DataTable;
 
     T1(:,1) = inwv{:,12};  %primary swell mean period

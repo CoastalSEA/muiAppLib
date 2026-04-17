@@ -130,7 +130,7 @@ end
 function [S,gamma] = jonswap(f,inputs)
     %construct the JONSWAP spectrum using Carter eq(16) with alpha based on
     %Hughes for wind and Carter for wave type input
-    [fp,alpha,gamma] = get_input(inputs,f,0);
+    [fp,alpha,gamma] = get_input(inputs,0);
     if isempty(fp), return; end
     sigma = [0.07,0.09];
     S = getSpectrum(f,fp,alpha,gamma,sigma,[],false);
@@ -140,7 +140,7 @@ end
 function [S,gamma] = tma(f,inp)
     %construct the TMA spectrum using Kitaigorodskii limit (see Bouws et al, 
     %or Hughes for details)
-    [fp,alpha,gamma] = get_input(inp,f,1);
+    [fp,alpha,gamma] = get_input(inp,1);
     if isempty(fp), return; end 
     sigma = [0.07,0.09];
     S = getSpectrum(f,fp,alpha,gamma,sigma,inp.ds,true);
@@ -173,7 +173,7 @@ function S = getSpectrum(f,fp,alpha,gamma,sigma,ds,istma)
 end
 
 %%
-function [fp,alpha,gamma] = get_input(inp,f,istma)
+function [fp,alpha,gamma] = get_input(inp,istma)
     %unpack inp for the wind and wave cases
     g = 9.81;
      
@@ -197,16 +197,16 @@ function [fp,alpha,gamma] = get_input(inp,f,istma)
             if inp.gamma<=0
                 %define alpha and gamma for TMA or Jonswap
                 if istma
-                    gamma = 2.47*kp.^0.39;             %Hughes eq(23)
+                    gamma = 2.47*kp.^0.39;         %Hughes eq(23)
                 else
-                    gamma = 7.0*(gFU2).^-0.143;        %Hughes eq(8)
+                    gamma = 7.0*(gFU2).^-0.143;    %Hughes eq(8)
                 end
             else
                 gamma = inp.gamma;
             end
 
         case 'Wave'
-            gamma0 = 3.3;         %default gamma (overwritten by negative input value)
+            gamma0 = 3.3;                          %default gamma
 
             if inp.gamma>0
                 gamma = inp.gamma;
@@ -216,7 +216,7 @@ function [fp,alpha,gamma] = get_input(inp,f,istma)
 
             fp = 1./inp.Tp;
             sigma = [0.07,0.09];
-            I0 = spectral_moment(0,gamma,sigma);            %Carter eq(18)
+            I0 = spectral_moment(0,gamma,sigma);               %Carter eq(18)
             alpha = (2*pi).^4*inp.Hs.^2.*fp.^4./(16*g.^2.*I0); %Carter eq(20)                
 
         otherwise

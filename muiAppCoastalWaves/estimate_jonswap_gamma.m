@@ -38,8 +38,8 @@ function gamma = estimate_jonswap_gamma(inp,f,gamma_0,istma)
     if gamma_0>0, gamma = gamma_0; return; end
 
     bnds = [0,7];         %hard coded**    
-    lambda = 0.1;         %prior weighting - hard coded**
-    gamma_option = 1;     %options to estimate gamma - hard coded**
+    lambda = 0.1;         %prior weighting - hard coded******
+    gamma_option = 1;     %options to estimate gamma - hard coded******
     sigmas = [0.07,0.09]; %default values of sigma
     gamma0 = 3.3;         %default gamma (overwritten by negative input value)
     if gamma_0<0, gamma0 = -gamma_0; end
@@ -52,7 +52,7 @@ function gamma = estimate_jonswap_gamma(inp,f,gamma_0,istma)
             %use spectral moments and Hs, Tp, T1, T2, T-10
             gamma = fit_gamma_multimoment(inp,f,bnds,sigmas,gamma0,lambda);
         case 2
-            %estimate gamma using Hs, Tp and steepness
+            %estimate gamma using Hs, T1 and steepness
             [gamma,~] = gamma_estimation(inp,f,fp,sigmas,bnds,istma);
         case 3
             %estimate gamma using Hs, Tp and the sea state component value of T1
@@ -85,7 +85,11 @@ function gamma_est = fit_gamma_multimoment(inp,f,bnds,sigmas,g0,lambda)%(Hs, Tp,
     %estimate gamma using spectral moments and Hs, Tp, T1, T2, T-10
 
     % Inputs
-    Hs = inp.Hs; Tp = inp.Tp; T1_obs = inp.T1; T2_obs = inp.T2; T10_obs = inp.T10;
+    if any(ismatch(inp.Properties.VariableNames,'T1'))  %COP reanalysis includes all parameters
+        Hs = inp.Hs; Tp = inp.Tp; T1_obs = inp.T1; T2_obs = inp.T2; T10_obs = inp.T10;
+    else                 %Basic wave buoy data only has Tp and Tz (==T2).
+        Hs = inp.Hs; Tp = inp.Tp; T1_obs = 0; T2_obs = inp.Tz; T10_obs = 0;
+    end
     % flim = [0.025,0.58]; %frequency limits
     % f = [flim(1):0.005:0.1,0.11:0.01:flim(2)];  %observed frequency intervals (spt format)
     % Weights and prior
@@ -126,9 +130,10 @@ function J = objective_gamma(gamma, Hs, Tp, f, ...
     T2_mod  = sqrt(m0 / m2);
     T10_mod = m_1 / m0;
 
-    e1  = (T1_mod  - T1_obs ) / T1_obs;
-    e2  = (T2_mod  - T2_obs ) / T2_obs;
-    e10 = (T10_mod - T10_obs) / T10_obs;
+    e1 = 0; e2 = 0; e10 = 0;
+    if T1_obs>0, e1  = (T1_mod  - T1_obs ) / T1_obs; end    
+    if T2_obs>0, e2  = (T2_mod  - T2_obs ) / T2_obs; end
+    if T10_obs>0, e10 = (T10_mod - T10_obs) / T10_obs; end
 
     J = w1*e1.^2 + w2*e2.^2 + w10*e10.^2;
 
@@ -147,7 +152,7 @@ end
 
 %%
 function gamma = gamma_estimation(inp,f,fp,sigmas,bnds,istma)
-    %estimate gamma using Hs, Tp and the sea state component value of T1
+    %estimate gamma using Hs, T1 and the wave steepness
     % Inputs
     Hs = inp.Hs; T1 = inp.T1; ds = inp.ds; 
     lb = bnds(1)-1e-3; ub = bnds(2)+1e-3; 

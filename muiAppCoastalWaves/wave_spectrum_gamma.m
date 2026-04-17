@@ -4,11 +4,11 @@ function gamma = wave_spectrum_gamma(SG,f,bnd,dir,islog)
 % NAME
 %   wave_spectrum_gamma.m
 % PURPOSE
-%   Estiamte the JONSWAP gamma from a frequency spectrum, S(f), or a
+%   Estimate the JONSWAP gamma from a frequency spectrum, S(f), or a
 %   frequency–direction spectrum S(dir,f)
 % USAGE
 %   gamma = wave_spectrum_gamma(SG,f,bnd,dir,islog);  %for 2D spectrum
-%   gamma = wave_spectrum_gamma(SG,f,bnd,[],islog);  %for 1D spectrum
+%   gamma = wave_spectrum_gamma(SG,f,bnd,[],islog);   %for 1D spectrum
 %   gamma = wave_spectrum_gamma(SG,f,bnd);  %for 1D spectrum linear option
 % INPUTS
 %   SG - Spectrum, 1D frequency, SG(f) or 2D frequency–direction spectrum
@@ -20,7 +20,7 @@ function gamma = wave_spectrum_gamma(SG,f,bnd,dir,islog)
 % OUTPUT
 %    gamma - best-fit JONSWAP peak enhancement factor
 % SEE ALSO
-%   
+%   wave_spectrum.m. Called from ctWaveSpectraPlots.estimateSpectrumGamma
 %   
 % CoastalSEA (c) March 2026
 %--------------------------------------------------------------------------
