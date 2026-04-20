@@ -73,6 +73,10 @@ classdef ctWaveModel < waveModels
             if isin
                 inp = inputParameters(site_params); %convert class to struct
                 inp.g = mobj.Constants.Gravity;     %add gravity
+                if numel(tsdst)>1
+                    warndlg('Plane bed refraction does not work for compound sea states')
+                    obj = []; return;
+                end
                 [Hs,Dir,depi,bs] = hs_surf(tsdst,inp);      
                 if isempty(Hs)
                     obj = []; return

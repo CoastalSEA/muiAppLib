@@ -170,10 +170,10 @@ function [shoal,offdir] = getShoal(obj,inobj,swl,idx) %...getShoal(sptobj,dir,fr
             
     %check plot of surf (make sure commented out when running 
     %coefficientsPlot as the loop will produce thousands of plots!!)
-    surfobj = ctWaveSpectraPlots;
-    surfobj.Spectrum.SG = shoal; 
-    surfobj.Spectrum.freq = inobj.Spectrum.freq; 
-    surfobj.Spectrum.dir = inobj.Spectrum.dir;
-    surfobj.Plotxt.ttxt = 'Test shoal function';
-    surfPlot(surfobj,'on');
+    % surfobj = ctWaveSpectraPlots;
+    % surfobj.Spectrum.SG = shoal; 
+    % surfobj.Spectrum.freq = inobj.Spectrum.freq; 
+    % surfobj.Spectrum.dir = inobj.Spectrum.dir;
+    % surfobj.Plotxt.ttxt = 'Test shoal function';
+    % surfPlot(surfobj,'on');
 end

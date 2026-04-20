@@ -283,13 +283,14 @@ function obj = setInputParams(obj,tsdst,inptype)
                 istma = contains(obj.spModel.form,'TMA');
                 [~,f] = spectrumDimensions(obj);                
                 gamma0 = obj.spModel.gamma(1);
-                gamma = estimate_jonswap_gamma(seastate,f,gamma0,istma);
-                if ncomp>1
-                    gamma = repmat(gamma,1,ncomp);
-                end                
+                gamma = estimate_jonswap_gamma(seastate,f,gamma0,istma);             
             else
                 gamma = obj.spModel.gamma; 
             end
+            %
+            if ncomp>1
+                gamma = repmat(gamma,1,ncomp);
+            end   
         end
 %% ------------------------------------------------------------------------
 % get functions
@@ -761,11 +762,11 @@ function mod_obj = getModelTS(obj,tsdst,meta)
         end
 
 %%
-        function [spectra,params] = unpackSpectrum(inobj,offobj)
+        function spectra = unpackSpectrum(inobj,offobj)
             %unpack the spectrum property as a set of arrays
-            % 1 - input includes inobj and offobj: return spectra and params
-            % 2 - input just inobj: returns params
-            nrec = length(inobj);
+            % 1 - input includes inobj and offobj: return spectra
+            % % 2 - input just inobj: returns params
+            nrec = numel(inobj);
             hpw = PoolWaitbar(nrec, 'Unpacking spectra');
             if nargin==2
                 parfor i=1:nrec                               %parfor loop
@@ -774,20 +775,35 @@ function mod_obj = getModelTS(obj,tsdst,meta)
                     Sot(i,:,:) = offobj(i).Spectrum.SG;
                     Sit(i,:,:) = inobj(i).Spectrum.SG;
                     depths(i,1) = inobj(i).Spectrum.depth;  
-                    params(i,:) = inobj(i).Params;
+                    % params(i,:) = inobj(i).Params;
                     increment(hpw);
                 end   
                 spectra = struct('time',time,'swl',swl,'Sot',Sot,'Sit',Sit,'depths',depths);
             else
-                parfor i=1:nrec                               %parfor loop
-                    params(i,:) = inobj(i).Params;
-                    increment(hpw);
-                end
+            %     parfor i=1:nrec                               %parfor loop
+            %         params(i,:) = inobj(i).Params;
+            %         increment(hpw);
+            %     end
                 spectra = [];
             end
             delete(hpw)
         end
 
+%%
+        function [props,mt] = unpackProperties(inobj,offobj)
+            %unpack the spectrum properties as a set of arrays
+            nrec = numel(inobj);
+            hpw = PoolWaitbar(nrec, 'Sorting results');
+            parfor i=1:nrec                               %parfor loop
+                mt(i,1) = offobj(i).Spectrum.date;
+                props(i,:) = inobj(i).Params;
+                swl(i,1) = offobj(i).inpData.swl;
+                depths(i,1) = inobj(i).Spectrum.depth
+                increment(hpw);
+            end
+            props = addvars(props,swl,depths,'NewVariableNames',{'swl','depi'});
+            delete(hpw)
+        end
 %%
         function inputMessage(obj)
             %write details of the input conditions to the command window

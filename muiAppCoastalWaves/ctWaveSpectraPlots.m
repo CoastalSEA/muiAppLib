@@ -513,8 +513,8 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 increment(hpw);
             end
             delete(hpw)
-elapsedTime = toc;  % Stop timer
-fprintf('Elapsed time for %d steps: %.6f seconds\n',nrec,elapsedTime);
+            elapsedTime = toc/60;  % Stop timer
+            fprintf('Run time for %d steps: %.2f minutes\n',nrec,elapsedTime);
             %plot model skill and allow user to examine individual parameters
             ctWaveSpectraPlots.plotSpectrumModelSkill(stats,skill,meta)
             ctWaveSpectraPlots.parameterPlots(obsprops,modprops);
@@ -604,10 +604,10 @@ fprintf('Elapsed time for %d steps: %.6f seconds\n',nrec,elapsedTime);
             % gammalog(idl) = gamma(idl); %alternative to assign gamma values
 
             mn_gamma = mean(gamma,'all','omitnan');
-            sd_gamma = std(gamma,'all','omitnan');
+            sd_gamma = std(gamma,[],'omitnan');
             mn_gammalog = mean(gammalog,'all','omitnan');
             mn_Hs = mean(Hs,'all','omitnan');
-            sd_Hs = std(Hs,'all','omitnan');
+            sd_Hs = std(Hs,[],'omitnan');
 
             if nrec<1000; msz = 6; elseif nrec<10000, msz = 4; else, msz = 2; end
             %plot of gamma and Hs as timeseries
