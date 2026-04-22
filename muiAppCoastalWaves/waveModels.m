@@ -189,7 +189,7 @@ function [xtsdst,meta] = getInputParams(cobj,tsdst,dsnames)
             %CT_WaveModels - this function adds water levels if available
             % (could possibly be merged with getInputParams)
             meta.iselvar = false;
-            classops = {'ctWaveData','muiUserModel','ctWindData'};  
+            classops = {'ctWaveData','muiUserModel','ctWindData','ctWaveSpectrumData'};  
             [cobj,tsdst,dsnames] = waveModels.getCaseDataset(mobj,classops);
             if isempty(tsdst), return; end
 

@@ -29,7 +29,8 @@ classdef ctWaveSpectrum < matlab.mixin.Copyable
                        % Spectrum - S,Dir,Spr,Skew,Kurt,f,ds,issat
                        % depth at site - ds, includes any variation in swl
                        % gamma - wave record specific gamma value
-                       % - all include fields for input, output and source
+                       % - all include fields for date, input type, 
+                       %   output type and data source
         %struct with specification for spectrum model to use               
         spModel        % form - wave spectrum model
                        % source - wind or wave data
@@ -296,11 +297,13 @@ function obj = setInputParams(obj,tsdst,inptype)
 % get functions
 %--------------------------------------------------------------------------
 
-        function obj = getSpectrumObject(obj,meta,tsdst,irow)
+        function obj = getSpectrumObject(obj,meta,tsdst,irow,isset)
             %get the spectrum and wave properties for selected input
+            if nargin<5, isset = false; end 
+
             tsdstrow = ctWaveSpectrum.getDatasetRow(tsdst,irow);
      
-            if ~strcmp(meta.inptype,'Spectrum')        
+            if ~strcmp(meta.inptype,'Spectrum') && ~isset      
                 obj = setSpectrumModel(obj);            %define model if not measured spectrum
                 if isempty(obj.spModel), return; end    %user cancelled
             end
@@ -314,9 +317,10 @@ function obj = setInputParams(obj,tsdst,inptype)
                 seastate = meta.variables.seastate.DataTable(irow,:);
             end
             obj = getSpectrum(obj,seastate);  
-            if isempty(obj.Spectrum.SG), return; end
-            inputMessage(obj);
-
+            if ~isempty(obj.Spectrum.SG) && ~isset 
+                obj.Spectrum.date = tsdstrow.RowNames;
+                inputMessage(obj);
+            end
             %option to return diagnostics struct to investigate
             %multi-modality
             % [params,diagn] = wave_spectrum_params(obj,true); %integral properties of spectrum
@@ -602,50 +606,84 @@ function mod_obj = getModelTS(obj,tsdst,meta)
 %% ------------------------------------------------------------------------
 % Save spectrum
 %--------------------------------------------------------------------------
-        function [Spectrum,Properties] = saveSpectrum(obj,mobj)
-            %save an array of spectra to a dstable using the spt format
-            %as used to import spectra from a wave buoy
-            % input is obj.Spectrum with SG, dir and freq. 
-            % saved in 64 frequency intervals
-            flim = obj(1).Interp.flim;
+        function [Spectrum,Properties] = saveSPTspectra(obj,vartime,spectra,ido)
+            [obj.Spectrum.dir,obj.Spectrum.freq] = spectrumDimensions(obj);
+            flim = obj.Interp.flim;
             obsfreq = [flim(1):0.005:0.1,0.11:0.01:flim(2)];            
-            nvar = length(obj);
-            hpw = PoolWaitbar(nvar, 'Saving spectra');
-            for i=1:nvar
-                stats = setspectrum(obj(i),obsfreq);    
+            nvar = numel(spectra);
+            snames = fields(spectra);
+            bartxt = {'Saving offshore spectra','Saving inshore spectra'};
+            hpw = PoolWaitbar(nvar,bartxt{ido});
+            parfor i=1:nvar
+                anobj = copy(obj);
+                anobj.Spectrum.SG = spectra(i).(snames{ido}); %#ok<PFBNS>
+                stats = setspectrum(anobj,obsfreq);    
                 varData(i,:) = varfun(@transpose,stats);
-                myDatetime(i,1) = obj(i).Spectrum.date;
-                input(i,:) = [obj(i).Params.Hs,obj(i).Params.T2,obj(i).Params.Sp,NaN];  %NaN is for SST
+                props = wave_spectrum_params(anobj);
+                params(i,:) = [props.Hs,props.T2,props.Sp,NaN];  %NaN is for SST
                 increment(hpw);
             end
-            delete(hpw) 
-
-            varData.Properties.VariableNames = stats.Properties.VariableNames;
-            input = array2table(input);
 
             dsp = wave_cco_spectra('setDSproperties');
+            varData.Properties.VariableNames = {dsp.dspec.Variables(:).Name};
+            params = array2table(params);
+            
             %load the results into a dstable  
-            Spectrum = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp.dspec); 
+            Spectrum = dstable(varData,'RowNames',vartime,'DSproperties',dsp.dspec); 
             Spectrum.Dimensions.freq = obsfreq;
-            
+            Spectrum.Description = obj.inpData.source;
+                
             %add properties to a dstable            
-            Properties =  dstable(input,'RowNames',myDatetime,'DSproperties',dsp.dsprop);
-            
-            if isfield(obj(1).inpData,'tsdst')
-                Spectrum.Description = obj(1).inpData.tsdst(1).Description;
-                Properties.Description = obj(1).inpData.tsdst(1).Description;
-            end
-
-            %save results
-            if nargin>1
-                dst.Spectra = Spectrum;
-                dst.Properties = Properties;
-                cobj = ctWaveData;
-                cobj.ModelType = 'Spectrum'; 
-                setDataSetRecord(cobj,mobj.Cases,dst,'spectrum');
-                getdialog(sprintf('Data loaded in class: %s',classname));
-            end
+            Properties =  dstable(params,'RowNames',vartime,'DSproperties',dsp.dsprop);      
+            Properties.Description = obj.inpData.source;
+            delete(hpw) 
         end
+
+%%
+        % function [Spectrum,Properties] = saveSpectrum(obj,mobj)
+        %     %save an array of spectra to a dstable using the spt format
+        %     %as used to import spectra from a wave buoy
+        %     % input is obj.Spectrum with SG, dir and freq. 
+        %     % saved in 64 frequency intervals
+        %     flim = obj(1).Interp.flim;
+        %     obsfreq = [flim(1):0.005:0.1,0.11:0.01:flim(2)];            
+        %     nvar = numel(spectra);
+        %     hpw = PoolWaitbar(nvar, 'Saving spectra');
+        %     for i=1:nvar
+        %         stats = setspectrum(obj(i),obsfreq);    
+        %         varData(i,:) = varfun(@transpose,stats);
+        %         myDatetime(i,1) = obj(i).Spectrum.date;
+        %         input(i,:) = [obj(i).Params.Hs,obj(i).Params.T2,obj(i).Params.Sp,NaN];  %NaN is for SST
+        %         increment(hpw);
+        %     end
+        %     delete(hpw) 
+        % 
+        %     varData.Properties.VariableNames = stats.Properties.VariableNames;
+        %     input = array2table(input);
+        % 
+        %     dsp = wave_cco_spectra('setDSproperties');
+        %     %load the results into a dstable  
+        %     Spectrum = dstable(varData,'RowNames',myDatetime,'DSproperties',dsp.dspec); 
+        %     Spectrum.Dimensions.freq = obsfreq;
+        % 
+        %     %add properties to a dstable            
+        %     Properties =  dstable(input,'RowNames',myDatetime,'DSproperties',dsp.dsprop);
+        % 
+        %     if isfield(obj(1).inpData,'tsdst')
+        %         Spectrum.Description = obj(1).inpData.tsdst(1).Description;
+        %         Properties.Description = obj(1).inpData.tsdst(1).Description;
+        %     end
+        % 
+        %     %save results
+        %     if nargin>1
+        %         dst.Spectra = Spectrum;
+        %         dst.Properties = Properties;
+        %         cobj = ctWaveData;
+        %         cobj.ModelType = 'Spectrum'; 
+        %         setDataSetRecord(cobj,mobj.Cases,dst,'spectrum');
+        %         getdialog(sprintf('Data loaded in class: %s',classname));
+        %     end
+        % end
 
 %% ------------------------------------------------------------------------
 % Plotting metadata
@@ -762,66 +800,67 @@ function mod_obj = getModelTS(obj,tsdst,meta)
         end
 
 %%
-        function spectra = unpackSpectrum(inobj,offobj)
-            %unpack the spectrum property as a set of arrays
-            % 1 - input includes inobj and offobj: return spectra
-            % % 2 - input just inobj: returns params
-            nrec = numel(inobj);
-            hpw = PoolWaitbar(nrec, 'Unpacking spectra');
-            if nargin==2
-                parfor i=1:nrec                               %parfor loop
-                    time(i,1) = offobj(i).Spectrum.date;    
-                    swl(i,1) = offobj(i).inpData.swl;
-                    Sot(i,:,:) = offobj(i).Spectrum.SG;
-                    Sit(i,:,:) = inobj(i).Spectrum.SG;
-                    depths(i,1) = inobj(i).Spectrum.depth;  
-                    % params(i,:) = inobj(i).Params;
-                    increment(hpw);
-                end   
-                spectra = struct('time',time,'swl',swl,'Sot',Sot,'Sit',Sit,'depths',depths);
-            else
-            %     parfor i=1:nrec                               %parfor loop
-            %         params(i,:) = inobj(i).Params;
-            %         increment(hpw);
-            %     end
-                spectra = [];
-            end
-            delete(hpw)
-        end
+        % function spectra = unpackSpectrum(inobj,offobj)
+        %     %unpack the spectrum property as a set of arrays
+        %     % 1 - input includes inobj and offobj: return spectra
+        %     % % 2 - input just inobj: returns params
+        %     nrec = numel(inobj);
+        %     hpw = PoolWaitbar(nrec, 'Unpacking spectra');
+        %     if nargin==2
+        %         parfor i=1:nrec                               %parfor loop
+        %             time(i,1) = offobj(i).Spectrum.date;    
+        %             swl(i,1) = offobj(i).inpData.swl;
+        %             Sot(i,:,:) = offobj(i).Spectrum.SG;
+        %             Sit(i,:,:) = inobj(i).Spectrum.SG;
+        %             depths(i,1) = inobj(i).Spectrum.depth;  
+        %             % params(i,:) = inobj(i).Params;
+        %             increment(hpw);
+        %         end   
+        %         spectra = struct('time',time,'swl',swl,'Sot',Sot,'Sit',Sit,'depths',depths);
+        %     else
+        %     %     parfor i=1:nrec                               %parfor loop
+        %     %         params(i,:) = inobj(i).Params;
+        %     %         increment(hpw);
+        %     %     end
+        %         spectra = [];
+        %     end
+        %     delete(hpw)
+        % end
 
 %%
-        function [props,mt] = unpackProperties(inobj,offobj)
-            %unpack the spectrum properties as a set of arrays
-            nrec = numel(inobj);
-            hpw = PoolWaitbar(nrec, 'Sorting results');
-            parfor i=1:nrec                               %parfor loop
-                mt(i,1) = offobj(i).Spectrum.date;
-                props(i,:) = inobj(i).Params;
-                swl(i,1) = offobj(i).inpData.swl;
-                depths(i,1) = inobj(i).Spectrum.depth
-                increment(hpw);
-            end
-            props = addvars(props,swl,depths,'NewVariableNames',{'swl','depi'});
-            delete(hpw)
-        end
+        % function [props,mt] = unpackProperties(inobj,offobj)
+        %     %unpack the spectrum properties as a set of arrays
+        %     nrec = numel(inobj);
+        %     hpw = PoolWaitbar(nrec, 'Sorting results');
+        %     for i=1:nrec                               %parfor loop
+        %         mt(i,1) = offobj(i).Spectrum.date;
+        %         props(i,:) = inobj(i).Params;
+        %         swl(i,1) = offobj(i).inpData.swl;
+        %         depths(i,1) = inobj(i).Spectrum.depth;
+        %         increment(hpw);
+        %     end
+        %     props = addvars(props,swl,depths,'NewVariableNames',{'swl','depi'});
+        %     delete(hpw)
+        % end
 %%
         function inputMessage(obj)
             %write details of the input conditions to the command window
-            inp = obj.inpData;
+            inp = obj.inpData; 
+            mt = string(inp.date);
             if strcmp(inp.input,'Wave')
                 if ~isfield(inp,'Hs') && isfield(inp,'tsdst')
                     inp = inp.tsdst;
                 end
 
                 for i=1:length(inp.Hs)
-                    fprintf('Input parameters: Hs=%.1f m, Tp=%.1f s, Dir=%.1f dTN\n',...
-                                           inp.Hs(i),inp.Tp(i),inp.Dir(i)); 
+                    fprintf('Input parameters: %s, Hs=%.1f m, Tp=%.1f s, Dir=%.1f dTN\n',...
+                                       mt,inp.Hs(i),inp.Tp(i),inp.Dir(i)); 
                 end
             elseif strcmp(inp.input,'Wind')
-                fprintf('Input parameters: U=%.1f m/s, Dir=%.1f dTN, F=%.0f m\n',...
-                                            inp.Uw,inp.Dir,inp.Fetch); 
+                fprintf('Input parameters: %s, U=%.1f m/s, Dir=%.1f dTN, F=%.0f m\n',...
+                                        mt,inp.Uw,inp.Dir,inp.Fetch); 
             else
-                fprintf('Wave spectrum for %s\n',string(inp.date));
+                fprintf('Wave spectrum for %s\n',mt);
             end
         end
     end
