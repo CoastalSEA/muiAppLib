@@ -52,12 +52,18 @@ classdef WRM_WaveModel < waveModels
 
             %select a spectral transfer case to use
             [sptobj,sptmeta] = SpectralTransfer.getSTcase(mobj);
+            if isempty(sptobj), return; end
             setRunParam(obj,mobj,meta.caserecs{:})     %assign run parameters
             %add spectral transfer selection to meta data
             inputxt = sprintf('%s, %s',meta.inptxt,sptmeta.inptxt);
 
+            spobj = [];
+            if ~strcmp(meta.inptype,'Spectrum')       
+                spobj = setSpectrumModel(ctWaveSpectrum); 
+            end
+
             %check whether wave spectra should also be saved
-            nrec = height(tsdst);
+            nrec = height(tsdst(1));
             meta.issave = false;
             if nrec<=50000
                 %only save results if arrays size is manageable
@@ -68,10 +74,13 @@ classdef WRM_WaveModel < waveModels
                     savetype = questdlg(questxt,'Wave model','Full','SPT format','SPT format');
                 end
             else
-                msgbox(sprintf('Timeseries is too large to save spectra\nN = %d and current limit in WRM_WaveModel.runModel is 50000)',nrec))
+                getdialog(sprintf('Timeseries is too large to save spectra\nN = %d and current limit in WRM_WaveModel.runModel is 50000)',nrec))
             end
-
-            [vartime,results,spectra] = runWaves(sptobj,tsdst,meta);
+            
+            tic
+            [vartime,results,spectra] = runWaves(sptobj,tsdst,meta,spobj);
+            elapsedTime = toc/60;  % Stop timer
+            fprintf('Run time for %d steps: %.2f minutes\n',nrec,elapsedTime);
             if isempty(results), obj = []; return; end
 %--------------------------------------------------------------------------
 % Assign model output to a dstable using the defined dsproperties meta-data
@@ -117,55 +126,6 @@ classdef WRM_WaveModel < waveModels
                     dst.oiSpectra.MetaData = inputxt;  
                 end
             end
-
-
-
-
-
-
-
-            % [results,mytime] = unpackProperties(inobj,offobj);
-            % dst.Properties = dstable(results,'RowNames',mytime,'DSproperties',dsprop);                      
-            % %assign metadata about model            
-            % dst.Properties.Source =  sprintf('Class %s, using %s',metaclass(obj).Name,...
-            %                                              ModelType);
-            % dst.Properties.MetaData = inputxt;   
-            % %add depths of inshore point for which there are backward rays
-            % dst.Properties.UserData = depths;  
-
-            % %check whether wave spectra should also be saved
-            % nrec = numel(inobj);
-            % if nrec<=15000
-            %     %only save results if arrays size is manageable
-            %     answer = questdlg('Save the spectra?','Wave model','Yes','No','No');
-            %     if strcmp(answer,'Yes')    
-            %         Sot = offobj(1).Spectrum.SG; %#ok<NASGU>
-            %         sze = 2*nrec*getfield(whos('Sot'),'bytes')*9.53674e-7;
-            %         questxt = sprintf('Save the full wave spectra (arrays are %.1f Mb) or spt format',sze);
-            %         answer = questdlg(questxt,'Wave model','Full','SPT format','SPT format');
-            %         source = sprintf('Class %s, using %s',metaclass(obj).Name,ModelType);                        
-            %         if strcmp(answer,'SPT format')
-            %             dst.OffshoreSpectra = saveSpectrum(offobj);
-            %             dst.OffshoreSpectra.Source = source;
-            %             dst.OffshoreSpectra.MetaData = inputxt; 
-            %             dst.InshoreSpectra = saveSpectrum(inobj);
-            %             dst.InshoreSpectra.Description = sprintf('Inshore using %s',dst.OffshoreSpectra.Description);
-            %             dst.InshoreSpectra.Source = source;
-            %             dst.InshoreSpectra.MetaData = inputxt;  
-            %         else
-            %             dir = offobj(1).Spectrum.dir;
-            %             freq = offobj(1).Spectrum.freq;                        
-            %             sp = unpackSpectrum(inobj,offobj);
-            %             clear inobj offobj
-            %             dst.oiSpectra = dstable(sp.Sot,sp.Sit,'RowNames',sp.time,'DSproperties',dspec); 
-            %             dst.oiSpectra.Dimensions.dir = dir;    %NB order is X,Y and must
-            %             dst.oiSpectra.Dimensions.freq = freq;  %match variable dimensions  
-            %             %assign metadata about model
-            %             dst.oiSpectra.Source = source;
-            %             dst.oiSpectra.MetaData = inputxt;                    
-            %         end                    
-            %     end
-            % end
 %--------------------------------------------------------------------------
 % Save results
 %--------------------------------------------------------------------------  
@@ -209,14 +169,13 @@ classdef WRM_WaveModel < waveModels
 
             hw = waitbar(0,'Processing point 0');
             npnts = length(sptrecs);
+            tic
             for i=1:npnts      %NOT parfor because used in runWaves               
                 waitbar(i/npnts,hw,sprintf('Processing point %d',i));
                 sptobj = getCase(muicat,sptrecs(i));
-                [offobj,inobj] = runWaves(sptobj,tsdst,meta,spmodelobj);
-                %each variable should be an array in the 'results' cell array
-                %if model returns single variable as array of doubles, use {results}
-                [results,mytime] = unpackProperties(inobj,offobj);
-                adst = dstable(results,'RowNames',mytime,'DSproperties',dsprop);
+                [vartime,results,~] = runWaves(sptobj,tsdst,meta,spmodelobj);
+
+                adst = dstable(results,'RowNames',vartime,'DSproperties',dsprop);
                 %assign metadata about model            
                 adst.Source =  sprintf('Class %s, using %s',metaclass(obj).Name,...
                                                              ModelType);
@@ -227,6 +186,8 @@ classdef WRM_WaveModel < waveModels
                 pname{i} = sprintf('Point%d',i);
                 pdst(i) = adst; clear results
             end
+            elapsedTime = toc/60;  % Stop timer
+            fprintf('Run time for %d points: %.2f minutes\n',npnts,elapsedTime);
             
             for j = 1:npnts
                 dst.(pname{j}) = pdst(j);

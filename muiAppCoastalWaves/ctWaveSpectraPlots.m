@@ -318,7 +318,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                     'ListString',dates);
                 if isempty(irow), ok = 1; continue; end
                 obj.Plotxt.ttxt = sprintf('%s (%s)',obsdst.Description,dates{irow});
-                tsdstrow = ctWaveSpectrum.getDatasetRow(obsdst,irow);
+                tsdstrow = getDSTrows(obsdst,irow);
                 %set input parameters for selected record
                 obj = setInputParams(obj,tsdstrow,meta.inptype);
                 obj = getMeasuredSpectrum(obj);  %compute spectrum based on measured form                
@@ -485,7 +485,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             hpw = PoolWaitbar(nrec, 'Processing skill statistics');
             tic
             parfor i=1:nrec                                   %parfor loop
-                itsdst = getDSTable(obsdst,i,[]);             %selected record
+                itsdst = getDSTrows(obsdst,i);             %selected record
                 obsobj = copy(obj);
                 obsobj = setInputParams(obsobj,itsdst,'Spectrum');            
                 obsobj = getMeasuredSpectrum(obsobj);         %compute spectrum based on measured form
@@ -493,7 +493,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
 
                 modobj = copy(obj);
                 if iscase
-                    indst = ctWaveSpectrum.getDatasetRow(moddst,i); %selected record
+                    indst = getDSTrows(moddst,i); %selected record
                     seastate = seas(i,:);    
                 else
                     indst = dstable(obsprops(i,:),'RowNames',mtime(i));

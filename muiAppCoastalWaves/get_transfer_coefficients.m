@@ -32,8 +32,8 @@ function output = get_transfer_coefficients(offobj,inobj)
     end   
 
     %spectrum dimensions and parameter settings
-    p0 = offobj.Params;   %parameters of offshore spectrum
-    pi = inobj.Params;    %parameters of inshore spectrum
+    p0 = offobj.Params(1,:);   %parameters of offshore spectrum (COP results have multiple rows)
+    pi = inobj.Params;         %parameters of inshore spectrum
     % inp = offobj.inpData;
     % fprintf('Hs = %.2f/%.2f, Dir = %.1f/%.1f\n',inp.Hs,p0.Hs,inp.Dir,p0.Dir)
 

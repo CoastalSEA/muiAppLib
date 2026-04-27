@@ -101,7 +101,6 @@ function [shoal,offdir] = getShoal(obj,inobj,swl,idx) %...getShoal(sptobj,dir,fr
     ci = squeeze(indst.celerity);            %inshore celerity
     cgi = squeeze(indst.cgroup);             %inshore group celerity
 
-    
     Tdef = [2,3,4,5,6,7,8,9,10,11.8,13.3,15.4,18.2,22.2,28.6,40];
     %pad the high frequencies with values from the maximum frequency
     idx = find(Tdef<min(T)); 

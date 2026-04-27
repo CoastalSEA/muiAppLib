@@ -120,8 +120,8 @@ classdef SpectralTransfer < muiDataSet
 %%
         function runPlotSpectrum(mobj)
             %create a plot of the offshore and inshore 2-D specrum surfaces 
-            %for a single wave condition. Uses ctWaveSpectraPlots fucntions
-            % but includes transfer to obtain inshore spectrum
+            %for a single wave condition. Uses ctWaveSpectraPlots functions
+            %but includes transfer to obtain inshore spectrum
             ptype = questdlg('What type of plot','XY Polar','XY','Polar','XY'); 
             %get the refraction transfer table
             promptxt = 'Select a Transfer Table Case to use:'; 
@@ -205,7 +205,19 @@ classdef SpectralTransfer < muiDataSet
                 getdialog('Spectral Transfer table not found'); return; 
              end
 
-            [offobj,inobj] = runWaves(obj,tsdst,meta);
+            [~,~,spectra] = runWaves(obj,tsdst,meta);
+
+            nrec = numel(spectra);
+            anobj = ctWaveSpectrum;
+            [dir,freq] = spectrumDimensions(specobj); 
+            anobj.Dimensions.dir = dir;    %NB order is X,Y and must
+            anobj.Dimensions.freq = freq;  %match variable dimensions  
+            for i=1:nrec
+                offobj = copy(anobj); 
+                offobj(i).Spectrum.SG = spectra(i).Sot;
+                inobj = copy(anobj); 
+                inobj(i).Spectrum.SG = spectra(i).Sit;
+            end
 
             if strcmp(offobj(1).inpData.input,'Spectrum')
                 tsdst(1) = addvars(tsdst(1),tsdst(2).Hs,'NewVariableNames',{'Hs'});
@@ -223,35 +235,31 @@ classdef SpectralTransfer < muiDataSet
         function [mytime,results,spectra] = runWaves(obj,tsdst,meta,spobj)
             %run the spectral transfer model for a timeseries of offshore
             %wave conditions and return a table of wave spectrum objects
-            % NB runs out of memory for long time series******
-
-            % islog = false;
-            % answer = questdlg('Write log of missing dates to file?',...
-            %                        'SpectralTransfer','Yes','No','No');
-            % if strcmp(answer,'Yes'), islog = true; end
-            % filename = sprintf('Sprectra_log_%s.txt',char(datetime,"ddMMMyy_HH-mm"));
             spectra = struct('Sot',[],'Sit',[]);
             if nargin<4 || isempty(spobj)
                 spobj = ctWaveSpectrum;    %allow user to define spectrum model to use
             end
             spobj.inpData.input = meta.inptype; 
-            inptype = meta.inptype; 
-            meta.variables.swl = tsdst(1).swl; %extract swl as vector
+            inptype = meta.inptype;  
+            issave = meta.issave;    
+            swl = tsdst(1).swl;
+
             if strcmp(inptype,'Spectrum')      
                 spobj.inpData.output = 'Measured';           %dummy value 
-                %need to remove swl from dstable because getDSTable
-                %requires all variables to have the same dimensions
-                tsdst = removevars(tsdst(1),'swl'); 
             elseif ~isempty(spobj.spModel)
                 spobj.inpData.output = 'Modelled'; %TMA, etc used in get_inshore_spectrum
             else
                 spobj = setSpectrumModel(spobj);  %define the model to be used (Jonswap etc)
-                if isempty(spobj.spModel), offobj = []; inobj = []; return; end
+                if isempty(spobj.spModel), mytime = [];results = []; return; end
                 spobj.inpData.output = 'Modelled'; %TMA, etc used in get_inshore_spectrum
             end
                 
-            tsdst(1).DataTable = rmmissing(tsdst(1).DataTable);%remove nans
+            [tsdst(1).DataTable,idv] = rmmissing(tsdst(1).DataTable);%remove nans
+            for j=2:numel(tsdst)
+                tsdst(1).DataTable(idv,:) = [];
+            end
             nrec = height(tsdst(1).DataTable);
+
             % seas = zeros(nrec,1);                         %needed in parfor to match loop size
             % if ~isempty(meta.variables) && ~isempty(meta.variables.seastate)...
             %                        && isa(meta.variables.seastate,'dstable')
@@ -259,62 +267,45 @@ classdef SpectralTransfer < muiDataSet
             % end
 
             hpw = PoolWaitbar(nrec, 'Processing timeseries');
-            parfor i=1:nrec                                %parfor loop 
-                [offobj,inobj] = runWave(obj,tsdst,meta,spobj,i);
-                swl = offobj.inpData.swl;
+            parfor i=1:nrec                                %parfor loop
+                [offobj,inobj] = runWave(obj,tsdst,meta,spobj,swl(i),i);
                 depth = inobj.Spectrum.depth;       
-                mytime(i,:) = tsdst.RowNames(i);
-                results(i,:) = addvars(inobj.Params,swl,depth,...
+                mytime(i,:) = tsdst(1).RowNames(i);
+                results(i,:) = addvars(inobj.Params,swl(i),depth,...
                                        'NewVariableNames',{'swl','depi'}); 
-                if meta.issave
+                if issave
                     Sot = offobj.Spectrum.SG;
                     Sit = inobj.Spectrum.SG;                     
                     spectra(i,1) = struct('Sot',Sot,'Sit',Sit);
                     increment(hpw);       
                 end
-                % %for each offshore wave get the inshore results
-                % offspectrum = copy(spobj);
-                % tsdstrow = ctWaveSpectrum.getDatasetRow(tsdst,i);
-                % %set input parameters for selected record
-                % offspectrum = setInputParams(offspectrum,tsdstrow,inptype);
-                % offspectrum.inpData.swl = swl(i);
-                % %get the spectrum data for selected record
-                % if strcmp(inptype,'Spectrum')
-                %     offspectrum = getMeasuredSpectrum(offspectrum);
-                % elseif strcmp(inptype,'Wind')
-                %     offspectrum = getModelSpectrum(offspectrum);
-                % else
-                %     offspectrum = getMultiModalSpectrum(offspectrum,seas(i,:));
-                % end
-                % offspectrum.Spectrum.date = tsdstrow.RowNames;
-                % offspectrum.Params = wave_spectrum_params(offspectrum);
-                % offobj(i) = offspectrum;
-                % 
-                % %inshore spectrum and wave parameters
-                % inspectrum = get_inshore_spectrum(obj,offspectrum);
-                % inspectrum.Params = wave_spectrum_params(inspectrum);
-                % inobj(i) = inspectrum;
-                % coeftable = get_transfer_coefficients(offobj(i),inobj(i));
-                % inobj(i).Params = [inobj(i).Params,coeftable];
-                % % if islog
-                % %     lines = sprintf('%s',tsdst.RowNames(i)); %#ok<PFBNS> 
-                % %     writelines(lines,filename,WriteMode="append")%v2022a or later
-                % % end
                 increment(hpw);
             end
             delete(hpw)  
         end
 
 %%
-        function [offobj,inobj] = runWave(obj,tsdst,meta,spobj,irow)
+        function [offobj,inobj] = runWave(obj,tsdst,meta,spobj,swl,irow)
             %run the spectral transfer model for an offshore wave condition
             %and return offshore and inshore wave spectrum objects
-            offobj = copy(spobj);
-            offobj = getSpectrumObject(offobj,meta,tsdst,irow,1); %1=spModel already defined
-            offobj.inpData.swl = meta.variables.swl(irow);
+            % 
+            % offobj = copy(spobj);
+            % offobj = setInputParams(offobj,tsdstrow,inptype);
+            % 
+            % tic
+            % offobj = getSpectrum(offobj,seastate);
+            % offobj.inpData.swl = swl;
+            % toc
+            % tic
+            offobj = getSpectrumObject(spobj,meta,tsdst,irow,1); %1=spModel already defined
+            offobj.inpData.swl = swl;
+            % toc
             %inshore spectrum and wave parameters
+            % tic
             inobj = get_inshore_spectrum(obj,offobj);
             inobj.Params = wave_spectrum_params(inobj);
+            % toc
+
             coeftable = get_transfer_coefficients(offobj,inobj);
             inobj.Params = [inobj.Params,coeftable];
         end
