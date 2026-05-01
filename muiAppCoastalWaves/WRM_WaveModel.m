@@ -23,7 +23,7 @@ classdef WRM_WaveModel < waveModels
         ModelType        %model used for the particular instance
     end                  %abstract property required by waveModels
     
-    methods (Access={?muiDataSet,?muiStats,?ctWaveData,?ctWaveSpectra})
+    methods %(Access={?muiDataSet,?muiStats,?ctWaveData,?ctWaveSpectra,?subsample_dst})
         function obj = WRM_WaveModel()                    
             %class constructor
         end
