@@ -23,7 +23,7 @@ function ct_coastal_plots(mobj)
 %--------------------------------------------------------------------------
 %
     listxt = {'Littoral Drift','Generic Scatter Plot','Wave Scatter Plot',...
-              'Frequency Analysis','Pos-Neg Change Plot'};
+              'Surface Scatter Plot','Frequency Analysis','Pos-Neg Change Plot'};
     % ok = 1;
     % while ok>0
         selection = listdlg("ListString",listxt,"PromptString",...
@@ -39,6 +39,8 @@ function ct_coastal_plots(mobj)
                 scatter_plot(mobj);    %muitoolbox function              
             case 'Wave Scatter Plot'
                 wave_scatter_plot(mobj);
+            case 'Surface Scatter Plot'
+                surface_scatter_plot(mobj)
             case 'Frequency Analysis'
                 frequency_analysis(mobj);
             case 'Pos-Neg Change Plot'
@@ -165,7 +167,7 @@ end
 function wave_scatter_plot(mobj)
     %plot wave scatter diagrams using depth or direction as 3rd variable
     promptxt = 'Select wave height:';    
-    [H,indH] = get_variable(mobj,promptxt,'XYZmxvar',1);
+    [H,indH] = get_variable(mobj,promptxt,'XYZmxvar',1);%XYZmxvar limits tab variable selection to 1
     if isempty(H), return; end
     promptxt = 'Select wave period:';    
     [T,indT] = get_variable(mobj,promptxt,'XYZmxvar',1);
@@ -190,6 +192,29 @@ function wave_scatter_plot(mobj)
         if isempty(D), return; end
         wave_scatter_3d(H.data,T.data,D.data);
     end
+end
+
+%%
+function surface_scatter_plot(mobj)
+    %plot x-y points of selected data sets and add a histogram surface
+    %useful when there are >1000 data points
+    promptxt = 'Select X variable:';    
+    [x,~] = get_variable(mobj,promptxt,'XYZmxvar',1); %XYZmxvar limits tab variable selection to 1
+    if isempty(x), return; end
+    promptxt = 'Select Y variable:';    
+    [y,~] = get_variable(mobj,promptxt,'XYZmxvar',1);
+    if isempty(y), return; end  
+    isvalid = checkdimensions(x.data,y.data);
+    if ~isvalid, return; end
+
+    ttxt = sprintf('%s(%s)%s v %s(%s)%s',x.case,x.dset,x.name,y.case,y.dset,y.name);
+    plotxt = struct('title',ttxt,...
+                    'subtitle','',...
+                    'xlabel',x.label,...
+                    'ylabel',y.label);
+    iscentroid = 1;                      %may need to add prompts for these
+    ispolar = 0;
+    plot_scatter_surface(x.data,y.data,plotxt,iscentroid,ispolar);
 end
 
 %%
