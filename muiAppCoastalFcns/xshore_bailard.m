@@ -34,6 +34,7 @@ function Qx = xshore_bailard(Hs,Tp,Dir,dep,theta,bs,d50,g,rhow,rhos,visc)
 %   Hs = [0.55,0.65,0.59,1.01,0.99,1.4,0.91,0.62,0.73];
 %   bs = 50; %beach face is 1:20 reducing to 1:50 in surf zone
 %   d50 = 0.17/1000;
+%   g = 9.81; rhow = 1025; rhos = 2650; visc = 1.3e-6;
 %   Qx = xshore_bailard(Hs,[],[],[],[],bs,d50,g,rhow,rhos,visc);
 %   Vx = Qx*3600*24;      %convert m3/m/s to m3/m/d
 % 
