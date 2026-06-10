@@ -57,8 +57,8 @@ function [clinedir,ncplines,cumlen] = gd_curvelineprops(cplines,idL)
             dy = [dy(1),dy,dy(end)];           %#ok<AGROW>             
             theta = atan2(dy,dx);              %direction between points            
             dirs(1) = theta(1);
-            for k=2:length(theta)-1             %mean direction at point
-                dirs(k) = (theta(k-1)+theta(k+1))/2; %#ok<AGROW> 
+            for k=2:length(theta)-1             %mean direction at point in x,y space
+                dirs(k) = sum(theta(k-1:k+1))/3; %#ok<AGROW> 
             end  
             clinedir{j} = [dirs,NaN];           %pad to make same length as lines
             dirs = [];
