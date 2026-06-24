@@ -402,10 +402,10 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
         function cfModelled2Measured_ts(mobj,iscase)
             %create a measured timeseries of spectra and compare with:
             % iscase=true: modelled spectra from wave properties defined
-            %   by suitable wave data timeseries (e.g. Copernicus data) to
-            %   examine spectrum model fit parameters for given sea location
+            %    by suitable wave data timeseries (e.g. Copernicus data) to
+            %    examine spectrum model fit parameters for given sea location
             % iscase=false: use the measured properties to create a model 
-            %   spectrum to assess model skill
+            %    spectrum to assess model skill
             getdialog('Select wave spectra data'); 
             [~,obsdst,meta] = waveModels.getCaseInputParams(mobj,{'ctWaveSpectrumData'},1);
             if isempty(obsdst), getdialog('No wave spectra data selected'); return; end
@@ -425,7 +425,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 end
             end
             
-            if iscase           %cf measured and model from case
+            if iscase           %cf measured spectra and model of case wave parameters
                 %get Case dataset to be used
                 getdialog('Select wave data to compare with spectra'); 
                 [~,seldst,meta] = waveModels.getCaseInputParams(mobj);
@@ -447,9 +447,9 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
                 end
                 meta.model{1} = moddst(1).Description;
                 delete(hwb)
-            else
+            else             %cf measured spectra and model derived from measured spectra
                 moddst = [];   %needed for parfor loop
-                meta.model{1} = 'Model using spectrum properties';
+                meta.model{1} = 'spectrum properties';
                 meta.variables.inputs = {'spectrum Hs','spectrum Tp','spectrum Dir'};
                 meta.variables.seastate = [];
             end            
@@ -461,6 +461,7 @@ classdef ctWaveSpectraPlots < ctWaveSpectrum
             obj = ctWaveSpectraPlots;
             obj = setSpectrumModel(obj);
             if isempty(obj.spModel), return; end % user cancelled
+            meta.model{1} = sprintf('%s model using %s',obj.spModel.form,meta.model{1});
             [dir,freq] = spectrumDimensions(obj);
             obj.Spectrum.freq = freq;
             obj.Spectrum.dir = dir;

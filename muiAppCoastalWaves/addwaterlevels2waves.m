@@ -27,10 +27,16 @@ function [tsdst,meta] = addwaterlevels2waves(wvdst,mobj,meta)
     muicat = mobj.Cases;
     wvtime = wvdst(1).RowNames;      %timesteps in wave record
 
-    wlclassprops = {'ctWaterLevelData','ctTidalAnalysis','muiUserModel'};                                              
-    promptxt = 'Select input water level data set (Cancel to use SWL=0):';           
-    [wl_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
-                     'CaseClass',wlclassprops,'ListSize',[300,100]);                                 
+    answer = questdlg('Include water levels?','Wave model','Yes','No','Yes');
+    if strcmp(answer,'Yes')
+        wlclassprops = {'ctWaterLevelData','ctTidalAnalysis','muiUserModel'};                                              
+        promptxt = 'Select input water level data set (Cancel to use SWL=0):';           
+        [wl_crec,ok] = selectRecord(muicat,'PromptText',promptxt,...
+                         'CaseClass',wlclassprops,'ListSize',[300,100]); 
+    else
+        wl_crec = []; ok = 0;
+    end
+
     swl = zeros(size(wvtime));               
     if ok<1 || isempty(wl_crec)
         getdialog('Using SWL=0');

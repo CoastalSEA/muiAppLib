@@ -166,20 +166,34 @@ function movingtime_thr_duration(wl,t,z0)
     wetdur.Format = 'h';
     wetdur = hours(wetdur);
     tper = years(1);  %set to annual but movingtime allows this to be changed!
-    [tm,vm] = movingtime(wetdur,t(stid),tper,tper,'mean');
+    [tm,vm,tdur,tstep] = movingtime(wetdur,t(stid),tper,tper,'mean');
     figure('Name','Duration exceedance','Units','normalized',...                
            'Resize','on','HandleVisibility','on','Tag','PlotFig'); 
     plot(tm,vm);
     title(sprintf('Rolling mean above %.3g (mOD) threshold',z0))
-    ylabel('Mean annual duration of exceedances (hours)')
+    subtitle(sprintf('Averaging period %s; Time step %s',...
+                                                    char(tdur),char(tstep))) 
+    ylabel('Mean duration of exceedances (hours)')
     xlabel('Time')
     reclen = t(end)-t(1);
     pcntexcdur = sum(wetdur)/hours(reclen)*100;
     numexc = mean(length(stid),length(edid));
     aveannumexc = numexc/years(reclen);
     msg1 = sprintf('Percentage time duration exceeded in %.3g years = %.3g%%',years(reclen),pcntexcdur);
-    msg2 = sprintf('Average annual number of threshold exceedances = %.3g',aveannumexc);
+    msg2 = sprintf('Annual average number of threshold exceedances = %.3g',aveannumexc);
     msgtxt = sprintf('%s\n%s',msg1,msg2);
     hm = msgbox(msgtxt,'Mean duration results');
     waitfor(hm)
+    
+    ok = 0; hf = []; slopes = [];
+    while ok<1
+        inp = inputdlg(';Size of smoothing window','Turning points',1,{'100'});
+        if isempty(inp), ok=1; continue; end
+        nwindow = str2double(inp{1});
+        delete(hf)
+        [hf,~,~,~,slopes] = detect_turning_points(tm,vm,nwindow,1);   
+    end
+    j = 1:numel(slopes);
+    out = reshape([j',slopes]',[],1);
+    fprintf('Segment %d: %.4f hrs/yr\n',out)
 end

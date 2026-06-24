@@ -381,6 +381,7 @@ function obj = setInputParams(obj,tsdst,inptype)
             else
                 params = obj.inpData;
             end
+            params.gamma = abs(obj.spModel.gamma); %force +ve value as no seastate info
 
             %spectral energy for selected wave spectrum
             [S,gamma] = wave_spectrum(sp.form,freq,params);
@@ -595,7 +596,7 @@ function obj = setInputParams(obj,tsdst,inptype)
             snames = fields(spectra);
             bartxt = {'Saving offshore spectra','Saving inshore spectra'};
             hpw = PoolWaitbar(nvar,bartxt{ido});
-            parfor i=1:nvar
+            parfor i=1:nvar                                   %parfor loop
                 anobj = copy(obj);
                 anobj.Spectrum.SG = spectra(i).(snames{ido}); %#ok<PFBNS>
                 stats = setspectrum(anobj,obsfreq);    

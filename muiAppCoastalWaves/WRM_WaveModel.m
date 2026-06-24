@@ -111,7 +111,7 @@ classdef WRM_WaveModel < waveModels
                     [dir,freq] = spectrumDimensions(specobj); 
                     nrec = numel(spectra);
                     hpw = PoolWaitbar(nrec,'Saving spectra');
-                    parfor i=1:nrec
+                    parfor i=1:nrec                         %parfor loop
                         Sot(i,:,:) = spectra(i).Sot;
                         Sit(i,:,:) = spectra(i).Sit;
                         increment(hpw)
