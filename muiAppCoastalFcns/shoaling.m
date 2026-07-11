@@ -1,11 +1,11 @@
-function Hs1 = shoaling(Hs0,Tp,dep0,dep1)
+function [Hs1,Ks] = shoaling(Hs0,Tp,dep0,dep1)
 %
 %-------function help------------------------------------------------------% NAME
 %   shoaling.m
 % PURPOSE
 %   Plane bed wave shoaling using linear wave theory
 % USAGE
-%   Hs1 = shoaling(Hs0,Tp,dep0,dep1)
+%   [Hs1,Ks] = shoaling(Hs0,Tp,dep0,dep1);
 % INPUTS
 %   Hs0  - input significant wave height (m)
 %   Tp   - peak wave period (s)
@@ -13,6 +13,7 @@ function Hs1 = shoaling(Hs0,Tp,dep0,dep1)
 %   dep1 - output water depth (m)
 % RESULTS
 %   Hs1 - output wave height
+%   Ks - shoaling coefficient
 % NOTES
 %   USACE Shore Protection Manual
 % SEE ALSO
