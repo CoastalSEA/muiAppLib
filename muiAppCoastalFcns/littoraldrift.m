@@ -27,8 +27,12 @@ function Q = littoraldrift(Hsi,Tp,Diri,depi,theta,mb,d50,Kc,g,rhos,rhow,visc)
 %         (ii) SANDS formulae - Dynamics of Marine Sands, Soulsby
 %        (iii) Kamphuis formula
 %         (iv) Damgaard & Soulsby (shingle)
+% NOTES
+%   drift when the waves are offshore relative to the shoreline angle are
+%   assigned a NaN value/. drift is positive when moving from left to right 
+%   and looking at shore from sea
 % SEE ALSO
-% getalp.m, refraction.m beachtransportratio.m, xshore_bailard.m
+%   getalp.m, refraction.m beachtransportratio.m, xshore_bailard.m
 %
 % Author: Ian Townend
 % CoastalSEA (c)June 2015
