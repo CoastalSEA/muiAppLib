@@ -20,7 +20,7 @@ function Qx = xshore_bailard(Hs,Tp,Dir,dep,theta,bs,d50,g,rhow,rhos,visc)
 %   rhos - density of sediment (default = 2650 kg/m^3)
 %   visc - viscosity of water (m^2/s)
 % OUTPUT
-%   Qx  - cross-shore volumetric transport rate (m^3/s) and is positive in 
+%   Qx  - cross-shore volumetric transport rate (m^3/s/m-shore) and is positive in 
 %         the onshore direction. Returns a struct with the results for
 %         Bailard Eq13 and Eq23 as two fields.
 % NOTES

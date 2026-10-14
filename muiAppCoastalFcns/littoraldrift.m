@@ -28,9 +28,12 @@ function Q = littoraldrift(Hsi,Tp,Diri,depi,theta,mb,d50,Kc,g,rhos,rhow,visc)
 %        (iii) Kamphuis formula
 %         (iv) Damgaard & Soulsby (shingle)
 % NOTES
-%   drift when the waves are offshore relative to the shoreline angle are
-%   assigned a NaN value/. drift is positive when moving from left to right 
-%   and looking at shore from sea
+%   Gaps are NaN values. When the waves are offshore relative to the
+%   shoreline angle drift is assigned a NaN value. Note: when 
+%   using nearshore waves there should not be many waves with a mean 
+%   offshore going wave direction. 
+%   Drift is  positive when moving from left to right and looking at 
+%   shore from sea.
 % SEE ALSO
 %   getalp.m, refraction.m beachtransportratio.m, xshore_bailard.m
 %
@@ -58,7 +61,6 @@ bsgn = zeros(size(quad));
 bsgn(quad==1 | quad==4) = -1;       %waves right to left when looking at shore from sea
 bsgn(quad==2 | quad==3) = +1;       %waves left to right when looking at shore from sea
 idoff = quad==3 | quad==4;          %offshore waves
-alpi(idoff) = NaN;
 
 ci = celerity(Tp,depi);             %wave celerity
 pidLi = 4*pi()*depi./(ci.*Tp);      %factor 4pi.d/(c.Tp)
@@ -79,7 +81,10 @@ Q(:,3) = (7.3*sign(bsgn).*(Hsi.^2).*(Tp.^1.5).*(sin(2*alpi).^(0.6)).*((1./mb).^0
 % Damgaard & Soulsby (shingle)
 Q(:,4) = shingle_transport(Hsi,Tp,alpi,sm1,visc,d50,1./mb,g).*sign(bsgn);
 
-Q(idoff,:) = 0;
+Q(idoff,:) = NaN;                   %offshore going waves treated as missing data
+                                    %using nearshore wave data as input
+%display(sum(idoff))                %they should not exist
+
 %
 % Transport functions-----------------------------------------------------
 %
@@ -104,9 +109,9 @@ Q(idoff,:) = 0;
         thmx  = sqrt((thm+thw.*sin(alp1)).^2+(thw.*cos(alp1)).^2);
         %conditional relationships for longshore transport
         Qls1=0.19*sqrt(g*tan(mb)).*(sin(2*alp1)).^1.5.*Hrms.^2.5.*(1-thcrf)/12/sm1.*(thcrf<1);
-        Qls2a=0.24*g^(3/8)*d50^0.25*dirf.*Hrms.^(19/8)/12/sm1./Tp.^0.25.*(thwr>=thwsf).*(thmx>thcr);
-        Qls2b=0.046*g^0.4*dirf.*Hrms.^(13/5)/12/sm1^1.2./(pi()*Tp).^0.2.*(thwr<thwsf).*(thmx>thcr);
-        Qls2 = Qls2a+Qls2b;
+        Qls2a=0.24*g^(3/8)*d50^0.25*dirf.*Hrms.^(19/8)/12/sm1./Tp.^0.25.*(thwr>=thwsf);
+        Qls2b=0.046*g^0.4*dirf.*Hrms.^(13/5)/12/sm1^1.2./(pi()*Tp).^0.2.*(thwr<thwsf);
+        Qls2 = (Qls2a+Qls2b).*(thmx>=thcr);
         Qls = max(real(Qls1),real(Qls2));
     end
 end

@@ -39,8 +39,8 @@ function dst = littoraldriftstats(qs,tdt,varargin)
 %
     maxgap = 12;  %to avoid drift being applied over large data gaps set 
                   %maximum gap that can be used to derive drift volume
-    calmsthreshold = 100;  %"calms" are drift rates less than threshold
-                           % 100m^3/yr ~= 3e-6 m^3/s; 
+    calmsthreshold = 10;  %"calms" are drift rates less than threshold
+                           % 10m^3/yr ~= 3e-7 m^3/s; 
     answer = inputdlg('Calms threshold (Qs (m^3/yr):','Drift stats',...
                                         1,{num2str(calmsthreshold)});
     if isempty(answer), return; end %user cancelled
@@ -72,7 +72,7 @@ function dst = littoraldriftstats(qs,tdt,varargin)
     dt = hours(diff(tdt));         %individual times step in hours
     delt = [dt;dt(end)];           %pad to maintain record length
     delt(delt>maxgap) = maxgap;    %remove large gaps
-    vs = qs.*delt*3600;            %volume transported (m^3)
+    vs = real(qs).*delt*3600;            %volume transported (m^3)
     %statistics for gaps in record, in data (NaNs) and calms 
     %drift statsistics annual and monthly
     zm = zeros(nyr,1); gapsinrecord = zm; gapsindata = zm; calms = zm;
@@ -100,10 +100,14 @@ function dst = littoraldriftstats(qs,tdt,varargin)
         gapsindata(i)   = sum(isnan(qs(idy)))/anrecs*100;  %NaN values
 
         %calms in either direction when >0 and <threshold
-        idcalm = find(abs(qs(idy))<calmsthreshold & abs(qs(idy))>0);
-        calms(i) = length(idcalm)/anrecs*100;
+        % idcalm = find(abs(qs(idy))<calmsthreshold & abs(qs(idy))>0);
+        idcalm = find(abs(qs(idy))<calmsthreshold);
+        calms(i) = numel(idcalm)/anrecs*100;
         %qs=0 is assigned when waves are offshore
-        offshore(i) = length(find(qs(idy)==0))/anrecs*100;
+        %offshore(i) = length(find(qs(idy)==0))/anrecs*100;
+        %qs=1i is assigned when waves are offshore
+        offshore(i) = numel(~isreal(qs(idy)))/anrecs*100;
+
         %annual drift   
         vols = vs(idy);
         andrift(i) = sum(vols,'omitnan');        
@@ -151,15 +155,15 @@ function dst = littoraldriftstats(qs,tdt,varargin)
         %plot gap statistics
         s(1) = subplot(3,1,1);
         if length(yearrecs)>1
-            bar(yearrecs,[gapsinrecord,gapsindata,offshore,calms],'stacked')
+            bar(yearrecs,[gapsinrecord,gapsindata,calms],'stacked')
         else
-            bar([yearrecs;NaN],[gapsinrecord,gapsindata,offshore,calms;0,0,0,0],'stacked')
+            bar([yearrecs;NaN],[gapsinrecord,gapsindata,calms;0,0,0,0],'stacked')
         end
         xlim([yearrecs(1)-0.5,yearrecs(end)+0.5])
         xlabel('Year');
-        ylabel(sprintf('Percentage gaps,\ncalms and offshore conditions'));
-        calmstxt = sprintf('Calms (qs<%g m^3/s)',calmsthreshold);
-        legend({'Gaps in record','Void/offshore (NaN input)','Offshore (qs=0)',calmstxt},'Location','best');
+        ylabel(sprintf('Percentage gaps,\nmissing data and calm conditions'));
+        calmstxt = sprintf('Calms (qs<%s m^3/yr)',answer{1});
+        legend({'Gaps in record','Void (NaN input)',calmstxt},'Location','best');
     end
 
     if plotoption==0 || plotoption==2

@@ -70,7 +70,7 @@ classdef WRM_WaveModel < waveModels
                 answer = questdlg('Save the spectra?','Wave model','Yes','No','No');
                 if strcmp(answer,'Yes') 
                     meta.issave = true; 
-                    questxt = 'Save the full wave spectraor spt format';
+                    questxt = 'Save the full wave spectra or spt format';
                     savetype = questdlg(questxt,'Wave model','Full','SPT format','SPT format');
                 end
             else
